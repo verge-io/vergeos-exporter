@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/verge/monitoring/prometheus-vergeos-exporter/blob/main/README.md
+    about: Check out our documentation before creating an issue
