@@ -28,10 +28,7 @@ func (e *Exporter) getToken() error {
 	req.Header.Set("X-JSON-Non-Compact", "1")
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{
-		Timeout: *scrapeTimeout,
-	}
-	resp, err := client.Do(req)
+	resp, err := e.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to execute token request: %v", err)
 	}
@@ -67,10 +64,7 @@ func (e *Exporter) collectNodeMetrics(ch chan<- prometheus.Metric) {
 	}
 	req.Header.Set("x-yottabyte-token", e.token)
 
-	client := &http.Client{
-		Timeout: *scrapeTimeout,
-	}
-	resp, err := client.Do(req)
+	resp, err := e.httpClient.Do(req)
 	if err != nil {
 		fmt.Printf("Error executing request: %v\n", err)
 		return
@@ -103,7 +97,7 @@ func (e *Exporter) collectNodeMetrics(ch chan<- prometheus.Metric) {
 		}
 		req.Header.Set("x-yottabyte-token", e.token)
 
-		resp, err := client.Do(req)
+		resp, err := e.httpClient.Do(req)
 		if err != nil {
 			fmt.Printf("Error executing stats request for node %s: %v\n", node.Name, err)
 			continue
@@ -171,10 +165,7 @@ func (e *Exporter) collectVSANMetrics(ch chan<- prometheus.Metric) {
 	}
 	req.Header.Set("x-yottabyte-token", e.token)
 
-	client := &http.Client{
-		Timeout: *scrapeTimeout,
-	}
-	resp, err := client.Do(req)
+	resp, err := e.httpClient.Do(req)
 	if err != nil {
 		fmt.Printf("Error executing VSAN request: %v\n", err)
 		return
@@ -280,10 +271,7 @@ func (e *Exporter) collectClusterMetrics(ch chan<- prometheus.Metric) {
 	}
 	req.Header.Set("x-yottabyte-token", e.token)
 
-	client := &http.Client{
-		Timeout: *scrapeTimeout,
-	}
-	resp, err := client.Do(req)
+	resp, err := e.httpClient.Do(req)
 	if err != nil {
 		fmt.Printf("Error executing cluster request: %v\n", err)
 		return
@@ -330,7 +318,7 @@ func (e *Exporter) collectClusterMetrics(ch chan<- prometheus.Metric) {
 		}
 		req.Header.Set("x-yottabyte-token", e.token)
 
-		resp, err := client.Do(req)
+		resp, err := e.httpClient.Do(req)
 		if err != nil {
 			fmt.Printf("Error executing cluster stats request for cluster %s: %v\n", cluster.Name, err)
 			continue

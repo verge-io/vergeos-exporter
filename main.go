@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"crypto/tls"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -170,10 +171,11 @@ type ClusterStats struct {
 
 // Prometheus exporter type
 type Exporter struct {
-	url      string
-	username string
-	password string
-	token    string
+	url        string
+	username   string
+	password   string
+	token      string
+	httpClient *http.Client
 
 	// Node metrics
 	nodesTotal     prometheus.Gauge
@@ -246,10 +248,19 @@ type Exporter struct {
 }
 
 func NewExporter(url, username, password string) *Exporter {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{
+		Transport: tr,
+		Timeout:   *scrapeTimeout,
+	}
+
 	return &Exporter{
-		url:      url,
-		username: username,
-		password: password,
+		url:        url,
+		username:   username,
+		password:   password,
+		httpClient: client,
 		nodesTotal: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "vergeos_nodes_total",
 			Help: "Total number of physical nodes",
