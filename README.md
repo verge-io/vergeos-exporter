@@ -78,7 +78,7 @@ sudo useradd -rs /bin/false vergeos_exporter
 
 2. Copy the binary to a system location:
 ```bash
-sudo cp vergeos-exporter /usr/local/bin/
+sudo cp vergeos_exporter /usr/local/bin/
 sudo chown vergeos_exporter:vergeos_exporter /usr/local/bin/vergeos-exporter
 ```
 
