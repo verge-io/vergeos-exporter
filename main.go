@@ -148,6 +148,7 @@ type VSANTierStatus struct {
 }
 
 type ClusterInfo struct {
+	Key          int     `json:"$key"`
 	Name         string  `json:"name"`
 	Enabled      bool    `json:"enabled"`
 	RamPerUnit   int64   `json:"ram_per_unit"`

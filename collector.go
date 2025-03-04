@@ -311,7 +311,7 @@ func (e *Exporter) collectClusterMetrics(ch chan<- prometheus.Metric) {
 		e.clusterStatus.WithLabelValues(cluster.Name).Set(statusValue)
 
 		// Get detailed cluster stats
-		req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v4/cluster_stats_history_short/%s?fields=all", e.url, cluster.Name), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v4/cluster_stats_history_short/%d?fields=all", e.url, cluster.Key), nil)
 		if err != nil {
 			fmt.Printf("Error creating cluster stats request for cluster %s: %v\n", cluster.Name, err)
 			continue
