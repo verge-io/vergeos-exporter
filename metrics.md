@@ -17,11 +17,22 @@
 - **RAM Usage Percentage**: `vergeos_node_ram_pct` (Gauge, labeled by `node_name`)
 
 ### Storage Metrics
-- **Drive Read Operations**: `vergeos_drive_read_ops` (Counter, labeled by `node_name` and `drive_name`)
-- **Drive Write Operations**: `vergeos_drive_write_ops` (Counter, labeled by `node_name` and `drive_name`)
-- **Drive Read Bytes**: `vergeos_drive_read_bytes` (Counter, labeled by `node_name` and `drive_name`)
-- **Drive Write Bytes**: `vergeos_drive_write_bytes` (Counter, labeled by `node_name` and `drive_name`)
-- **Drive Utilization**: `vergeos_drive_utilization` (Gauge, labeled by `node_name` and `drive_name`)
+- **Drive Read Operations**: `vergeos_drive_read_ops` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
+- **Drive Write Operations**: `vergeos_drive_write_ops` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
+- **Drive Read Bytes**: `vergeos_drive_read_bytes` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
+- **Drive Write Bytes**: `vergeos_drive_write_bytes` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
+- **Drive Utilization**: `vergeos_drive_utilization` (Gauge, labeled by `node_name`, `drive_name`, and `vsan_tier`)
+
+### Drive Health Metrics
+- **Drive Read Errors**: `vergeos_drive_read_errors` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
+- **Drive Write Errors**: `vergeos_drive_write_errors` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
+- **Drive Average Latency**: `vergeos_drive_avg_latency` (Gauge, labeled by `node_name`, `drive_name`, and `vsan_tier`)
+- **Drive Maximum Latency**: `vergeos_drive_max_latency` (Gauge, labeled by `node_name`, `drive_name`, and `vsan_tier`)
+- **Drive Repairs**: `vergeos_drive_repairs` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
+- **Drive Throttle**: `vergeos_drive_throttle` (Gauge, labeled by `node_name`, `drive_name`, and `vsan_tier`)
+- **Drive Wear Level**: `vergeos_drive_wear_level` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
+- **Drive Power On Hours**: `vergeos_drive_power_on_hours` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
+- **Drive Reallocated Sectors**: `vergeos_drive_reallocated_sectors` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
 
 ### Network Metrics
 - **NIC Transmit Packets**: `vergeos_nic_tx_packets` (Counter, labeled by `node_name` and `nic_name`)
@@ -31,7 +42,7 @@
 
 ---
 
-## (VSAN Tiers Overview)
+## VSAN Tiers Overview
 - **VSAN Tier Capacity**: `vergeos_vsan_tier_capacity` (Gauge, labeled by `tier_id`)
 - **VSAN Tier Used Space**: `vergeos_vsan_tier_used` (Gauge, labeled by `tier_id`)
 - **VSAN Tier Used Percentage**: `vergeos_vsan_tier_used_pct` (Gauge, labeled by `tier_id`)
