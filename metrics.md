@@ -33,6 +33,7 @@
 - **Drive Wear Level**: `vergeos_drive_wear_level` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
 - **Drive Power On Hours**: `vergeos_drive_power_on_hours` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
 - **Drive Reallocated Sectors**: `vergeos_drive_reallocated_sectors` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
+- **Drive Temperature**: `vergeos_drive_temperature` (Gauge, labeled by `node_name`, `drive_name`, and `vsan_tier`)
 
 ### Network Metrics
 - **NIC Transmit Packets**: `vergeos_nic_tx_packets` (Counter, labeled by `node_name` and `nic_name`)
@@ -67,7 +68,6 @@
 - **VSAN Current Space Throttle (ms)**: `vergeos_vsan_cur_space_throttle_ms` (Gauge, labeled by `tier_id`)
 - **VSAN Nodes Online**: `vergeos_vsan_nodes_online` (Gauge, labeled by `tier_id`)
 - **VSAN Drives Online**: `vergeos_vsan_drives_online` (Gauge, labeled by `tier_id`)
-- **VSAN Drive Temperature (°C)**: `vergeos_vsan_drive_temp` (Gauge, labeled by `tier_id` and `drive_id`)
 - **VSAN Drive Wear Level**: `vergeos_vsan_drive_wear_level` (Gauge, labeled by `tier_id` and `drive_id`)
 
 ---
