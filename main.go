@@ -1,11 +1,11 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"log"
 	"net/http"
 	"time"
-	"crypto/tls"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -64,14 +64,17 @@ type NodeStats struct {
 				Util       float64 `json:"util"`
 			} `json:"stats"`
 			PhysicalStatus struct {
-				VSANTier          int     `json:"vsan_tier"`
-				VSANReadErrors    int64   `json:"vsan_read_errors"`
-				VSANWriteErrors   int64   `json:"vsan_write_errors"`
-				VSANAvgLatency    float64 `json:"vsan_avg_latency"`
-				VSANMaxLatency    float64 `json:"vsan_max_latency"`
-				VSANRepairing     int64   `json:"vsan_repairing"`
-				VSANThrottle      float64 `json:"vsan_throttle"`
-				Status            string  `json:"status"`
+				VSANTier        int     `json:"vsan_tier"`
+				VSANReadErrors  int64   `json:"vsan_read_errors"`
+				VSANWriteErrors int64   `json:"vsan_write_errors"`
+				VSANAvgLatency  float64 `json:"vsan_avg_latency"`
+				VSANMaxLatency  float64 `json:"vsan_max_latency"`
+				VSANRepairing   int64   `json:"vsan_repairing"`
+				VSANThrottle    float64 `json:"vsan_throttle"`
+				Status          string  `json:"status"`
+				WearLevel       int64   `json:"wear_level"`
+				Hours           int64   `json:"hours"`
+				ReallocSectors  int64   `json:"realloc_sectors"`
 			} `json:"physical_status"`
 			VSANTier int `json:"vsan_tier"`
 		} `json:"drives"`
@@ -202,19 +205,20 @@ type Exporter struct {
 	nodeRAMPercent *prometheus.GaugeVec
 
 	// Drive metrics
-	driveReadOps    *prometheus.CounterVec
-	driveWriteOps   *prometheus.CounterVec
-	driveReadBytes  *prometheus.CounterVec
-	driveWriteBytes *prometheus.CounterVec
-	driveUtil       *prometheus.GaugeVec
-
-	// Drive VSAN metrics
+	driveReadOps     *prometheus.CounterVec
+	driveWriteOps    *prometheus.CounterVec
+	driveReadBytes   *prometheus.CounterVec
+	driveWriteBytes  *prometheus.CounterVec
+	driveUtil        *prometheus.GaugeVec
 	driveReadErrors  *prometheus.CounterVec
 	driveWriteErrors *prometheus.CounterVec
 	driveAvgLatency  *prometheus.GaugeVec
 	driveMaxLatency  *prometheus.GaugeVec
 	driveRepairs     *prometheus.CounterVec
 	driveThrottle    *prometheus.GaugeVec
+	driveWearLevel   *prometheus.CounterVec
+	drivePowerOnHours *prometheus.CounterVec
+	driveReallocSectors *prometheus.CounterVec
 
 	// NIC metrics
 	nicTxPackets *prometheus.CounterVec
@@ -404,6 +408,31 @@ func NewExporter(url, username, password string) *Exporter {
 			},
 			[]string{"node_name", "drive_name", "vsan_tier"},
 		),
+
+		driveWearLevel: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "vergeos_drive_wear_level",
+				Help: "Drive wear level",
+			},
+			[]string{"node_name", "drive_name", "vsan_tier"},
+		),
+
+		drivePowerOnHours: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "vergeos_drive_power_on_hours",
+				Help: "Drive power on hours",
+			},
+			[]string{"node_name", "drive_name", "vsan_tier"},
+		),
+
+		driveReallocSectors: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "vergeos_drive_reallocated_sectors",
+				Help: "Number of reallocated sectors on the drive",
+			},
+			[]string{"node_name", "drive_name", "vsan_tier"},
+		),
+
 		nicTxPackets: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "vergeos_nic_tx_packets",
@@ -706,6 +735,9 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	e.driveMaxLatency.Describe(ch)
 	e.driveRepairs.Describe(ch)
 	e.driveThrottle.Describe(ch)
+	e.driveWearLevel.Describe(ch)
+	e.drivePowerOnHours.Describe(ch)
+	e.driveReallocSectors.Describe(ch)
 	e.nicTxPackets.Describe(ch)
 	e.nicRxPackets.Describe(ch)
 	e.nicTxBytes.Describe(ch)
@@ -770,6 +802,9 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	e.driveMaxLatency.Collect(ch)
 	e.driveRepairs.Collect(ch)
 	e.driveThrottle.Collect(ch)
+	e.driveWearLevel.Collect(ch)
+	e.drivePowerOnHours.Collect(ch)
+	e.driveReallocSectors.Collect(ch)
 	e.nicTxPackets.Collect(ch)
 	e.nicRxPackets.Collect(ch)
 	e.nicTxBytes.Collect(ch)
