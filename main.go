@@ -63,6 +63,17 @@ type NodeStats struct {
 				WriteBytes float64 `json:"write_bytes"`
 				Util       float64 `json:"util"`
 			} `json:"stats"`
+			PhysicalStatus struct {
+				VSANTier          int     `json:"vsan_tier"`
+				VSANReadErrors    int64   `json:"vsan_read_errors"`
+				VSANWriteErrors   int64   `json:"vsan_write_errors"`
+				VSANAvgLatency    float64 `json:"vsan_avg_latency"`
+				VSANMaxLatency    float64 `json:"vsan_max_latency"`
+				VSANRepairing     int64   `json:"vsan_repairing"`
+				VSANThrottle      float64 `json:"vsan_throttle"`
+				Status            string  `json:"status"`
+			} `json:"physical_status"`
+			VSANTier int `json:"vsan_tier"`
 		} `json:"drives"`
 		Nics []struct {
 			Name  string `json:"name"`
@@ -197,6 +208,14 @@ type Exporter struct {
 	driveWriteBytes *prometheus.CounterVec
 	driveUtil       *prometheus.GaugeVec
 
+	// Drive VSAN metrics
+	driveReadErrors  *prometheus.CounterVec
+	driveWriteErrors *prometheus.CounterVec
+	driveAvgLatency  *prometheus.GaugeVec
+	driveMaxLatency  *prometheus.GaugeVec
+	driveRepairs     *prometheus.CounterVec
+	driveThrottle    *prometheus.GaugeVec
+
 	// NIC metrics
 	nicTxPackets *prometheus.CounterVec
 	nicRxPackets *prometheus.CounterVec
@@ -306,35 +325,84 @@ func NewExporter(url, username, password string) *Exporter {
 				Name: "vergeos_drive_read_ops",
 				Help: "Number of read operations",
 			},
-			[]string{"node_name", "drive_name"},
+			[]string{"node_name", "drive_name", "vsan_tier"},
 		),
 		driveWriteOps: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "vergeos_drive_write_ops",
 				Help: "Number of write operations",
 			},
-			[]string{"node_name", "drive_name"},
+			[]string{"node_name", "drive_name", "vsan_tier"},
 		),
 		driveReadBytes: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "vergeos_drive_read_bytes",
 				Help: "Number of bytes read",
 			},
-			[]string{"node_name", "drive_name"},
+			[]string{"node_name", "drive_name", "vsan_tier"},
 		),
 		driveWriteBytes: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "vergeos_drive_write_bytes",
 				Help: "Number of bytes written",
 			},
-			[]string{"node_name", "drive_name"},
+			[]string{"node_name", "drive_name", "vsan_tier"},
 		),
 		driveUtil: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "vergeos_drive_utilization",
-				Help: "Drive utilization percentage",
+				Help: "Drive utilization",
 			},
-			[]string{"node_name", "drive_name"},
+			[]string{"node_name", "drive_name", "vsan_tier"},
+		),
+
+		// Drive VSAN metrics
+		driveReadErrors: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "vergeos_drive_read_errors",
+				Help: "Number of drive read errors",
+			},
+			[]string{"node_name", "drive_name", "vsan_tier"},
+		),
+
+		driveWriteErrors: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "vergeos_drive_write_errors",
+				Help: "Number of drive write errors",
+			},
+			[]string{"node_name", "drive_name", "vsan_tier"},
+		),
+
+		driveAvgLatency: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "vergeos_drive_avg_latency",
+				Help: "Drive average latency",
+			},
+			[]string{"node_name", "drive_name", "vsan_tier"},
+		),
+
+		driveMaxLatency: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "vergeos_drive_max_latency",
+				Help: "Drive maximum latency",
+			},
+			[]string{"node_name", "drive_name", "vsan_tier"},
+		),
+
+		driveRepairs: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "vergeos_drive_repairs",
+				Help: "Number of drive repairs",
+			},
+			[]string{"node_name", "drive_name", "vsan_tier"},
+		),
+
+		driveThrottle: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "vergeos_drive_throttle",
+				Help: "Drive throttle value",
+			},
+			[]string{"node_name", "drive_name", "vsan_tier"},
 		),
 		nicTxPackets: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -632,6 +700,12 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	e.driveReadBytes.Describe(ch)
 	e.driveWriteBytes.Describe(ch)
 	e.driveUtil.Describe(ch)
+	e.driveReadErrors.Describe(ch)
+	e.driveWriteErrors.Describe(ch)
+	e.driveAvgLatency.Describe(ch)
+	e.driveMaxLatency.Describe(ch)
+	e.driveRepairs.Describe(ch)
+	e.driveThrottle.Describe(ch)
 	e.nicTxPackets.Describe(ch)
 	e.nicRxPackets.Describe(ch)
 	e.nicTxBytes.Describe(ch)
@@ -690,6 +764,12 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	e.driveReadBytes.Collect(ch)
 	e.driveWriteBytes.Collect(ch)
 	e.driveUtil.Collect(ch)
+	e.driveReadErrors.Collect(ch)
+	e.driveWriteErrors.Collect(ch)
+	e.driveAvgLatency.Collect(ch)
+	e.driveMaxLatency.Collect(ch)
+	e.driveRepairs.Collect(ch)
+	e.driveThrottle.Collect(ch)
 	e.nicTxPackets.Collect(ch)
 	e.nicRxPackets.Collect(ch)
 	e.nicTxBytes.Collect(ch)
