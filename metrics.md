@@ -17,24 +17,33 @@
 - **RAM Usage Percentage**: `vergeos_node_ram_pct` (Gauge, labeled by `node_name`)
 
 ### Storage Metrics
-- **Drive Read Operations**: `vergeos_drive_read_ops` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
-- **Drive Write Operations**: `vergeos_drive_write_ops` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
-- **Drive Read Bytes**: `vergeos_drive_read_bytes` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
-- **Drive Write Bytes**: `vergeos_drive_write_bytes` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
-- **Drive Utilization**: `vergeos_drive_utilization` (Gauge, labeled by `node_name`, `drive_name`, and `vsan_tier`)
+- **Drive Read Operations**: `vergeos_drive_read_ops` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
+- **Drive Write Operations**: `vergeos_drive_write_ops` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
+- **Drive Read Bytes**: `vergeos_drive_read_bytes` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
+- **Drive Write Bytes**: `vergeos_drive_write_bytes` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
+- **Drive Utilization**: `vergeos_drive_utilization` (Gauge, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
 
 ### Drive Health Metrics
-- **Drive Read Errors**: `vergeos_drive_read_errors` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
-- **Drive Write Errors**: `vergeos_drive_write_errors` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
-- **Drive Average Latency**: `vergeos_drive_avg_latency` (Gauge, labeled by `node_name`, `drive_name`, and `vsan_tier`)
-- **Drive Maximum Latency**: `vergeos_drive_max_latency` (Gauge, labeled by `node_name`, `drive_name`, and `vsan_tier`)
-- **Drive Repairs**: `vergeos_drive_repairs` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
-- **Drive Throttle**: `vergeos_drive_throttle` (Gauge, labeled by `node_name`, `drive_name`, and `vsan_tier`)
-- **Drive Wear Level**: `vergeos_drive_wear_level` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
-- **Drive Power On Hours**: `vergeos_drive_power_on_hours` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
-- **Drive Reallocated Sectors**: `vergeos_drive_reallocated_sectors` (Counter, labeled by `node_name`, `drive_name`, and `vsan_tier`)
-- **Drive Temperature**: `vergeos_drive_temperature` (Gauge, labeled by `node_name`, `drive_name`, and `vsan_tier`)
+- **Drive Read Errors**: `vergeos_drive_read_errors` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
+- **Drive Write Errors**: `vergeos_drive_write_errors` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
+- **Drive Average Latency**: `vergeos_drive_avg_latency` (Gauge, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
+- **Drive Maximum Latency**: `vergeos_drive_max_latency` (Gauge, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
+- **Drive Repairs**: `vergeos_drive_repairs` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
+- **Drive Throttle**: `vergeos_drive_throttle` (Gauge, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
+- **Drive Wear Level**: `vergeos_drive_wear_level` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
+- **Drive Power On Hours**: `vergeos_drive_power_on_hours` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
+- **Drive Reallocated Sectors**: `vergeos_drive_reallocated_sectors` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
+- **Drive Temperature**: `vergeos_drive_temperature` (Gauge, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
 
+### Drive Metrics
+
+All drive metrics include the following labels:
+- `node_name`: Name of the node the drive belongs to
+- `drive_name`: Name of the drive
+- `vsan_tier`: VSAN tier number (0 or 1)
+- `serial`: Drive serial number
+
+## Basic Drive Metrics
 ### Network Metrics
 - **NIC Transmit Packets**: `vergeos_nic_tx_packets` (Counter, labeled by `node_name` and `nic_name`)
 - **NIC Receive Packets**: `vergeos_nic_rx_packets` (Counter, labeled by `node_name` and `nic_name`)
