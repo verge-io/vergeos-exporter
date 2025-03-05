@@ -76,6 +76,7 @@ type NodeStats struct {
 				Hours           int64   `json:"hours"`
 				ReallocSectors  int64   `json:"realloc_sectors"`
 				Temp            int64   `json:"temp"`
+				Serial          string  `json:"serial"`
 			} `json:"physical_status"`
 			VSANTier int `json:"vsan_tier"`
 		} `json:"drives"`
@@ -160,6 +161,19 @@ type VSANTierStatus struct {
 	Fullwalk           bool    `json:"fullwalk"`
 	Progress           float64 `json:"progress"`
 	CurSpaceThrottleMs int64   `json:"cur_space_throttle_ms"`
+}
+
+type StorageTier struct {
+	Tier         int     `json:"tier"`
+	Description  string  `json:"description"`
+	Capacity     int64   `json:"capacity"`
+	Used         int64   `json:"used"`
+	Allocated    int64   `json:"allocated"`
+	Stats        int     `json:"stats"`
+	Modified     int64   `json:"modified"`
+	UsedPct      int     `json:"used_pct"`
+	UsedInflated int64   `json:"used_inflated"`
+	DedupeRatio  float64 `json:"dedupe_ratio"`
 }
 
 type ClusterInfo struct {
@@ -330,35 +344,35 @@ func NewExporter(url, username, password string) *Exporter {
 				Name: "vergeos_drive_read_ops",
 				Help: "Number of read operations",
 			},
-			[]string{"node_name", "drive_name", "vsan_tier"},
+			[]string{"node_name", "drive_name", "vsan_tier", "serial"},
 		),
 		driveWriteOps: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "vergeos_drive_write_ops",
 				Help: "Number of write operations",
 			},
-			[]string{"node_name", "drive_name", "vsan_tier"},
+			[]string{"node_name", "drive_name", "vsan_tier", "serial"},
 		),
 		driveReadBytes: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "vergeos_drive_read_bytes",
 				Help: "Number of bytes read",
 			},
-			[]string{"node_name", "drive_name", "vsan_tier"},
+			[]string{"node_name", "drive_name", "vsan_tier", "serial"},
 		),
 		driveWriteBytes: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "vergeos_drive_write_bytes",
 				Help: "Number of bytes written",
 			},
-			[]string{"node_name", "drive_name", "vsan_tier"},
+			[]string{"node_name", "drive_name", "vsan_tier", "serial"},
 		),
 		driveUtil: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "vergeos_drive_utilization",
 				Help: "Drive utilization",
 			},
-			[]string{"node_name", "drive_name", "vsan_tier"},
+			[]string{"node_name", "drive_name", "vsan_tier", "serial"},
 		),
 
 		// Drive VSAN metrics
@@ -367,7 +381,7 @@ func NewExporter(url, username, password string) *Exporter {
 				Name: "vergeos_drive_read_errors",
 				Help: "Number of drive read errors",
 			},
-			[]string{"node_name", "drive_name", "vsan_tier"},
+			[]string{"node_name", "drive_name", "vsan_tier", "serial"},
 		),
 
 		driveWriteErrors: prometheus.NewCounterVec(
@@ -375,7 +389,7 @@ func NewExporter(url, username, password string) *Exporter {
 				Name: "vergeos_drive_write_errors",
 				Help: "Number of drive write errors",
 			},
-			[]string{"node_name", "drive_name", "vsan_tier"},
+			[]string{"node_name", "drive_name", "vsan_tier", "serial"},
 		),
 
 		driveAvgLatency: prometheus.NewGaugeVec(
@@ -383,7 +397,7 @@ func NewExporter(url, username, password string) *Exporter {
 				Name: "vergeos_drive_avg_latency",
 				Help: "Drive average latency",
 			},
-			[]string{"node_name", "drive_name", "vsan_tier"},
+			[]string{"node_name", "drive_name", "vsan_tier", "serial"},
 		),
 
 		driveMaxLatency: prometheus.NewGaugeVec(
@@ -391,7 +405,7 @@ func NewExporter(url, username, password string) *Exporter {
 				Name: "vergeos_drive_max_latency",
 				Help: "Drive maximum latency",
 			},
-			[]string{"node_name", "drive_name", "vsan_tier"},
+			[]string{"node_name", "drive_name", "vsan_tier", "serial"},
 		),
 
 		driveRepairs: prometheus.NewCounterVec(
@@ -399,7 +413,7 @@ func NewExporter(url, username, password string) *Exporter {
 				Name: "vergeos_drive_repairs",
 				Help: "Number of drive repairs",
 			},
-			[]string{"node_name", "drive_name", "vsan_tier"},
+			[]string{"node_name", "drive_name", "vsan_tier", "serial"},
 		),
 
 		driveThrottle: prometheus.NewGaugeVec(
@@ -407,7 +421,7 @@ func NewExporter(url, username, password string) *Exporter {
 				Name: "vergeos_drive_throttle",
 				Help: "Drive throttle value",
 			},
-			[]string{"node_name", "drive_name", "vsan_tier"},
+			[]string{"node_name", "drive_name", "vsan_tier", "serial"},
 		),
 
 		driveWearLevel: prometheus.NewCounterVec(
@@ -415,7 +429,7 @@ func NewExporter(url, username, password string) *Exporter {
 				Name: "vergeos_drive_wear_level",
 				Help: "Drive wear level",
 			},
-			[]string{"node_name", "drive_name", "vsan_tier"},
+			[]string{"node_name", "drive_name", "vsan_tier", "serial"},
 		),
 
 		drivePowerOnHours: prometheus.NewCounterVec(
@@ -423,7 +437,7 @@ func NewExporter(url, username, password string) *Exporter {
 				Name: "vergeos_drive_power_on_hours",
 				Help: "Drive power on hours",
 			},
-			[]string{"node_name", "drive_name", "vsan_tier"},
+			[]string{"node_name", "drive_name", "vsan_tier", "serial"},
 		),
 
 		driveReallocSectors: prometheus.NewCounterVec(
@@ -431,14 +445,14 @@ func NewExporter(url, username, password string) *Exporter {
 				Name: "vergeos_drive_reallocated_sectors",
 				Help: "Number of reallocated sectors on the drive",
 			},
-			[]string{"node_name", "drive_name", "vsan_tier"},
+			[]string{"node_name", "drive_name", "vsan_tier", "serial"},
 		),
 		driveTemperature: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "vergeos_drive_temperature",
 				Help: "Temperature of the drive in Celsius",
 			},
-			[]string{"node_name", "drive_name", "vsan_tier"},
+			[]string{"node_name", "drive_name", "vsan_tier", "serial"},
 		),
 
 		nicTxPackets: prometheus.NewCounterVec(

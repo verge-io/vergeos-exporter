@@ -130,7 +130,7 @@ func (e *Exporter) collectNodeMetrics(ch chan<- prometheus.Metric) {
 
 		// Set drive metrics
 		for _, drive := range nodeStats.Machine.Drives {
-			labels := []string{node.Name, drive.Name, strconv.Itoa(drive.PhysicalStatus.VSANTier)}
+			labels := []string{node.Name, drive.Name, strconv.Itoa(drive.VSANTier), drive.PhysicalStatus.Serial}
 
 			e.driveReadOps.WithLabelValues(labels...).Add(drive.Stats.ReadOps)
 			e.driveWriteOps.WithLabelValues(labels...).Add(drive.Stats.WriteOps)
@@ -185,29 +185,60 @@ func (e *Exporter) collectVSANMetrics(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	// Get VSAN tier stats
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v4/cluster_tiers?fields=all%%2Cstatus%%5Ball%%5D", e.url), nil)
+	// Get storage tier stats
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v4/storage_tiers?fields=most", e.url), nil)
 	if err != nil {
-		fmt.Printf("Error creating VSAN request: %v\n", err)
+		fmt.Printf("Error creating storage tier request: %v\n", err)
 		return
 	}
 	req.Header.Set("x-yottabyte-token", e.token)
 
 	resp, err := e.httpClient.Do(req)
 	if err != nil {
-		fmt.Printf("Error executing VSAN request: %v\n", err)
+		fmt.Printf("Error executing storage tier request: %v\n", err)
 		return
 	}
 	defer resp.Body.Close()
 
-	var tiers []VSANTier
+	var tiers []StorageTier
 	if err := json.NewDecoder(resp.Body).Decode(&tiers); err != nil {
-		fmt.Printf("Error decoding VSAN response: %v\n", err)
+		fmt.Printf("Error decoding storage tier response: %v\n", err)
 		return
 	}
 
 	// Process each tier
 	for _, tier := range tiers {
+		tierID := strconv.Itoa(tier.Tier)
+		e.vsanTierCapacity.WithLabelValues(tierID).Set(float64(tier.Capacity))
+		e.vsanTierUsed.WithLabelValues(tierID).Set(float64(tier.Used))
+		e.vsanTierUsedPct.WithLabelValues(tierID).Set(float64(tier.UsedPct))
+		e.vsanTierAllocated.WithLabelValues(tierID).Set(float64(tier.Allocated))
+		e.vsanTierDedupeRatio.WithLabelValues(tierID).Set(tier.DedupeRatio)
+	}
+
+	// Get VSAN tier stats
+	req, err = http.NewRequest("GET", fmt.Sprintf("%s/api/v4/cluster_tiers?fields=all%%2Cstatus%%5Ball%%5D", e.url), nil)
+	if err != nil {
+		fmt.Printf("Error creating VSAN request: %v\n", err)
+		return
+	}
+	req.Header.Set("x-yottabyte-token", e.token)
+
+	resp, err = e.httpClient.Do(req)
+	if err != nil {
+		fmt.Printf("Error executing VSAN request: %v\n", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	var tiers2 []VSANTier
+	if err := json.NewDecoder(resp.Body).Decode(&tiers2); err != nil {
+		fmt.Printf("Error decoding VSAN response: %v\n", err)
+		return
+	}
+
+	// Process each tier
+	for _, tier := range tiers2 {
 		tierID := strconv.Itoa(tier.Tier)
 
 		// Set basic tier metrics
