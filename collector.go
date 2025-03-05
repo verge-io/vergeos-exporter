@@ -145,16 +145,21 @@ func (e *Exporter) collectNodeMetrics(ch chan<- prometheus.Metric) {
 			e.driveMaxLatency.WithLabelValues(labels...).Set(drive.PhysicalStatus.VSANMaxLatency)
 			e.driveRepairs.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.VSANRepairing))
 			e.driveThrottle.WithLabelValues(labels...).Set(drive.PhysicalStatus.VSANThrottle)
-		}
 
-		// Set NIC metrics
-		for _, nic := range nodeStats.Machine.Nics {
-			labels := []string{node.Name, nic.Name}
+			// Set drive health metrics
+			e.driveWearLevel.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.WearLevel))
+			e.drivePowerOnHours.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.Hours))
+			e.driveReallocSectors.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.ReallocSectors))
 
-			e.nicTxPackets.WithLabelValues(labels...).Add(nic.Stats.TxPackets)
-			e.nicRxPackets.WithLabelValues(labels...).Add(nic.Stats.RxPackets)
-			e.nicTxBytes.WithLabelValues(labels...).Add(nic.Stats.TxBytes)
-			e.nicRxBytes.WithLabelValues(labels...).Add(nic.Stats.RxBytes)
+			// Set NIC metrics
+			for _, nic := range nodeStats.Machine.Nics {
+				labels := []string{node.Name, nic.Name}
+
+				e.nicTxPackets.WithLabelValues(labels...).Add(nic.Stats.TxPackets)
+				e.nicRxPackets.WithLabelValues(labels...).Add(nic.Stats.RxPackets)
+				e.nicTxBytes.WithLabelValues(labels...).Add(nic.Stats.TxBytes)
+				e.nicRxBytes.WithLabelValues(labels...).Add(nic.Stats.RxBytes)
+			}
 		}
 	}
 }
