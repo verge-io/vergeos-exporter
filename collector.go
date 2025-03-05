@@ -130,13 +130,21 @@ func (e *Exporter) collectNodeMetrics(ch chan<- prometheus.Metric) {
 
 		// Set drive metrics
 		for _, drive := range nodeStats.Machine.Drives {
-			labels := []string{node.Name, drive.Name}
+			labels := []string{node.Name, drive.Name, strconv.Itoa(drive.PhysicalStatus.VSANTier)}
 
 			e.driveReadOps.WithLabelValues(labels...).Add(drive.Stats.ReadOps)
 			e.driveWriteOps.WithLabelValues(labels...).Add(drive.Stats.WriteOps)
 			e.driveReadBytes.WithLabelValues(labels...).Add(drive.Stats.ReadBytes)
 			e.driveWriteBytes.WithLabelValues(labels...).Add(drive.Stats.WriteBytes)
 			e.driveUtil.WithLabelValues(labels...).Set(drive.Stats.Util)
+
+			// Set VSAN drive metrics
+			e.driveReadErrors.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.VSANReadErrors))
+			e.driveWriteErrors.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.VSANWriteErrors))
+			e.driveAvgLatency.WithLabelValues(labels...).Set(drive.PhysicalStatus.VSANAvgLatency)
+			e.driveMaxLatency.WithLabelValues(labels...).Set(drive.PhysicalStatus.VSANMaxLatency)
+			e.driveRepairs.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.VSANRepairing))
+			e.driveThrottle.WithLabelValues(labels...).Set(drive.PhysicalStatus.VSANThrottle)
 		}
 
 		// Set NIC metrics
