@@ -75,6 +75,7 @@ type NodeStats struct {
 				WearLevel       int64   `json:"wear_level"`
 				Hours           int64   `json:"hours"`
 				ReallocSectors  int64   `json:"realloc_sectors"`
+				Temp            int64   `json:"temp"`
 			} `json:"physical_status"`
 			VSANTier int `json:"vsan_tier"`
 		} `json:"drives"`
@@ -219,6 +220,7 @@ type Exporter struct {
 	driveWearLevel   *prometheus.CounterVec
 	drivePowerOnHours *prometheus.CounterVec
 	driveReallocSectors *prometheus.CounterVec
+	driveTemperature    *prometheus.GaugeVec
 
 	// NIC metrics
 	nicTxPackets *prometheus.CounterVec
@@ -247,7 +249,6 @@ type Exporter struct {
 	vsanCurSpaceThrottleMs *prometheus.GaugeVec
 	vsanNodesOnline        *prometheus.GaugeVec
 	vsanDrivesOnline       *prometheus.GaugeVec
-	vsanDriveTemp          *prometheus.GaugeVec
 	vsanDriveWearLevel     *prometheus.GaugeVec
 
 	// Cluster metrics
@@ -432,6 +433,13 @@ func NewExporter(url, username, password string) *Exporter {
 			},
 			[]string{"node_name", "drive_name", "vsan_tier"},
 		),
+		driveTemperature: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "vergeos_drive_temperature",
+				Help: "Temperature of the drive in Celsius",
+			},
+			[]string{"node_name", "drive_name", "vsan_tier"},
+		),
 
 		nicTxPackets: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -583,25 +591,19 @@ func NewExporter(url, username, password string) *Exporter {
 		vsanDrivesOnline: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "vergeos_vsan_drives_online",
-				Help: "Number of online drives in VSAN tier",
+				Help: "Number of drives online per VSAN tier",
 			},
 			[]string{"tier_id"},
-		),
-		vsanDriveTemp: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_vsan_drive_temp",
-				Help: "Temperature of VSAN drive in Celsius",
-			},
-			[]string{"tier_id", "drive_id"},
 		),
 		vsanDriveWearLevel: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "vergeos_vsan_drive_wear_level",
-				Help: "Wear level of VSAN drive",
+				Help: "Drive wear level per VSAN tier and drive",
 			},
 			[]string{"tier_id", "drive_id"},
 		),
 
+		// Cluster metrics
 		clustersTotal: prometheus.NewGauge(
 			prometheus.GaugeOpts{
 				Name: "vergeos_clusters_total",
@@ -738,6 +740,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	e.driveWearLevel.Describe(ch)
 	e.drivePowerOnHours.Describe(ch)
 	e.driveReallocSectors.Describe(ch)
+	e.driveTemperature.Describe(ch)
 	e.nicTxPackets.Describe(ch)
 	e.nicRxPackets.Describe(ch)
 	e.nicTxBytes.Describe(ch)
@@ -760,7 +763,6 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	e.vsanCurSpaceThrottleMs.Describe(ch)
 	e.vsanNodesOnline.Describe(ch)
 	e.vsanDrivesOnline.Describe(ch)
-	e.vsanDriveTemp.Describe(ch)
 	e.vsanDriveWearLevel.Describe(ch)
 	e.clustersTotal.Describe(ch)
 	e.clusterEnabled.Describe(ch)
@@ -805,6 +807,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	e.driveWearLevel.Collect(ch)
 	e.drivePowerOnHours.Collect(ch)
 	e.driveReallocSectors.Collect(ch)
+	e.driveTemperature.Collect(ch)
 	e.nicTxPackets.Collect(ch)
 	e.nicRxPackets.Collect(ch)
 	e.nicTxBytes.Collect(ch)
@@ -827,7 +830,6 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	e.vsanCurSpaceThrottleMs.Collect(ch)
 	e.vsanNodesOnline.Collect(ch)
 	e.vsanDrivesOnline.Collect(ch)
-	e.vsanDriveTemp.Collect(ch)
 	e.vsanDriveWearLevel.Collect(ch)
 	e.clustersTotal.Collect(ch)
 	e.clusterEnabled.Collect(ch)

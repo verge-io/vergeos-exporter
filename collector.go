@@ -139,17 +139,32 @@ func (e *Exporter) collectNodeMetrics(ch chan<- prometheus.Metric) {
 			e.driveUtil.WithLabelValues(labels...).Set(drive.Stats.Util)
 
 			// Set VSAN drive metrics
-			e.driveReadErrors.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.VSANReadErrors))
-			e.driveWriteErrors.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.VSANWriteErrors))
+			if drive.PhysicalStatus.VSANReadErrors > 0 {
+				e.driveReadErrors.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.VSANReadErrors))
+			}
+			if drive.PhysicalStatus.VSANWriteErrors > 0 {
+				e.driveWriteErrors.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.VSANWriteErrors))
+			}
 			e.driveAvgLatency.WithLabelValues(labels...).Set(drive.PhysicalStatus.VSANAvgLatency)
 			e.driveMaxLatency.WithLabelValues(labels...).Set(drive.PhysicalStatus.VSANMaxLatency)
-			e.driveRepairs.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.VSANRepairing))
+			if drive.PhysicalStatus.VSANRepairing > 0 {
+				e.driveRepairs.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.VSANRepairing))
+			}
 			e.driveThrottle.WithLabelValues(labels...).Set(drive.PhysicalStatus.VSANThrottle)
 
 			// Set drive health metrics
-			e.driveWearLevel.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.WearLevel))
-			e.drivePowerOnHours.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.Hours))
-			e.driveReallocSectors.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.ReallocSectors))
+			if drive.PhysicalStatus.WearLevel > 0 {
+				e.driveWearLevel.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.WearLevel))
+			}
+			if drive.PhysicalStatus.Hours > 0 {
+				e.drivePowerOnHours.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.Hours))
+			}
+			if drive.PhysicalStatus.ReallocSectors > 0 {
+				e.driveReallocSectors.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.ReallocSectors))
+			}
+			if drive.PhysicalStatus.Temp > 0 {
+				e.driveTemperature.WithLabelValues(labels...).Set(float64(drive.PhysicalStatus.Temp))
+			}
 
 			// Set NIC metrics
 			for _, nic := range nodeStats.Machine.Nics {
@@ -260,9 +275,7 @@ func (e *Exporter) collectVSANMetrics(ch chan<- prometheus.Metric) {
 
 		// Set drive-specific metrics
 		if tier.VSANDrives != nil {
-			for _, drive := range tier.VSANDrives {
-				driveID := strconv.Itoa(drive.Key)
-				e.vsanDriveTemp.WithLabelValues(tierID, driveID).Set(float64(drive.Temp))
+			for range tier.VSANDrives {
 				// Note: Wear level might not be directly available in the API response
 				// Add it when the field is available
 			}
