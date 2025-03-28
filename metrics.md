@@ -9,19 +9,19 @@
 ## Node Details and Stats
 
 ### CPU Metrics
-- **CPU Usage per Core**: `vergeos_node_cpu_core_usage` (Gauge, labeled by `node_name` and `core_id`)
-- **CPU Temperature**: `vergeos_node_core_temp` (Gauge, labeled by `node_name`)
+- **CPU Usage per Core**: `vergeos_node_cpu_core_usage` (Gauge, labeled by `node_name`, `core_id`, and 'system_name`)
+- **CPU Temperature**: `vergeos_node_core_temp` (Gauge, labeled by 'system_name` and `node_name`)
 
 ### Memory Metrics
-- **RAM Used (MB)**: `vergeos_node_ram_used` (Gauge, labeled by `node_name`)
-- **RAM Usage Percentage**: `vergeos_node_ram_pct` (Gauge, labeled by `node_name`)
+- **RAM Used (MB)**: `vergeos_node_ram_used` (Gauge, labeled by 'system_name` and `node_name`)
+- **RAM Usage Percentage**: `vergeos_node_ram_pct` (Gauge, labeled by 'system_name` and `node_name`)
 
 ### Storage Metrics
 - **Drive Read Operations**: `vergeos_drive_read_ops` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
 - **Drive Write Operations**: `vergeos_drive_write_ops` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
 - **Drive Read Bytes**: `vergeos_drive_read_bytes` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
 - **Drive Write Bytes**: `vergeos_drive_write_bytes` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
-- **Drive Utilization**: `vergeos_drive_utilization` (Gauge, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
+- **Drive Utilization**: `vergeos_drive_util` (Gauge, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
 
 ### Drive Health Metrics
 - **Drive Read Errors**: `vergeos_drive_read_errors` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
