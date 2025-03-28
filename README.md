@@ -67,6 +67,24 @@ go build -o vergeos-exporter
 
 See [metrics.md](metrics.md) for a complete list of exported metrics.
 
+## Grafana Dashboard
+
+A pre-configured Grafana dashboard is included in the `examples/grafana-dashboard.json` file. This dashboard provides a comprehensive visualization of VergeOS metrics including:
+
+- VSAN tier performance and health metrics
+- Cluster resource utilization and status
+- Node health and performance indicators
+- Storage metrics and drive status
+
+To import the dashboard:
+
+1. Open your Grafana instance
+2. Click on the + icon in the side menu and select "Import"
+3. Upload the `grafana-dashboard.json` file or copy its contents
+4. Select your Prometheus data source
+5. Click "Import" to finish
+
+
 ## Running as a Linux Service
 
 To run the VergeOS Exporter as a systemd service on Linux:
@@ -78,7 +96,7 @@ sudo useradd -rs /bin/false vergeos_exporter
 
 2. Copy the binary to a system location:
 ```bash
-sudo cp vergeos_exporter /usr/local/bin/
+sudo cp vergeos-exporter /usr/local/bin/
 sudo chown vergeos_exporter:vergeos_exporter /usr/local/bin/vergeos-exporter
 ```
 
@@ -199,4 +217,3 @@ git push origin v1.0.0
    - Build binaries for all supported platforms
    - Create a new GitHub release
    - Upload the binaries and checksums
-
