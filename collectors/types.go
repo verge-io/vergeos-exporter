@@ -2,7 +2,7 @@ package collectors
 
 // NodeDriveStats represents drive statistics for a node
 type NodeDriveStats struct {
-	Name            string  `json:"name"`
+	Name           string  `json:"name"`
 	ReadOps        uint64  `json:"read_ops"`
 	WriteOps       uint64  `json:"write_ops"`
 	ReadBytes      uint64  `json:"read_bytes"`
@@ -48,9 +48,9 @@ type DriveResponse struct {
 
 // NodeResponse represents the API response for a node
 type NodeResponse struct {
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	ID          int            `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	ID          int    `json:"id"`
 	Machine     struct {
 		Stats struct {
 			TotalCPU float64 `json:"total_cpu"`
@@ -60,41 +60,41 @@ type NodeResponse struct {
 		Status struct {
 			Status        string `json:"status"`
 			StatusDisplay string `json:"status_display"`
-			State        string `json:"state"`
+			State         string `json:"state"`
 		} `json:"status"`
 		NodeStats struct {
-			CPUTemp      float64 `json:"cpu_temp"`
-			CPUUsage     float64 `json:"cpu_usage"`
-			MemoryTotal  int64   `json:"memory_total"`
-			MemoryUsed   int64   `json:"memory_used"`
+			CPUTemp       float64 `json:"cpu_temp"`
+			CPUUsage      float64 `json:"cpu_usage"`
+			MemoryTotal   int64   `json:"memory_total"`
+			MemoryUsed    int64   `json:"memory_used"`
 			MemoryUsedPct float64 `json:"memory_used_pct"`
 		} `json:"node_stats"`
 		DrivesDetailed []struct {
-			Name        string `json:"name"`
+			Name           string `json:"name"`
 			PhysicalStatus struct {
 				VsanTier string `json:"vsan_tier"`
 				Serial   string `json:"serial"`
 			} `json:"physical_status"`
 			Stats struct {
-				ReadOps      int     `json:"read_ops"`
-				WriteOps     int     `json:"write_ops"`
-				ReadBytes    int64   `json:"read_bytes"`
-				WriteBytes   int64   `json:"write_bytes"`
-				Util         float64 `json:"util"`
-				ReadErrors   int     `json:"read_errors"`
-				WriteErrors  int     `json:"write_errors"`
-				AvgLatency   float64 `json:"avg_latency"`
-				MaxLatency   float64 `json:"max_latency"`
-				Repairs      int     `json:"repairs"`
-				Throttle     float64 `json:"throttle"`
-				WearLevel    int     `json:"wear_level"`
-				PowerOnHours int     `json:"power_on_hours"`
-				ReallocSectors int   `json:"realloc_sectors"`
-				Temperature   float64 `json:"temperature"`
+				ReadOps        int     `json:"read_ops"`
+				WriteOps       int     `json:"write_ops"`
+				ReadBytes      int64   `json:"read_bytes"`
+				WriteBytes     int64   `json:"write_bytes"`
+				Util           float64 `json:"util"`
+				ReadErrors     int     `json:"read_errors"`
+				WriteErrors    int     `json:"write_errors"`
+				AvgLatency     float64 `json:"avg_latency"`
+				MaxLatency     float64 `json:"max_latency"`
+				Repairs        int     `json:"repairs"`
+				Throttle       float64 `json:"throttle"`
+				WearLevel      int     `json:"wear_level"`
+				PowerOnHours   int     `json:"power_on_hours"`
+				ReallocSectors int     `json:"realloc_sectors"`
+				Temperature    float64 `json:"temperature"`
 			} `json:"stats"`
 		} `json:"drives_detailed"`
 	} `json:"machine"`
-	Physical    bool           `json:"physical"`
+	Physical bool `json:"physical"`
 }
 
 // VSANTier represents a VSAN storage tier
@@ -109,32 +109,32 @@ type VSANTier struct {
 
 // VSANTierStatus represents the status of a VSAN tier
 type VSANTierStatus struct {
-	Tier                  int     `json:"tier"`
-	Status               string  `json:"status"`
-	State                string  `json:"state"`
-	Capacity             int64   `json:"capacity"`
-	Used                 int64   `json:"used"`
-	UsedPct              int     `json:"used_pct"`
-	Redundant            bool    `json:"redundant"`
-	Encrypted            bool    `json:"encrypted"`
-	Working              bool    `json:"working"`
-	LastWalkTimeMs       int     `json:"last_walk_time_ms"`
-	LastFullwalkTimeMs   int     `json:"last_fullwalk_time_ms"`
-	Transaction          int64   `json:"transaction"`
-	Repairs              int64   `json:"repairs"`
-	BadDrives            int     `json:"bad_drives"`
-	Fullwalk            bool    `json:"fullwalk"`
-	Progress            int     `json:"progress"`
-	CurSpaceThrottleMs  int     `json:"cur_space_throttle_ms"`
-	StatusDisplay       string  `json:"status_display"`
+	Tier               int    `json:"tier"`
+	Status             string `json:"status"`
+	State              string `json:"state"`
+	Capacity           int64  `json:"capacity"`
+	Used               int64  `json:"used"`
+	UsedPct            int    `json:"used_pct"`
+	Redundant          bool   `json:"redundant"`
+	Encrypted          bool   `json:"encrypted"`
+	Working            bool   `json:"working"`
+	LastWalkTimeMs     int    `json:"last_walk_time_ms"`
+	LastFullwalkTimeMs int    `json:"last_fullwalk_time_ms"`
+	Transaction        int64  `json:"transaction"`
+	Repairs            int64  `json:"repairs"`
+	BadDrives          int    `json:"bad_drives"`
+	Fullwalk           bool   `json:"fullwalk"`
+	Progress           int    `json:"progress"`
+	CurSpaceThrottleMs int    `json:"cur_space_throttle_ms"`
+	StatusDisplay      string `json:"status_display"`
 }
 
 // VSANTierResponse represents the API response for VSAN tier status
 type VSANTierResponse []struct {
-	Key            int    `json:"$key"`
-	Tier           int    `json:"tier"`
-	Description    string `json:"description"`
-	ClusterDisplay string `json:"cluster_display"`
+	Key            int            `json:"$key"`
+	Tier           int            `json:"tier"`
+	Description    string         `json:"description"`
+	ClusterDisplay string         `json:"cluster_display"`
 	Status         VSANTierStatus `json:"status"`
 	DrivesOnline   []struct {
 		State string `json:"state"`
@@ -172,17 +172,23 @@ type ClusterListResponse []struct {
 
 // ClusterDetailResponse represents the detailed information about a cluster
 type ClusterDetailResponse struct {
-	Key                int    `json:"$key"`
-	Name              string `json:"name"`
-	Enabled           bool   `json:"enabled"`
-	RamPerUnit        int    `json:"ram_per_unit"`
-	CoresPerUnit      int    `json:"cores_per_unit"`
-	TargetRamPct      int    `json:"target_ram_pct"`
-	TotalNodes        int    `json:"total_nodes"`
-	OnlineNodes       int    `json:"online_nodes"`
-	OnlineRam        int64  `json:"online_ram"`
-	OnlineCores      int    `json:"online_cores"`
-	PhysRamUsed      int64  `json:"phys_ram_used"`
+	Key          int    `json:"$key"`
+	Name         string `json:"name"`
+	Enabled      bool   `json:"enabled"`
+	RamPerUnit   int    `json:"ram_per_unit"`
+	CoresPerUnit int    `json:"cores_per_unit"`
+	TargetRamPct int    `json:"target_ram_pct"`
+	Status       struct {
+		TotalNodes      int   `json:"total_nodes"`
+		OnlineNodes     int   `json:"online_nodes"`
+		OnlineRam       int64 `json:"online_ram"`
+		OnlineCores     int   `json:"online_cores"`
+		PhysRamUsed     int64 `json:"phys_ram_used"`
+		RunningMachines int   `json:"running_machines"`
+		TotalRam        int64 `json:"total_ram"`
+		UsedRam         int64 `json:"used_ram"`
+		UsedCores       int   `json:"used_cores"`
+	} `json:"status"`
 }
 
 // Setting represents a system setting
@@ -222,7 +228,7 @@ type ClusterTierResponse []struct {
 				Status struct {
 					Status        string `json:"status"`
 					StatusDisplay string `json:"status_display"`
-					State        string `json:"state"`
+					State         string `json:"state"`
 				} `json:"status"`
 				Stats struct {
 					IowaitCPU float64 `json:"iowait_cpu"`
@@ -230,17 +236,17 @@ type ClusterTierResponse []struct {
 				DrivesCount int `json:"drives_count"`
 				Drives      []struct {
 					PhysicalStatus struct {
-						VsanUsed     int64 `json:"vsan_used"`
-						VsanMax      int64 `json:"vsan_max"`
+						VsanUsed      int64 `json:"vsan_used"`
+						VsanMax       int64 `json:"vsan_max"`
 						VsanRepairing int64 `json:"vsan_repairing"`
-						VsanTier     int   `json:"vsan_tier"`
+						VsanTier      int   `json:"vsan_tier"`
 					} `json:"physical_status"`
 				} `json:"drives"`
 			} `json:"machine"`
 		} `json:"nodes"`
 	} `json:"cluster"`
 	Status struct {
-		Key                 int    `json:"$key"`
+		Key                int    `json:"$key"`
 		Tier               int    `json:"tier"`
 		Status             string `json:"status"`
 		State              string `json:"state"`
@@ -255,10 +261,10 @@ type ClusterTierResponse []struct {
 		Transaction        int64  `json:"transaction"`
 		Repairs            int64  `json:"repairs"`
 		BadDrives          int    `json:"bad_drives"`
-		Fullwalk          bool   `json:"fullwalk"`
-		Progress          int    `json:"progress"`
+		Fullwalk           bool   `json:"fullwalk"`
+		Progress           int    `json:"progress"`
 		CurSpaceThrottleMs int    `json:"cur_space_throttle_ms"`
-		StatusDisplay     string `json:"status_display"`
+		StatusDisplay      string `json:"status_display"`
 	} `json:"status"`
 }
 
