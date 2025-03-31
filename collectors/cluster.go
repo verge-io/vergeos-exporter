@@ -18,7 +18,7 @@ type ClusterCollector struct {
 	mutex sync.Mutex
 
 	// Metrics
-	clusterStatus         *prometheus.GaugeVec
+	clusterStatus        *prometheus.GaugeVec
 	clusterRAMTotal      *prometheus.GaugeVec
 	clusterRAMUsed       *prometheus.GaugeVec
 	clusterCoresTotal    *prometheus.GaugeVec
@@ -55,14 +55,14 @@ func NewClusterCollector(url string, client *http.Client, username, password str
 		),
 		clusterRAMTotal: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_ram_total",
+				Name: "vergeos_cluster_total_ram",
 				Help: "Total RAM in bytes",
 			},
 			[]string{"system_name", "cluster"},
 		),
 		clusterRAMUsed: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_ram_used",
+				Name: "vergeos_cluster_used_ram",
 				Help: "Used RAM in bytes",
 			},
 			[]string{"system_name", "cluster"},
@@ -76,14 +76,14 @@ func NewClusterCollector(url string, client *http.Client, username, password str
 		),
 		clusterCoresUsed: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_cores_used",
+				Name: "vergeos_cluster_used_cores",
 				Help: "Number of CPU cores in use",
 			},
 			[]string{"system_name", "cluster"},
 		),
 		clusterMachinesTotal: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_machines_total",
+				Name: "vergeos_cluster_running_machines",
 				Help: "Total number of running machines",
 			},
 			[]string{"system_name", "cluster"},
@@ -285,11 +285,22 @@ func (cc *ClusterCollector) Collect(ch chan<- prometheus.Metric) {
 		cc.clusterRamPerUnit.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.RamPerUnit))
 		cc.clusterCoresPerUnit.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.CoresPerUnit))
 		cc.clusterTargetRamPct.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.TargetRamPct))
-		cc.clusterTotalNodes.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.TotalNodes))
-		cc.clusterOnlineNodes.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.OnlineNodes))
-		cc.clusterOnlineRam.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.OnlineRam*1024*1024*1024)) // Convert GB to bytes
-		cc.clusterOnlineCores.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.OnlineCores))
-		cc.clusterPhysRamUsed.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.PhysRamUsed*1024*1024*1024)) // Convert GB to bytes
+		cc.clusterTotalNodes.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.TotalNodes))
+		cc.clusterOnlineNodes.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.OnlineNodes))
+		cc.clusterOnlineRam.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.OnlineRam * 1024 * 1024 * 1024)) // Convert GB to bytes
+		cc.clusterOnlineCores.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.OnlineCores))
+		cc.clusterPhysRamUsed.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.PhysRamUsed * 1024 * 1024 * 1024)) // Convert GB to bytes
+		cc.clusterMachinesTotal.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.RunningMachines))
+		cc.clusterRAMTotal.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.TotalRam))
+		cc.clusterRAMUsed.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.UsedRam))
+		cc.clusterCoresUsed.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.UsedCores))
+
+		// Set cluster status (1=online, 0=offline)
+		statusValue := 0.0
+		if detail.Status.OnlineNodes > 0 {
+			statusValue = 1.0
+		}
+		cc.clusterStatus.WithLabelValues(cc.systemName, detail.Name).Set(statusValue)
 	}
 
 	cc.clusterStatus.Collect(ch)
