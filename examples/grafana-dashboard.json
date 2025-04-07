@@ -506,7 +506,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "vergeos_vsan_tier_used_pct{system_name=~\"$system\"}",
+          "expr": "(vergeos_vsan_tier_used{system_name=~\"$system\"} / vergeos_vsan_tier_capacity{system_name=~\"$system\"}) * 100",
           "legendFormat": "Tier {{tier}}",
           "range": true,
           "refId": "A"
@@ -846,6 +846,14 @@
             "steps": [
               {
                 "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
               }
             ]
           },
