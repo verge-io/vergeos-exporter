@@ -41,19 +41,19 @@ type StorageCollector struct {
 	vsanDedupeRatio *prometheus.GaugeVec
 
 	// VSAN tier detailed metrics
-	vsanTierTransaction      *prometheus.CounterVec
-	vsanTierRepairs         *prometheus.CounterVec
-	vsanTierState           *prometheus.GaugeVec
-	vsanBadDrives           *prometheus.GaugeVec
-	vsanEncryptionStatus    *prometheus.GaugeVec
-	vsanRedundant           *prometheus.GaugeVec
-	vsanLastWalkTime        *prometheus.GaugeVec
-	vsanLastFullwalkTime    *prometheus.GaugeVec
-	vsanFullwalkStatus      *prometheus.GaugeVec
-	vsanFullwalkProgress    *prometheus.GaugeVec
-	vsanCurSpaceThrottle    *prometheus.GaugeVec
-	vsanNodesOnline         *prometheus.GaugeVec
-	vsanDrivesOnline        *prometheus.GaugeVec
+	vsanTierTransaction  *prometheus.CounterVec
+	vsanTierRepairs      *prometheus.CounterVec
+	vsanTierState        *prometheus.GaugeVec
+	vsanBadDrives        *prometheus.GaugeVec
+	vsanEncryptionStatus *prometheus.GaugeVec
+	vsanRedundant        *prometheus.GaugeVec
+	vsanLastWalkTime     *prometheus.GaugeVec
+	vsanLastFullwalkTime *prometheus.GaugeVec
+	vsanFullwalkStatus   *prometheus.GaugeVec
+	vsanFullwalkProgress *prometheus.GaugeVec
+	vsanCurSpaceThrottle *prometheus.GaugeVec
+	vsanNodesOnline      *prometheus.GaugeVec
+	vsanDrivesOnline     *prometheus.GaugeVec
 }
 
 // NewStorageCollector creates a new StorageCollector
@@ -434,9 +434,9 @@ func (sc *StorageCollector) Collect(ch chan<- prometheus.Metric) {
 			sc.driveRepairs.WithLabelValues(labels...).Add(float64(drive.Stats.Repairs))
 			sc.driveThrottle.WithLabelValues(labels...).Set(drive.Stats.Throttle)
 			sc.driveWearLevel.WithLabelValues(labels...).Add(float64(drive.Stats.WearLevel))
-			sc.drivePowerOnHours.WithLabelValues(labels...).Add(float64(drive.Stats.PowerOnHours))
+			sc.drivePowerOnHours.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.Hours))
 			sc.driveReallocSectors.WithLabelValues(labels...).Add(float64(drive.Stats.ReallocSectors))
-			sc.driveTemperature.WithLabelValues(labels...).Set(drive.Stats.Temperature)
+			sc.driveTemperature.WithLabelValues(labels...).Set(drive.PhysicalStatus.Temp)
 		}
 	}
 
