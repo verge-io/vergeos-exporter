@@ -25,14 +25,13 @@ type StorageCollector struct {
 	driveUtil           *prometheus.GaugeVec
 	driveReadErrors     *prometheus.CounterVec
 	driveWriteErrors    *prometheus.CounterVec
-	driveAvgLatency     *prometheus.GaugeVec
-	driveMaxLatency     *prometheus.GaugeVec
 	driveRepairs        *prometheus.CounterVec
 	driveThrottle       *prometheus.GaugeVec
 	driveWearLevel      *prometheus.CounterVec
 	drivePowerOnHours   *prometheus.CounterVec
 	driveReallocSectors *prometheus.CounterVec
 	driveTemperature    *prometheus.GaugeVec
+	driveServiceTime    *prometheus.GaugeVec
 
 	// VSAN metrics
 	vsanCapacity    *prometheus.GaugeVec
@@ -42,7 +41,7 @@ type StorageCollector struct {
 
 	// VSAN tier detailed metrics
 	vsanTierTransaction  *prometheus.CounterVec
-	vsanTierRepairs      *prometheus.CounterVec
+	vsanTierRepairs      *prometheus.GaugeVec
 	vsanTierState        *prometheus.GaugeVec
 	vsanBadDrives        *prometheus.GaugeVec
 	vsanEncryptionStatus *prometheus.GaugeVec
@@ -95,14 +94,6 @@ func NewStorageCollector(url string, client *http.Client, username, password str
 			Name: "vergeos_drive_write_errors",
 			Help: "Total number of write errors",
 		}, driveLabels),
-		driveAvgLatency: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "vergeos_drive_avg_latency",
-			Help: "Average drive latency in seconds",
-		}, driveLabels),
-		driveMaxLatency: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "vergeos_drive_max_latency",
-			Help: "Maximum drive latency in seconds",
-		}, driveLabels),
 		driveRepairs: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "vergeos_drive_repairs",
 			Help: "Total number of drive repairs",
@@ -127,6 +118,10 @@ func NewStorageCollector(url string, client *http.Client, username, password str
 			Name: "vergeos_drive_temperature",
 			Help: "Drive temperature in Celsius",
 		}, driveLabels),
+		driveServiceTime: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "vergeos_drive_service_time",
+			Help: "Drive service time in seconds",
+		}, driveLabels),
 		vsanCapacity: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "vergeos_vsan_tier_capacity",
 			Help: "VSAN tier capacity in bytes",
@@ -149,9 +144,9 @@ func NewStorageCollector(url string, client *http.Client, username, password str
 			Name: "vergeos_vsan_tier_transaction",
 			Help: "VSAN tier transaction count",
 		}, []string{"system_name", "tier", "status"}),
-		vsanTierRepairs: prometheus.NewCounterVec(prometheus.CounterOpts{
+		vsanTierRepairs: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "vergeos_vsan_tier_repairs",
-			Help: "VSAN tier repair count",
+			Help: "Number of repairs in VSAN tier",
 		}, []string{"system_name", "tier", "status"}),
 		vsanTierState: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "vergeos_vsan_tier_state",
@@ -216,14 +211,13 @@ func (sc *StorageCollector) Describe(ch chan<- *prometheus.Desc) {
 	sc.driveUtil.Describe(ch)
 	sc.driveReadErrors.Describe(ch)
 	sc.driveWriteErrors.Describe(ch)
-	sc.driveAvgLatency.Describe(ch)
-	sc.driveMaxLatency.Describe(ch)
 	sc.driveRepairs.Describe(ch)
 	sc.driveThrottle.Describe(ch)
 	sc.driveWearLevel.Describe(ch)
 	sc.drivePowerOnHours.Describe(ch)
 	sc.driveReallocSectors.Describe(ch)
 	sc.driveTemperature.Describe(ch)
+	sc.driveServiceTime.Describe(ch)
 	sc.vsanCapacity.Describe(ch)
 	sc.vsanUsed.Describe(ch)
 	sc.vsanAllocated.Describe(ch)
@@ -341,9 +335,9 @@ func (sc *StorageCollector) Collect(ch chan<- prometheus.Metric) {
 
 		// Update counters
 		sc.vsanTierTransaction.WithLabelValues(labels...).Add(float64(tier.Status.Transaction))
-		sc.vsanTierRepairs.WithLabelValues(labels...).Add(float64(tier.Status.Repairs))
 
 		// Update gauges
+		sc.vsanTierRepairs.WithLabelValues(labels...).Set(float64(tier.Status.Repairs))
 		sc.vsanTierState.WithLabelValues(labels...).Set(boolToFloat64(tier.Status.Working))
 		sc.vsanBadDrives.WithLabelValues(labels...).Set(float64(tier.Status.BadDrives))
 		sc.vsanEncryptionStatus.WithLabelValues(labels...).Set(boolToFloat64(tier.Status.Encrypted))
@@ -356,14 +350,14 @@ func (sc *StorageCollector) Collect(ch chan<- prometheus.Metric) {
 
 		// Count online nodes and drives
 		var onlineNodes, onlineDrives int
-		for _, node := range tier.Cluster.Nodes {
-			if node.Machine.Status.State == "online" {
+		for _, node := range tier.NodesOnline.Nodes {
+			if node.State == "online" {
 				onlineNodes++
 			}
-			for _, drive := range node.Machine.Drives {
-				if drive.PhysicalStatus.VsanTier == tier.Status.Tier {
-					onlineDrives++
-				}
+		}
+		for _, drive := range tier.DrivesOnline {
+			if drive.State == "online" {
+				onlineDrives++
 			}
 		}
 		sc.vsanNodesOnline.WithLabelValues(labels...).Set(float64(onlineNodes))
@@ -429,14 +423,13 @@ func (sc *StorageCollector) Collect(ch chan<- prometheus.Metric) {
 			sc.driveUtil.WithLabelValues(labels...).Set(drive.Stats.Util)
 			sc.driveReadErrors.WithLabelValues(labels...).Add(float64(drive.Stats.ReadErrors))
 			sc.driveWriteErrors.WithLabelValues(labels...).Add(float64(drive.Stats.WriteErrors))
-			sc.driveAvgLatency.WithLabelValues(labels...).Set(drive.Stats.AvgLatency)
-			sc.driveMaxLatency.WithLabelValues(labels...).Set(drive.Stats.MaxLatency)
 			sc.driveRepairs.WithLabelValues(labels...).Add(float64(drive.Stats.Repairs))
 			sc.driveThrottle.WithLabelValues(labels...).Set(drive.Stats.Throttle)
 			sc.driveWearLevel.WithLabelValues(labels...).Add(float64(drive.Stats.WearLevel))
 			sc.drivePowerOnHours.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.Hours))
 			sc.driveReallocSectors.WithLabelValues(labels...).Add(float64(drive.Stats.ReallocSectors))
 			sc.driveTemperature.WithLabelValues(labels...).Set(drive.PhysicalStatus.Temp)
+			sc.driveServiceTime.WithLabelValues(labels...).Set(drive.Stats.ServiceTime)
 		}
 	}
 
@@ -448,20 +441,19 @@ func (sc *StorageCollector) Collect(ch chan<- prometheus.Metric) {
 	sc.driveUtil.Collect(ch)
 	sc.driveReadErrors.Collect(ch)
 	sc.driveWriteErrors.Collect(ch)
-	sc.driveAvgLatency.Collect(ch)
-	sc.driveMaxLatency.Collect(ch)
 	sc.driveRepairs.Collect(ch)
 	sc.driveThrottle.Collect(ch)
 	sc.driveWearLevel.Collect(ch)
 	sc.drivePowerOnHours.Collect(ch)
 	sc.driveReallocSectors.Collect(ch)
 	sc.driveTemperature.Collect(ch)
+	sc.driveServiceTime.Collect(ch)
+
 	sc.vsanCapacity.Collect(ch)
 	sc.vsanUsed.Collect(ch)
 	sc.vsanAllocated.Collect(ch)
 	sc.vsanDedupeRatio.Collect(ch)
 
-	// VSAN tier detailed metrics
 	sc.vsanTierTransaction.Collect(ch)
 	sc.vsanTierRepairs.Collect(ch)
 	sc.vsanTierState.Collect(ch)
