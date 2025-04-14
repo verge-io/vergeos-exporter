@@ -36,13 +36,13 @@ type DriveResponse struct {
 		Repairs        float64 `json:"repairs"`
 		Throttle       float64 `json:"throttle"`
 		WearLevel      float64 `json:"wear_level"`
-		PowerOnHours   float64 `json:"hours"`
 		ReallocSectors float64 `json:"realloc_sectors"`
-		Temperature    float64 `json:"temp"`
 	} `json:"stats"`
 	PhysicalStatus struct {
-		Serial   string `json:"serial"`
-		VsanTier int    `json:"vsan_tier"`
+		Serial   string  `json:"serial"`
+		VsanTier int     `json:"vsan_tier"`
+		Temp     float64 `json:"temp"`
+		Hours    float64 `json:"hours"`
 	} `json:"physical_status"`
 }
 
