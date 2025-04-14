@@ -26,14 +26,13 @@
 ### Drive Health Metrics
 - **Drive Read Errors**: `vergeos_drive_read_errors` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
 - **Drive Write Errors**: `vergeos_drive_write_errors` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
-- **Drive Average Latency**: `vergeos_drive_avg_latency` (Gauge, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
-- **Drive Maximum Latency**: `vergeos_drive_max_latency` (Gauge, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
 - **Drive Repairs**: `vergeos_drive_repairs` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
 - **Drive Throttle**: `vergeos_drive_throttle` (Gauge, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
 - **Drive Wear Level**: `vergeos_drive_wear_level` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
 - **Drive Power On Hours**: `vergeos_drive_power_on_hours` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
 - **Drive Reallocated Sectors**: `vergeos_drive_reallocated_sectors` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
 - **Drive Temperature**: `vergeos_drive_temperature` (Gauge, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
+- **Drive Service Time**: `vergeos_drive_service_time` (Gauge, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`, in seconds)
 
 ### Drive Metrics
 
