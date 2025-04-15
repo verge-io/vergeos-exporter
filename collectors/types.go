@@ -37,6 +37,7 @@ type DriveResponse struct {
 		Throttle       float64 `json:"throttle"`
 		WearLevel      float64 `json:"wear_level"`
 		ReallocSectors float64 `json:"realloc_sectors"`
+		ServiceTime    float64 `json:"service_time"`
 	} `json:"stats"`
 	PhysicalStatus struct {
 		Serial   string  `json:"serial"`
@@ -218,8 +219,8 @@ type VSANResponse []StorageTier
 
 // ClusterTierResponse represents the API response for cluster tier details
 type ClusterTierResponse []struct {
-	Key     int `json:"$key"`
-	Cluster struct {
+	Key            int    `json:"$key"`
+	Cluster        struct {
 		Key   int `json:"$key"`
 		Nodes []struct {
 			Name    string `json:"name"`
@@ -266,6 +267,28 @@ type ClusterTierResponse []struct {
 		CurSpaceThrottleMs int    `json:"cur_space_throttle_ms"`
 		StatusDisplay      string `json:"status_display"`
 	} `json:"status"`
+	Stats struct {
+		Rops        int64 `json:"rops"`
+		Wops        int64 `json:"wops"`
+		Rbps        int64 `json:"rbps"`
+		Wbps        int64 `json:"wbps"`
+		Writes      int64 `json:"writes"`
+		Reads       int64 `json:"reads"`
+		WriteBytes  int64 `json:"write_bytes"`
+		ReadBytes   int64 `json:"read_bytes"`
+	} `json:"stats"`
+	ClusterDisplay string `json:"cluster_display"`
+	DrivesOnline   []struct {
+		State string `json:"state"`
+	} `json:"drives_online"`
+	DrivesWarn  []struct{} `json:"drives_warn"`
+	DrivesError []struct{} `json:"drives_error"`
+	DrivesCount int        `json:"drives_count"`
+	NodesOnline struct {
+		Nodes []struct {
+			State string `json:"state"`
+		} `json:"nodes"`
+	} `json:"nodes_online"`
 }
 
 // PhysicalNodeResponse represents the API response for physical nodes
