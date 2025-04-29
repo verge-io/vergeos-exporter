@@ -56,7 +56,7 @@ func NewNodeCollector(url string, client *http.Client, username, password string
 		},
 		systemName: "unknown", // Will be updated in Collect
 		nodesTotal: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "vergeos_physical_nodes_total",
+			Name: "vergeos_nodes_total",
 			Help: "Total number of physical nodes",
 		}, []string{"system_name", "cluster"}),
 		nodeIPMIStatus: prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -72,11 +72,11 @@ func NewNodeCollector(url string, client *http.Client, username, password string
 			Help: "Core temperature in Celsius",
 		}, []string{"system_name", "cluster", "node_name"}),
 		nodeRAMUsed: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "vergeos_node_ram_used_mb",
+			Name: "vergeos_node_ram_used",
 			Help: "RAM used in MB",
 		}, []string{"system_name", "cluster", "node_name"}),
 		nodeRAMPercent: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "vergeos_node_ram_used_percent",
+			Name: "vergeos_node_ram_pct",
 			Help: "RAM used percentage",
 		}, []string{"system_name", "cluster", "node_name"}),
 	}
