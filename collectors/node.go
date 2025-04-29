@@ -11,23 +11,23 @@ import (
 
 // Node represents a VergeOS node
 type Node struct {
-	Name          string `json:"name"`
-	Description   string `json:"description"`
-	ID            int    `json:"id"`
-	Machine       int    `json:"machine"`
-	Physical      bool   `json:"physical"`
-	IPMIStatus    string `json:"ipmi_status"`
+	Name           string `json:"name"`
+	Description    string `json:"description"`
+	ID             int    `json:"id"`
+	Machine        int    `json:"machine"`
+	Physical       bool   `json:"physical"`
+	IPMIStatus     string `json:"ipmi_status"`
 	IPMIStatusInfo string `json:"ipmi_status_info"`
-	Cluster       int    `json:"cluster"`
+	Cluster        int    `json:"cluster"`
 }
 
 // NodeStats represents node statistics
 type NodeStats struct {
-	TotalCPU     float64   `json:"total_cpu"`
-	RAM          int64     `json:"ram"`
+	TotalCPU      float64   `json:"total_cpu"`
+	RAM           int64     `json:"ram"`
 	CoreUsageList []float64 `json:"core_usagelist"`
-	CoreTemp     float64   `json:"core_temp"`
-	CoreTempTop  float64   `json:"core_temp_top"`
+	CoreTemp      float64   `json:"core_temp"`
+	CoreTempTop   float64   `json:"core_temp_top"`
 }
 
 // NodeCollector collects metrics about VergeOS nodes
@@ -39,12 +39,12 @@ type NodeCollector struct {
 	systemName string
 
 	// Metrics
-	nodesTotal      prometheus.Gauge
-	nodeIPMIStatus  *prometheus.GaugeVec
-	nodeCPUUsage    *prometheus.GaugeVec
-	nodeCoreTemp    *prometheus.GaugeVec
-	nodeRAMUsed     *prometheus.GaugeVec
-	nodeRAMPercent  *prometheus.GaugeVec
+	nodesTotal     *prometheus.GaugeVec
+	nodeIPMIStatus *prometheus.GaugeVec
+	nodeCPUUsage   *prometheus.GaugeVec
+	nodeCoreTemp   *prometheus.GaugeVec
+	nodeRAMUsed    *prometheus.GaugeVec
+	nodeRAMPercent *prometheus.GaugeVec
 }
 
 // NewNodeCollector creates a new NodeCollector
@@ -55,14 +55,14 @@ func NewNodeCollector(url string, client *http.Client, username, password string
 			httpClient: client,
 		},
 		systemName: "unknown", // Will be updated in Collect
-		nodesTotal: prometheus.NewGauge(prometheus.GaugeOpts{
+		nodesTotal: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "vergeos_physical_nodes_total",
 			Help: "Total number of physical nodes",
-		}),
+		}, []string{"system_name", "cluster"}),
 		nodeIPMIStatus: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "vergeos_node_ipmi_status",
 			Help: "IPMI status of the node (1=online, 0=offline)",
-		}, []string{"node_name"}),
+		}, []string{"system_name", "cluster", "node_name"}),
 		nodeCPUUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "vergeos_node_cpu_core_usage",
 			Help: "CPU usage per core",
@@ -74,11 +74,11 @@ func NewNodeCollector(url string, client *http.Client, username, password string
 		nodeRAMUsed: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "vergeos_node_ram_used_mb",
 			Help: "RAM used in MB",
-		}, []string{"node_name"}),
+		}, []string{"system_name", "cluster", "node_name"}),
 		nodeRAMPercent: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "vergeos_node_ram_used_percent",
 			Help: "RAM used percentage",
-		}, []string{"node_name"}),
+		}, []string{"system_name", "cluster", "node_name"}),
 	}
 
 	// Authenticate with the API
@@ -154,16 +154,19 @@ func (nc *NodeCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	nc.nodesTotal.Set(float64(len(nodes)))
+	// Create a map to count nodes per cluster
+	clusterNodeCounts := make(map[string]int)
+
+	// Keep the original metric with "all" for backward compatibility
+	nc.nodesTotal.WithLabelValues(nc.systemName, "all").Set(float64(len(nodes)))
 
 	// Process each node
 	for _, node := range nodes {
-		// Set IPMI status
+		// Calculate IPMI status value (will be set after we get cluster info)
 		ipmiStatus := 0.0
 		if node.IPMIStatus == "ok" {
 			ipmiStatus = 1.0
 		}
-		nc.nodeIPMIStatus.WithLabelValues(node.Name).Set(ipmiStatus)
 
 		// Get detailed node stats
 		req, err := nc.makeRequest("GET", fmt.Sprintf("/api/v4/nodes/%d?fields=dashboard", node.ID))
@@ -200,8 +203,14 @@ func (nc *NodeCollector) Collect(ch chan<- prometheus.Metric) {
 		if nodeStats.Machine.Stats.CoreTemp > 0 {
 			nc.nodeCoreTemp.WithLabelValues(nc.systemName, nodeStats.ClusterDisplay, node.Name).Set(nodeStats.Machine.Stats.CoreTemp)
 		}
-		nc.nodeRAMUsed.WithLabelValues(node.Name).Set(float64(nodeStats.Machine.Stats.RAM))
-		nc.nodeRAMPercent.WithLabelValues(node.Name).Set(nodeStats.Machine.Stats.TotalCPU)
+
+		// Set IPMI status with system_name and cluster labels
+		nc.nodeIPMIStatus.WithLabelValues(nc.systemName, nodeStats.ClusterDisplay, node.Name).Set(ipmiStatus)
+		nc.nodeRAMUsed.WithLabelValues(nc.systemName, nodeStats.ClusterDisplay, node.Name).Set(float64(nodeStats.Machine.Stats.RAM))
+		nc.nodeRAMPercent.WithLabelValues(nc.systemName, nodeStats.ClusterDisplay, node.Name).Set(nodeStats.Machine.Stats.TotalCPU)
+
+		// Count nodes per cluster
+		clusterNodeCounts[nodeStats.ClusterDisplay]++
 	}
 
 	// Collect all metrics
@@ -211,4 +220,9 @@ func (nc *NodeCollector) Collect(ch chan<- prometheus.Metric) {
 	nc.nodeCoreTemp.Collect(ch)
 	nc.nodeRAMUsed.Collect(ch)
 	nc.nodeRAMPercent.Collect(ch)
+
+	// Set the nodes total metric per cluster
+	for clusterName, count := range clusterNodeCounts {
+		nc.nodesTotal.WithLabelValues(nc.systemName, clusterName).Set(float64(count))
+	}
 }
