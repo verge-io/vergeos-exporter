@@ -1,20 +1,26 @@
 # VergeOS Exporter
 
-A Prometheus exporter for VergeOS that collects metrics about VSAN tiers, clusters, and nodes.
+A Prometheus exporter for VergeOS that collects metrics about VSAN tiers, clusters, nodes, and storage.
 
 ## Features
 
 - VSAN Tier Metrics:
   - Capacity, usage, and allocation statistics
   - Transaction and repair counts
-  - Drive status and temperature monitoring
+  - Drive status, temperature, and health monitoring
   - Node and drive availability tracking
-  - Performance metrics (read/write operations)
+  - Performance metrics (read/write operations, IOPS)
+  - Storage pool utilization and redundancy status
 
 - Cluster Metrics:
   - Total and online nodes
-  - RAM and CPU utilization
-  - Running machines statistics
+  - RAM, CPU, and disk utilization
+  - Cluster health status and node synchronization
+
+- Node Metrics:
+  - CPU and memory usage per node
+  - Network throughput and latency
+  - Process and service status
 
 ## Installation
 
