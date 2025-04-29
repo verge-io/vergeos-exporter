@@ -97,8 +97,3 @@ All drive metrics include the following labels:
 - **Used Cores in Cluster**: `vergeos_cluster_used_cores` (Gauge, labeled by `system_name` and `cluster`)
 - **Physical RAM Used (MB)**: `vergeos_cluster_phys_ram_used` (Gauge, labeled by `system_name` and `cluster`)
 
----
-## Aggregated from Node, VSAN, and Cluster Data
-- **Total Drives Online**: `vergeos_drives_online_total` (Gauge)
-- **Total NICs Online**: `vergeos_nics_online_total` (Gauge)
-- **Total Memory Online**: `vergeos_memory_online_total` (Gauge)
