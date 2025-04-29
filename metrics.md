@@ -5,16 +5,15 @@
 - **IPMI Status per Node**: `vergeos_node_ipmi_status` (Gauge, labeled by `node_name`)
 
 ---
-
 ## Node Details and Stats
 
 ### CPU Metrics
-- **CPU Usage per Core**: `vergeos_node_cpu_core_usage` (Gauge, labeled by `node_name`, `core_id`, and 'system_name`)
-- **CPU Temperature**: `vergeos_node_core_temp` (Gauge, labeled by 'system_name` and `node_name`)
+- **CPU Usage per Core**: `vergeos_node_cpu_core_usage` (Gauge, labeled by `node_name`, `core_id`, and `system_name`)
+- **CPU Temperature**: `vergeos_node_core_temp` (Gauge, labeled by `system_name` and `node_name`)
 
 ### Memory Metrics
-- **RAM Used (MB)**: `vergeos_node_ram_used` (Gauge, labeled by 'system_name` and `node_name`)
-- **RAM Usage Percentage**: `vergeos_node_ram_pct` (Gauge, labeled by 'system_name` and `node_name`)
+- **RAM Used (MB)**: `vergeos_node_ram_used` (Gauge, labeled by `system_name` and `node_name`)
+- **RAM Usage Percentage**: `vergeos_node_ram_pct` (Gauge, labeled by `system_name` and `node_name`)
 
 ### Storage Metrics
 - **Drive Read Operations**: `vergeos_drive_read_ops` (Counter, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`)
@@ -35,7 +34,6 @@
 - **Drive Service Time**: `vergeos_drive_service_time` (Gauge, labeled by `node_name`, `drive_name`, `vsan_tier`, and `serial`, in seconds)
 
 ### Drive Metrics
-
 All drive metrics include the following labels:
 - `node_name`: Name of the node the drive belongs to
 - `drive_name`: Name of the drive
@@ -44,13 +42,12 @@ All drive metrics include the following labels:
 
 ## Basic Drive Metrics
 ### Network Metrics
-- **NIC Transmit Packets**: `vergeos_nic_tx_packets` (Counter, labeled by `node_name` and `nic_name`)
-- **NIC Receive Packets**: `vergeos_nic_rx_packets` (Counter, labeled by `node_name` and `nic_name`)
-- **NIC Transmit Bytes**: `vergeos_nic_tx_bytes` (Counter, labeled by `node_name` and `nic_name`)
-- **NIC Receive Bytes**: `vergeos_nic_rx_bytes` (Counter, labeled by `node_name` and `nic_name`)
-
+- **NIC Transmit Packets**: `vergeos_nic_tx_packets_total` (Counter, labeled by `cluster`, `node_name` and `nic_name`)
+- **NIC Receive Packets**: `vergeos_nic_rx_packets_total` (Counter, labeled by `cluster`, `node_name` and `nic_name`)
+- **NIC Transmit Bytes**: `vergeos_nic_tx_bytes_total` (Counter, labeled by `cluster`, `node_name` and `nic_name`)
+- **NIC Receive Bytes**: `vergeos_nic_rx_bytes_total` (Counter, labeled by `cluster`, `node_name` and `nic_name`)
+- **NIC Status: `vergeos_nic_status` (Gauge, labeled by `cluster`, `node_name` and `nic_name`)
 ---
-
 ## VSAN Tiers Overview
 - **VSAN Tier Capacity**: `vergeos_vsan_tier_capacity` (Gauge, labeled by `tier_id`)
 - **VSAN Tier Used Space**: `vergeos_vsan_tier_used` (Gauge, labeled by `tier_id`)
@@ -59,12 +56,11 @@ All drive metrics include the following labels:
 - **VSAN Tier Dedupe Ratio**: `vergeos_vsan_tier_dedupe_ratio` (Gauge, labeled by `tier_id`)
 
 ---
-
 ## VSAN Tier Detailed Stats
 
 ### Metrics
 - **VSAN Tier Transaction Count**: `vergeos_vsan_tier_transaction` (Counter, labeled by `tier_id`)
-- **VSAN Tier Repairs Count**: `vergeos_vsan_tier_repairs` (Counter, labeled by `tier_id`)
+- **VSAN Tier Repairs Count**: `vergeos_vsan_tier_repairs` (Gauge, labeled by `tier_id`)
 - **VSAN Tier State**: `vergeos_vsan_tier_state` (Gauge, labeled by `tier_id`, `state` as a string value converted to numeric representation)
 - **VSAN Bad Drives**: `vergeos_vsan_bad_drives` (Gauge, labeled by `tier_id`)
 - **VSAN Encryption Status**: `vergeos_vsan_encryption_status` (Gauge, labeled by `tier_id`, `1` for encrypted, `0` for not encrypted)
@@ -76,10 +72,8 @@ All drive metrics include the following labels:
 - **VSAN Current Space Throttle (ms)**: `vergeos_vsan_cur_space_throttle_ms` (Gauge, labeled by `tier_id`)
 - **VSAN Nodes Online**: `vergeos_vsan_nodes_online` (Gauge, labeled by `tier_id`)
 - **VSAN Drives Online**: `vergeos_vsan_drives_online` (Gauge, labeled by `tier_id`)
-- **VSAN Drive Wear Level**: `vergeos_vsan_drive_wear_level` (Gauge, labeled by `tier_id` and `drive_id`)
 
 ---
-
 ## Cluster Overview
 - **Total Clusters**: `vergeos_clusters_total` (Gauge)
 - **Cluster Enabled Status**: `vergeos_cluster_enabled` (Gauge, labeled by `cluster_name`, `1` for enabled, `0` for disabled)
@@ -89,7 +83,6 @@ All drive metrics include the following labels:
 - **Cluster Status**: `vergeos_cluster_status` (Gauge, labeled by `cluster_name`, `1` for online, `0` for offline)
 
 ---
-
 ## Cluster Stats
 - **Total Nodes in Cluster**: `vergeos_cluster_total_nodes` (Gauge, labeled by `cluster_name`)
 - **Online Nodes in Cluster**: `vergeos_cluster_online_nodes` (Gauge, labeled by `cluster_name`)
@@ -103,7 +96,6 @@ All drive metrics include the following labels:
 - **Physical RAM Used (MB)**: `vergeos_cluster_phys_ram_used` (Gauge, labeled by `cluster_name`)
 
 ---
-
 ## Aggregated from Node, VSAN, and Cluster Data
 - **Total Drives Online**: `vergeos_drives_online_total` (Gauge)
 - **Total NICs Online**: `vergeos_nics_online_total` (Gauge)
