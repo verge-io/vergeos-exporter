@@ -36,6 +36,8 @@ type NodeCollector struct {
 	nodeCoreTemp   *prometheus.GaugeVec
 	nodeRAMUsed    *prometheus.GaugeVec
 	nodeRAMPercent *prometheus.GaugeVec
+	nodeRAM        *prometheus.GaugeVec // VM RAM allocated (vm_ram field)
+	nodeRAMTotal   *prometheus.GaugeVec // Total RAM (ram field)
 }
 
 // NewNodeCollector creates a new NodeCollector
@@ -70,6 +72,14 @@ func NewNodeCollector(url string, client *http.Client, username, password string
 			Name: "vergeos_node_ram_pct",
 			Help: "RAM used percentage",
 		}, []string{"system_name", "cluster", "node_name"}),
+		nodeRAM: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "vergeos_node_ram_allocated",
+			Help: "VM RAM in MB (vm_ram field)",
+		}, []string{"system_name", "cluster", "node_name"}),
+		nodeRAMTotal: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "vergeos_node_ram_total",
+			Help: "Total RAM in MB (ram field)",
+		}, []string{"system_name", "cluster", "node_name"}),
 	}
 
 	// Authenticate with the API
@@ -88,6 +98,8 @@ func (nc *NodeCollector) Describe(ch chan<- *prometheus.Desc) {
 	nc.nodeCoreTemp.Describe(ch)
 	nc.nodeRAMUsed.Describe(ch)
 	nc.nodeRAMPercent.Describe(ch)
+	nc.nodeRAM.Describe(ch)
+	nc.nodeRAMTotal.Describe(ch)
 }
 
 // Collect implements prometheus.Collector
@@ -183,6 +195,8 @@ func (nc *NodeCollector) Collect(ch chan<- prometheus.Metric) {
 				} `json:"stats"`
 			} `json:"machine"`
 			ClusterDisplay string `json:"cluster_display"`
+			VMRAM          int64  `json:"vm_ram"`
+			RAM            int64  `json:"ram"`
 		}
 		// Decode the response into the nodeData struct
 		if err := json.NewDecoder(resp.Body).Decode(&nodeData); err != nil {
@@ -208,6 +222,10 @@ func (nc *NodeCollector) Collect(ch chan<- prometheus.Metric) {
 		nc.nodeRAMUsed.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name).Set(float64(nodeData.Machine.Stats.RAMUsed))
 		nc.nodeRAMPercent.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name).Set(nodeData.Machine.Stats.RAMPct)
 
+		// Set the new RAM metrics from the root level fields
+		nc.nodeRAM.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name).Set(float64(nodeData.VMRAM))
+		nc.nodeRAMTotal.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name).Set(float64(nodeData.RAM))
+
 		// Count nodes per cluster
 		clusterNodeCounts[nodeData.ClusterDisplay]++
 	}
@@ -219,6 +237,8 @@ func (nc *NodeCollector) Collect(ch chan<- prometheus.Metric) {
 	nc.nodeCoreTemp.Collect(ch)
 	nc.nodeRAMUsed.Collect(ch)
 	nc.nodeRAMPercent.Collect(ch)
+	nc.nodeRAM.Collect(ch)
+	nc.nodeRAMTotal.Collect(ch)
 
 	// Set the nodes total metric per cluster
 	for clusterName, count := range clusterNodeCounts {

@@ -14,6 +14,8 @@
 ### Memory Metrics
 - **RAM Used (MB)**: `vergeos_node_ram_used` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
 - **RAM Usage Percentage**: `vergeos_node_ram_pct` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
+- **VM RAM (MB)**: `vergeos_node_ram_allocated` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
+- **Total RAM (MB)**: `vergeos_node_ram_total` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
 
 ### Storage Metrics
 - **Drive Read Operations**: `vergeos_drive_read_ops` (Counter, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
