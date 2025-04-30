@@ -1,5 +1,9 @@
 package collectors
 
+import (
+	"encoding/json"
+)
+
 // NodeDriveStats represents drive statistics for a node
 type NodeDriveStats struct {
 	Name           string  `json:"name"`
@@ -219,8 +223,8 @@ type VSANResponse []StorageTier
 
 // ClusterTierResponse represents the API response for cluster tier details
 type ClusterTierResponse []struct {
-	Key            int    `json:"$key"`
-	Cluster        struct {
+	Key     int `json:"$key"`
+	Cluster struct {
 		Key   int `json:"$key"`
 		Nodes []struct {
 			Name    string `json:"name"`
@@ -268,14 +272,14 @@ type ClusterTierResponse []struct {
 		StatusDisplay      string `json:"status_display"`
 	} `json:"status"`
 	Stats struct {
-		Rops        int64 `json:"rops"`
-		Wops        int64 `json:"wops"`
-		Rbps        int64 `json:"rbps"`
-		Wbps        int64 `json:"wbps"`
-		Writes      int64 `json:"writes"`
-		Reads       int64 `json:"reads"`
-		WriteBytes  int64 `json:"write_bytes"`
-		ReadBytes   int64 `json:"read_bytes"`
+		Rops       int64 `json:"rops"`
+		Wops       int64 `json:"wops"`
+		Rbps       int64 `json:"rbps"`
+		Wbps       int64 `json:"wbps"`
+		Writes     int64 `json:"writes"`
+		Reads      int64 `json:"reads"`
+		WriteBytes int64 `json:"write_bytes"`
+		ReadBytes  int64 `json:"read_bytes"`
 	} `json:"stats"`
 	ClusterDisplay string `json:"cluster_display"`
 	DrivesOnline   []struct {
@@ -306,4 +310,82 @@ type PhysicalNodeResponse []struct {
 type SystemNameResponse []struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
+}
+
+// MachineDriveResponse represents the API response for machine drives
+type MachineDriveResponse []struct {
+	Key            int         `json:"$key"`
+	Name           string      `json:"name"`
+	Node           int         `json:"node"`
+	Type           string      `json:"type"`
+	NodeDisplay    string      `json:"node_display"`
+	StatusList     string      `json:"statuslist"`
+	PhysicalStatus interface{} `json:"physical_status"` // Can be a number or struct
+	// Direct fields from API response
+	Bus             string  `json:"bus"`
+	Model           string  `json:"model"`
+	DriveSize       int64   `json:"drive_size"`
+	Fw              string  `json:"fw"`
+	Path            string  `json:"path"`
+	PhysSerial      string  `json:"phys_serial"`
+	VsanTier        int     `json:"vsan_tier"`
+	VsanPath        string  `json:"vsan_path"`
+	VsanDriveID     int     `json:"vsan_driveid"`
+	LocateStatus    string  `json:"locate_status"`
+	VsanRepairing   int     `json:"vsan_repairing"`
+	VsanReadErrors  int     `json:"vsan_read_errors"`
+	VsanWriteErrors int     `json:"vsan_write_errors"`
+	Temp            float64 `json:"temp"`
+	Location        string  `json:"location"`
+	PhyHours        int     `json:"phy_hours"`
+	ReallocSectors  int     `json:"realloc_sectors"`
+	WearLevel       int     `json:"wear_level"`
+	PreferredTier   string  `json:"preferred_tier"`
+	Maintenance     bool    `json:"maintenance"`
+}
+
+// PhysicalStatus represents the physical status of a drive
+// It can be unmarshaled from either a struct or a number (ID reference)
+type PhysicalStatus struct {
+	Bus             string  `json:"bus"`
+	Model           string  `json:"model"`
+	DriveSize       int64   `json:"drive_size"`
+	Fw              string  `json:"fw"`
+	Path            string  `json:"path"`
+	Serial          string  `json:"phys_serial"`
+	VsanTier        int     `json:"vsan_tier"`
+	VsanPath        string  `json:"vsan_path"`
+	VsanDriveID     int     `json:"vsan_driveid"`
+	LocateStatus    string  `json:"locate_status"`
+	VsanRepairing   int     `json:"vsan_repairing"`
+	VsanReadErrors  int     `json:"vsan_read_errors"`
+	VsanWriteErrors int     `json:"vsan_write_errors"`
+	Temp            float64 `json:"temp"`
+	Location        string  `json:"location"`
+	Hours           int     `json:"hours"`
+	ReallocSectors  int     `json:"realloc_sectors"`
+	WearLevel       int     `json:"wear_level"`
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface
+// This allows handling both when physical_status is a struct and when it's a number
+func (ps *PhysicalStatus) UnmarshalJSON(data []byte) error {
+	// First try to unmarshal as a number (ID reference)
+	var id int
+	if err := json.Unmarshal(data, &id); err == nil {
+		// If it's a number, set default values that will allow processing
+		// Use tier 1 as a default to ensure drives aren't skipped
+		ps.VsanTier = 1
+		ps.VsanRepairing = 0
+		return nil
+	}
+
+	// If it's not a number, try to unmarshal as a struct
+	type PhysicalStatusAlias PhysicalStatus
+	var alias PhysicalStatusAlias
+	if err := json.Unmarshal(data, &alias); err != nil {
+		return err
+	}
+	*ps = PhysicalStatus(alias)
+	return nil
 }
