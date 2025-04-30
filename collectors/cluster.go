@@ -287,9 +287,9 @@ func (cc *ClusterCollector) Collect(ch chan<- prometheus.Metric) {
 		cc.clusterTargetRamPct.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.TargetRamPct))
 		cc.clusterTotalNodes.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.TotalNodes))
 		cc.clusterOnlineNodes.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.OnlineNodes))
-		cc.clusterOnlineRam.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.OnlineRam * 1024 * 1024 * 1024)) // Convert GB to bytes
+		cc.clusterOnlineRam.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.OnlineRam))
 		cc.clusterOnlineCores.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.OnlineCores))
-		cc.clusterPhysRamUsed.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.PhysRamUsed * 1024 * 1024 * 1024)) // Convert GB to bytes
+		cc.clusterPhysRamUsed.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.PhysRamUsed))
 		cc.clusterMachinesTotal.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.RunningMachines))
 		cc.clusterRAMTotal.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.TotalRam))
 		cc.clusterRAMUsed.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.UsedRam))
