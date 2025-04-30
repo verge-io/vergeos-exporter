@@ -21,15 +21,6 @@ type Node struct {
 	Cluster        int    `json:"cluster"`
 }
 
-// NodeStats represents node statistics
-type NodeStats struct {
-	TotalCPU      float64   `json:"total_cpu"`
-	RAM           int64     `json:"ram"`
-	CoreUsageList []float64 `json:"core_usagelist"`
-	CoreTemp      float64   `json:"core_temp"`
-	CoreTempTop   float64   `json:"core_temp_top"`
-}
-
 // NodeCollector collects metrics about VergeOS nodes
 type NodeCollector struct {
 	BaseCollector
@@ -181,13 +172,20 @@ func (nc *NodeCollector) Collect(ch chan<- prometheus.Metric) {
 			continue
 		}
 
-		var nodeStats struct {
+		// Define a struct to capture the relevant fields from the node detail response
+		var nodeData struct {
 			Machine struct {
-				Stats NodeStats `json:"stats"`
+				Stats struct {
+					CoreUsageList []float64 `json:"core_usage_list"`
+					CoreTemp      float64   `json:"core_temp"`
+					RAMUsed       int64     `json:"ram_used"`
+					RAMPct        float64   `json:"ram_pct"`
+				} `json:"stats"`
 			} `json:"machine"`
 			ClusterDisplay string `json:"cluster_display"`
 		}
-		if err := json.NewDecoder(resp.Body).Decode(&nodeStats); err != nil {
+		// Decode the response into the nodeData struct
+		if err := json.NewDecoder(resp.Body).Decode(&nodeData); err != nil {
 			fmt.Printf("Error decoding response for node %s: %v\n", node.Name, err)
 			resp.Body.Close()
 			continue
@@ -195,22 +193,23 @@ func (nc *NodeCollector) Collect(ch chan<- prometheus.Metric) {
 		resp.Body.Close()
 
 		// Set metrics
-		// Set per-core CPU usage
-		for i, usage := range nodeStats.Machine.Stats.CoreUsageList {
-			nc.nodeCPUUsage.WithLabelValues(nc.systemName, nodeStats.ClusterDisplay, node.Name, fmt.Sprintf("%d", i)).Set(usage)
+		// Set per-core CPU usage using the Stats field
+		for i, usage := range nodeData.Machine.Stats.CoreUsageList {
+			nc.nodeCPUUsage.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name, fmt.Sprintf("%d", i)).Set(usage)
 		}
-		// Set core temperature
-		if nodeStats.Machine.Stats.CoreTemp > 0 {
-			nc.nodeCoreTemp.WithLabelValues(nc.systemName, nodeStats.ClusterDisplay, node.Name).Set(nodeStats.Machine.Stats.CoreTemp)
+		// Set core temperature using the Stats field
+		if nodeData.Machine.Stats.CoreTemp > 0 {
+			nc.nodeCoreTemp.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name).Set(nodeData.Machine.Stats.CoreTemp)
 		}
 
 		// Set IPMI status with system_name and cluster labels
-		nc.nodeIPMIStatus.WithLabelValues(nc.systemName, nodeStats.ClusterDisplay, node.Name).Set(ipmiStatus)
-		nc.nodeRAMUsed.WithLabelValues(nc.systemName, nodeStats.ClusterDisplay, node.Name).Set(float64(nodeStats.Machine.Stats.RAM))
-		nc.nodeRAMPercent.WithLabelValues(nc.systemName, nodeStats.ClusterDisplay, node.Name).Set(nodeStats.Machine.Stats.TotalCPU)
+		nc.nodeIPMIStatus.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name).Set(ipmiStatus)
+		// Set RAM metrics using the Stats field
+		nc.nodeRAMUsed.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name).Set(float64(nodeData.Machine.Stats.RAMUsed))
+		nc.nodeRAMPercent.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name).Set(nodeData.Machine.Stats.RAMPct)
 
 		// Count nodes per cluster
-		clusterNodeCounts[nodeStats.ClusterDisplay]++
+		clusterNodeCounts[nodeData.ClusterDisplay]++
 	}
 
 	// Collect all metrics
