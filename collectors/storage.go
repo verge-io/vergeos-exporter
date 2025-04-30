@@ -53,14 +53,22 @@ type StorageCollector struct {
 	vsanCurSpaceThrottle *prometheus.GaugeVec
 	vsanNodesOnline      *prometheus.GaugeVec
 	vsanDrivesOnline     *prometheus.GaugeVec
-	vsanDriveStates      *prometheus.GaugeVec // New metric to track all drive states
+	// VSAN drive state metrics (per node)
+	vsanDriveOnline       *prometheus.GaugeVec
+	vsanDriveOffline      *prometheus.GaugeVec
+	vsanDriveRepairing    *prometheus.GaugeVec
+	vsanDriveInitializing *prometheus.GaugeVec
+	vsanDriveVerifying    *prometheus.GaugeVec
+	vsanDriveNoredundant  *prometheus.GaugeVec
+	vsanDriveOutofspace   *prometheus.GaugeVec
 }
 
 // NewStorageCollector creates a new StorageCollector
 func NewStorageCollector(url string, client *http.Client, username, password string) *StorageCollector {
 	driveLabels := []string{"system_name", "node_name", "drive_name", "tier", "serial"}
 	tierLabels := []string{"system_name", "tier", "description"}
-	driveStateLabels := []string{"system_name", "tier", "state"}
+	// New labels for drive state metrics, including node_name
+	driveStateLabels := []string{"system_name", "node_name", "tier"}
 
 	sc := &StorageCollector{
 		BaseCollector: BaseCollector{
@@ -194,9 +202,34 @@ func NewStorageCollector(url string, client *http.Client, username, password str
 			Name: "vergeos_vsan_drives_online",
 			Help: "Number of online drives in VSAN tier",
 		}, []string{"system_name", "tier", "status"}),
-		vsanDriveStates: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "vergeos_vsan_drive_states",
-			Help: "Number of drives in each state (online, offline, repairing, initializing, verifying, noredundant, outofspace)",
+		// Initialize new drive state metrics
+		vsanDriveOnline: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "vergeos_vsan_drive_online_count",
+			Help: "Number of drives in the 'online' state per node and tier",
+		}, driveStateLabels),
+		vsanDriveOffline: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "vergeos_vsan_drive_offline_count",
+			Help: "Number of drives in the 'offline' state per node and tier",
+		}, driveStateLabels),
+		vsanDriveRepairing: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "vergeos_vsan_drive_repairing_count",
+			Help: "Number of drives in the 'repairing' state per node and tier",
+		}, driveStateLabels),
+		vsanDriveInitializing: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "vergeos_vsan_drive_initializing_count",
+			Help: "Number of drives in the 'initializing' state per node and tier",
+		}, driveStateLabels),
+		vsanDriveVerifying: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "vergeos_vsan_drive_verifying_count",
+			Help: "Number of drives in the 'verifying' state per node and tier",
+		}, driveStateLabels),
+		vsanDriveNoredundant: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "vergeos_vsan_drive_noredundant_count",
+			Help: "Number of drives in the 'noredundant' state per node and tier",
+		}, driveStateLabels),
+		vsanDriveOutofspace: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "vergeos_vsan_drive_outofspace_count",
+			Help: "Number of drives in the 'outofspace' state per node and tier",
 		}, driveStateLabels),
 	}
 
@@ -243,7 +276,14 @@ func (sc *StorageCollector) Describe(ch chan<- *prometheus.Desc) {
 	sc.vsanCurSpaceThrottle.Describe(ch)
 	sc.vsanNodesOnline.Describe(ch)
 	sc.vsanDrivesOnline.Describe(ch)
-	sc.vsanDriveStates.Describe(ch)
+	// Describe new drive state metrics
+	sc.vsanDriveOnline.Describe(ch)
+	sc.vsanDriveOffline.Describe(ch)
+	sc.vsanDriveRepairing.Describe(ch)
+	sc.vsanDriveInitializing.Describe(ch)
+	sc.vsanDriveVerifying.Describe(ch)
+	sc.vsanDriveNoredundant.Describe(ch)
+	sc.vsanDriveOutofspace.Describe(ch)
 }
 
 // Collect implements prometheus.Collector
@@ -477,12 +517,20 @@ func (sc *StorageCollector) Collect(ch chan<- prometheus.Metric) {
 	sc.vsanCurSpaceThrottle.Collect(ch)
 	sc.vsanNodesOnline.Collect(ch)
 	sc.vsanDrivesOnline.Collect(ch)
-	sc.vsanDriveStates.Collect(ch)
+	// Collect new drive state metrics
+	sc.vsanDriveOnline.Collect(ch)
+	sc.vsanDriveOffline.Collect(ch)
+	sc.vsanDriveRepairing.Collect(ch)
+	sc.vsanDriveInitializing.Collect(ch)
+	sc.vsanDriveVerifying.Collect(ch)
+	sc.vsanDriveNoredundant.Collect(ch)
+	sc.vsanDriveOutofspace.Collect(ch)
 }
 
-// collectDriveStateMetrics collects metrics about drive states using the new API endpoint
+// collectDriveStateMetrics collects metrics about drive states using the new API endpoint.
+// It counts the number of drives in each state per node and tier.
 func (sc *StorageCollector) collectDriveStateMetrics(ch chan<- prometheus.Metric) {
-	// Use the new API endpoint to get drive information
+	// Use the new API endpoint to get drive information including node name
 	req, err := sc.makeRequest("GET", "/api/v4/machine_drives?fields=%24key%2C%20name%2C%20machine%23parent%23%24key%20as%20node%2C%20machine%23type%20as%20type%2C%20machine%23name%20as%20node_display%2C%20status%23status%20as%20statuslist%2C%20physical_status%2C%20physical_status%23vsan_tier%20as%20vsan_tier%2C%20physical_status%23vsan_repairing%20as%20vsan_repairing&filter=type%20eq%20%27node%27")
 	if err != nil {
 		fmt.Printf("Error creating request for machine drives: %v\n", err)
@@ -502,66 +550,91 @@ func (sc *StorageCollector) collectDriveStateMetrics(ch chan<- prometheus.Metric
 		return
 	}
 
-	// Initialize a map to count drives by tier and state
-	// Map structure: driveStates[tier][state] = count
-	driveStates := make(map[string]map[string]int)
+	// Reset metrics before setting new values to handle removed/changed drives/nodes/tiers
+	sc.vsanDriveOnline.Reset()
+	sc.vsanDriveOffline.Reset()
+	sc.vsanDriveRepairing.Reset()
+	sc.vsanDriveInitializing.Reset()
+	sc.vsanDriveVerifying.Reset()
+	sc.vsanDriveNoredundant.Reset()
+	sc.vsanDriveOutofspace.Reset()
 
-	// Define the expected states
-	expectedStates := []string{
-		"online",
-		"offline",
-		"repairing",
-		"initializing",
-		"verifying",
-		"noredundant",
-		"outofspace",
+	// Define a struct to use as a map key
+	type driveKey struct {
+		nodeName string
+		tier     string
 	}
 
-	// Process each drive
-	for _, drive := range drives {
-		// Use the VsanTier field directly
-		vsanTier := drive.VsanTier
+	// Maps to store counts for each state per node/tier
+	onlineCounts := make(map[driveKey]float64)
+	offlineCounts := make(map[driveKey]float64)
+	repairingCounts := make(map[driveKey]float64)
+	initializingCounts := make(map[driveKey]float64)
+	verifyingCounts := make(map[driveKey]float64)
+	noredundantCounts := make(map[driveKey]float64)
+	outofspaceCounts := make(map[driveKey]float64)
+	allKeys := make(map[driveKey]struct{}) // Keep track of all node/tier combinations
 
-		// Don't skip tier 0 drives - they are valid tiers
-		// Only skip if we can't determine the tier at all
-		if vsanTier < 0 {
+	// Process each drive and increment the appropriate counter
+	for _, drive := range drives {
+		// Skip drives not assigned to a VSAN tier
+		if drive.VsanTier < 0 {
 			continue
 		}
 
-		// Convert tier to string
-		tierStr := fmt.Sprintf("%d", vsanTier)
+		nodeName := drive.NodeDisplay // Use the fetched node name
+		tierStr := fmt.Sprintf("%d", drive.VsanTier)
+		key := driveKey{nodeName: nodeName, tier: tierStr}
+		allKeys[key] = struct{}{} // Record this node/tier combination
 
-		// Initialize the tier map if it doesn't exist
-		if _, exists := driveStates[tierStr]; !exists {
-			driveStates[tierStr] = make(map[string]int)
-			// Initialize all states to 0
-			for _, state := range expectedStates {
-				driveStates[tierStr][state] = 0
-			}
-		}
-
-		// Map the status to one of our expected states
+		// Determine the primary state
 		state := drive.StatusList
-
-		// Use the VsanRepairing field directly
-		if drive.VsanRepairing > 0 {
+		if drive.VsanRepairing > 0 { // Override if repairing
 			state = "repairing"
 		}
 
-		// Increment the count for this state if it's one of our expected states
-		if _, exists := driveStates[tierStr][state]; exists {
-			driveStates[tierStr][state]++
+		// Increment the counter for the determined state
+		switch state {
+		case "online":
+			onlineCounts[key]++
+		case "offline":
+			offlineCounts[key]++
+		case "repairing":
+			repairingCounts[key]++
+		case "initializing":
+			initializingCounts[key]++
+		case "verifying":
+			verifyingCounts[key]++
+		case "noredundant":
+			noredundantCounts[key]++
+		case "outofspace":
+			outofspaceCounts[key]++
 		}
 	}
 
-	// Set metrics for each tier and state
-	for tier, states := range driveStates {
-		for state, count := range states {
-			sc.vsanDriveStates.WithLabelValues(sc.systemName, tier, state).Set(float64(count))
+	// Ensure all states are set for every encountered node/tier combination
+	for key := range allKeys {
+		labels := prometheus.Labels{
+			"system_name": sc.systemName,
+			"node_name":   key.nodeName,
+			"tier":        key.tier,
 		}
+
+		// Set gauge for each state, defaulting to 0 if the key wasn't in the specific count map
+		sc.vsanDriveOnline.With(labels).Set(onlineCounts[key])
+		sc.vsanDriveOffline.With(labels).Set(offlineCounts[key])
+		sc.vsanDriveRepairing.With(labels).Set(repairingCounts[key])
+		sc.vsanDriveInitializing.With(labels).Set(initializingCounts[key])
+		sc.vsanDriveVerifying.With(labels).Set(verifyingCounts[key])
+		sc.vsanDriveNoredundant.With(labels).Set(noredundantCounts[key])
+		sc.vsanDriveOutofspace.With(labels).Set(outofspaceCounts[key])
 	}
+
+	// Note: The 'ch' parameter is not used here as metrics are collected
+	// in the main Collect method which calls this function.
 }
 
+// boolToFloat64 converts a boolean to 1.0 or 0.0 for Prometheus gauges.
 func boolToFloat64(b bool) float64 {
 	if b {
 		return 1.0
