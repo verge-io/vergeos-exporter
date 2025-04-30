@@ -8,6 +8,7 @@ A Prometheus exporter for VergeOS that collects metrics about VSAN tiers, cluste
   - Capacity, usage, and allocation statistics
   - Transaction and repair counts
   - Drive status, temperature, and health monitoring
+  - Comprehensive drive state monitoring (online, offline, repairing, initializing, verifying, noredundant, outofspace)
   - Node and drive availability tracking
   - Performance metrics (read/write operations, IOPS)
   - Storage pool utilization and redundancy status

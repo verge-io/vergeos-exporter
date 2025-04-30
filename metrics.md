@@ -74,6 +74,14 @@ All drive metrics include the following labels:
 - **VSAN Current Space Throttle (ms)**: `vergeos_vsan_cur_space_throttle_ms` (Gauge, labeled by `system_name`, `tier`, and `status`)
 - **VSAN Nodes Online**: `vergeos_vsan_nodes_online` (Gauge, labeled by `system_name`, `tier`, and `status`)
 - **VSAN Drives Online**: `vergeos_vsan_drives_online` (Gauge, labeled by `system_name`, `tier`, and `status`)
+- **VSAN Drive States**: `vergeos_vsan_drive_states` (Gauge, labeled by `system_name`, `tier`, and `state`, counts drives in each state: online, offline, repairing, initializing, verifying, noredundant, outofspace)
+### Recent Changes to Tier Information
+
+1. **Fixing Tier Information**: The recent changes address an issue where tier information was not accurately captured. This update ensures that the metric now correctly reflects the tier details associated with each drive.
+
+2. **New Implementation**: The updated implementation leverages the `/api/v4/machine_drives` endpoint to directly fetch accurate tier information. This change improves data reliability and reduces dependencies on previous, less precise methods.
+
+3. **Implementation Details**: The new approach involves parsing the response from the `/api/v4/machine_drives` endpoint to extract tier-specific data. This data is then used to label the `vergeos_vsan_drive_states` metric, ensuring that each drive's state is correctly associated with its tier.
 
 ---
 ## Cluster Overview

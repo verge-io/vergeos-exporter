@@ -53,12 +53,14 @@ type StorageCollector struct {
 	vsanCurSpaceThrottle *prometheus.GaugeVec
 	vsanNodesOnline      *prometheus.GaugeVec
 	vsanDrivesOnline     *prometheus.GaugeVec
+	vsanDriveStates      *prometheus.GaugeVec // New metric to track all drive states
 }
 
 // NewStorageCollector creates a new StorageCollector
 func NewStorageCollector(url string, client *http.Client, username, password string) *StorageCollector {
 	driveLabels := []string{"system_name", "node_name", "drive_name", "tier", "serial"}
 	tierLabels := []string{"system_name", "tier", "description"}
+	driveStateLabels := []string{"system_name", "tier", "state"}
 
 	sc := &StorageCollector{
 		BaseCollector: BaseCollector{
@@ -192,6 +194,10 @@ func NewStorageCollector(url string, client *http.Client, username, password str
 			Name: "vergeos_vsan_drives_online",
 			Help: "Number of online drives in VSAN tier",
 		}, []string{"system_name", "tier", "status"}),
+		vsanDriveStates: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "vergeos_vsan_drive_states",
+			Help: "Number of drives in each state (online, offline, repairing, initializing, verifying, noredundant, outofspace)",
+		}, driveStateLabels),
 	}
 
 	// Authenticate immediately
@@ -237,6 +243,7 @@ func (sc *StorageCollector) Describe(ch chan<- *prometheus.Desc) {
 	sc.vsanCurSpaceThrottle.Describe(ch)
 	sc.vsanNodesOnline.Describe(ch)
 	sc.vsanDrivesOnline.Describe(ch)
+	sc.vsanDriveStates.Describe(ch)
 }
 
 // Collect implements prometheus.Collector
@@ -364,6 +371,9 @@ func (sc *StorageCollector) Collect(ch chan<- prometheus.Metric) {
 		sc.vsanDrivesOnline.WithLabelValues(labels...).Set(float64(onlineDrives))
 	}
 
+	// Collect drive state metrics using the new API endpoint
+	sc.collectDriveStateMetrics(ch)
+
 	// Collect drive metrics
 	req, err = sc.makeRequest("GET", "/api/v4/nodes?filter=physical%20eq%20true")
 	if err != nil {
@@ -467,6 +477,89 @@ func (sc *StorageCollector) Collect(ch chan<- prometheus.Metric) {
 	sc.vsanCurSpaceThrottle.Collect(ch)
 	sc.vsanNodesOnline.Collect(ch)
 	sc.vsanDrivesOnline.Collect(ch)
+	sc.vsanDriveStates.Collect(ch)
+}
+
+// collectDriveStateMetrics collects metrics about drive states using the new API endpoint
+func (sc *StorageCollector) collectDriveStateMetrics(ch chan<- prometheus.Metric) {
+	// Use the new API endpoint to get drive information
+	req, err := sc.makeRequest("GET", "/api/v4/machine_drives?fields=%24key%2C%20name%2C%20machine%23parent%23%24key%20as%20node%2C%20machine%23type%20as%20type%2C%20machine%23name%20as%20node_display%2C%20status%23status%20as%20statuslist%2C%20physical_status%2C%20physical_status%23vsan_tier%20as%20vsan_tier%2C%20physical_status%23vsan_repairing%20as%20vsan_repairing&filter=type%20eq%20%27node%27")
+	if err != nil {
+		fmt.Printf("Error creating request for machine drives: %v\n", err)
+		return
+	}
+
+	resp, err := sc.httpClient.Do(req)
+	if err != nil {
+		fmt.Printf("Error executing request for machine drives: %v\n", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	var drives MachineDriveResponse
+	if err := json.NewDecoder(resp.Body).Decode(&drives); err != nil {
+		fmt.Printf("Error decoding machine drives response: %v\n", err)
+		return
+	}
+
+	// Initialize a map to count drives by tier and state
+	// Map structure: driveStates[tier][state] = count
+	driveStates := make(map[string]map[string]int)
+
+	// Define the expected states
+	expectedStates := []string{
+		"online",
+		"offline",
+		"repairing",
+		"initializing",
+		"verifying",
+		"noredundant",
+		"outofspace",
+	}
+
+	// Process each drive
+	for _, drive := range drives {
+		// Use the VsanTier field directly
+		vsanTier := drive.VsanTier
+
+		// Don't skip tier 0 drives - they are valid tiers
+		// Only skip if we can't determine the tier at all
+		if vsanTier < 0 {
+			continue
+		}
+
+		// Convert tier to string
+		tierStr := fmt.Sprintf("%d", vsanTier)
+
+		// Initialize the tier map if it doesn't exist
+		if _, exists := driveStates[tierStr]; !exists {
+			driveStates[tierStr] = make(map[string]int)
+			// Initialize all states to 0
+			for _, state := range expectedStates {
+				driveStates[tierStr][state] = 0
+			}
+		}
+
+		// Map the status to one of our expected states
+		state := drive.StatusList
+
+		// Use the VsanRepairing field directly
+		if drive.VsanRepairing > 0 {
+			state = "repairing"
+		}
+
+		// Increment the count for this state if it's one of our expected states
+		if _, exists := driveStates[tierStr][state]; exists {
+			driveStates[tierStr][state]++
+		}
+	}
+
+	// Set metrics for each tier and state
+	for tier, states := range driveStates {
+		for state, count := range states {
+			sc.vsanDriveStates.WithLabelValues(sc.systemName, tier, state).Set(float64(count))
+		}
+	}
 }
 
 func boolToFloat64(b bool) float64 {
