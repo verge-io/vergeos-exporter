@@ -106,3 +106,9 @@ All drive metrics include the following labels:
 - **Used Cores in Cluster**: `vergeos_cluster_used_cores` (Gauge, labeled by `system_name` and `cluster`)
 - **Physical RAM Used (MB)**: `vergeos_cluster_phys_ram_used` (Gauge, labeled by `system_name` and `cluster`)
 
+---
+## System Version Metrics
+- **System Version**: `vergeos_system_version` (Gauge, labeled by `system_name` and `version`, always 1)
+- **Latest Available System Version**: `vergeos_system_version_latest` (Gauge, labeled by `system_name` and `version`, always 1)
+- **System Branch**: `vergeos_system_branch` (Gauge, labeled by `system_name` and `branch`, always 1)
+- **System Info**: `vergeos_system_info` (Gauge, labeled by `system_name`, `current_version`, `latest_version`, and `branch`, always 1)
