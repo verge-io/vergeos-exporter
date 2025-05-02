@@ -1,8 +1,10 @@
 package collectors
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"sync"
 
@@ -255,6 +257,40 @@ func (cc *ClusterCollector) Collect(ch chan<- prometheus.Metric) {
 
 	// Get detailed information for each cluster
 	for _, cluster := range response {
+		// First get the physical RAM usage from the cluster_stats_history_short endpoint
+		// This is the only endpoint that provides the phys_ram_used field
+		statsURL := fmt.Sprintf("/api/v4/cluster_stats_history_short/%d?fields=all", cluster.Key)
+		req, err = cc.makeRequest("GET", statsURL)
+		if err != nil {
+			fmt.Printf("Error creating request for cluster stats: %v\n", err)
+		} else {
+			resp, err = cc.httpClient.Do(req)
+			if err != nil {
+				fmt.Printf("Error executing request for cluster stats: %v\n", err)
+			} else {
+				// Read the response body
+				statsBytes, err := io.ReadAll(resp.Body)
+				resp.Body.Close()
+				if err != nil {
+					fmt.Printf("Error reading cluster stats response body: %v\n", err)
+				} else {
+					// Parse the stats response
+					var statsResp struct {
+						Key         int   `json:"$key"`
+						Cluster     int   `json:"cluster"`
+						PhysRamUsed int64 `json:"phys_ram_used"`
+						Timestamp   int64 `json:"timestamp"`
+					}
+					if err := json.NewDecoder(bytes.NewReader(statsBytes)).Decode(&statsResp); err != nil {
+						fmt.Printf("Error decoding cluster stats response: %v\n", err)
+					} else {
+						cc.clusterPhysRamUsed.WithLabelValues(cc.systemName, cluster.Name).Set(float64(statsResp.PhysRamUsed))
+					}
+				}
+			}
+		}
+
+		// Now get the other cluster details from the regular endpoint
 		detailURL := fmt.Sprintf("/api/v4/clusters/%d?fields=dashboard", cluster.Key)
 		req, err = cc.makeRequest("GET", detailURL)
 		if err != nil {
@@ -289,7 +325,8 @@ func (cc *ClusterCollector) Collect(ch chan<- prometheus.Metric) {
 		cc.clusterOnlineNodes.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.OnlineNodes))
 		cc.clusterOnlineRam.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.OnlineRam))
 		cc.clusterOnlineCores.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.OnlineCores))
-		cc.clusterPhysRamUsed.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.PhysRamUsed))
+
+		// Note: We're no longer trying to get PhysRamUsed from the detail API since it's not present in that endpoint
 		cc.clusterMachinesTotal.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.RunningMachines))
 		cc.clusterRAMTotal.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.TotalRam))
 		cc.clusterRAMUsed.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.UsedRam))
