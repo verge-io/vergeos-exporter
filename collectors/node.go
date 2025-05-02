@@ -188,7 +188,7 @@ func (nc *NodeCollector) Collect(ch chan<- prometheus.Metric) {
 		var nodeData struct {
 			Machine struct {
 				Stats struct {
-					CoreUsageList []float64 `json:"core_usage_list"`
+					CoreUsageList []float64 `json:"core_usagelist"` // Changed from core_usage_list to core_usagelist
 					CoreTemp      float64   `json:"core_temp"`
 					RAMUsed       int64     `json:"ram_used"`
 					RAMPct        float64   `json:"ram_pct"`
@@ -198,6 +198,7 @@ func (nc *NodeCollector) Collect(ch chan<- prometheus.Metric) {
 			VMRAM          int64  `json:"vm_ram"`
 			RAM            int64  `json:"ram"`
 		}
+
 		// Decode the response into the nodeData struct
 		if err := json.NewDecoder(resp.Body).Decode(&nodeData); err != nil {
 			fmt.Printf("Error decoding response for node %s: %v\n", node.Name, err)
