@@ -27,7 +27,7 @@ type StorageCollector struct {
 	driveWriteErrors    *prometheus.CounterVec
 	driveRepairs        *prometheus.CounterVec
 	driveThrottle       *prometheus.GaugeVec
-	driveWearLevel      *prometheus.CounterVec
+	driveWearLevel      *prometheus.GaugeVec
 	drivePowerOnHours   *prometheus.CounterVec
 	driveReallocSectors *prometheus.CounterVec
 	driveTemperature    *prometheus.GaugeVec
@@ -112,7 +112,7 @@ func NewStorageCollector(url string, client *http.Client, username, password str
 			Name: "vergeos_drive_throttle",
 			Help: "Drive throttle percentage",
 		}, driveLabels),
-		driveWearLevel: prometheus.NewCounterVec(prometheus.CounterOpts{
+		driveWearLevel: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "vergeos_drive_wear_level",
 			Help: "Drive wear level",
 		}, driveLabels),
@@ -475,9 +475,11 @@ func (sc *StorageCollector) Collect(ch chan<- prometheus.Metric) {
 			sc.driveWriteErrors.WithLabelValues(labels...).Add(float64(drive.Stats.WriteErrors))
 			sc.driveRepairs.WithLabelValues(labels...).Add(float64(drive.Stats.Repairs))
 			sc.driveThrottle.WithLabelValues(labels...).Set(drive.Stats.Throttle)
-			sc.driveWearLevel.WithLabelValues(labels...).Add(float64(drive.Stats.WearLevel))
+			// Use the wear level from physical_status
+			sc.driveWearLevel.WithLabelValues(labels...).Set(float64(drive.PhysicalStatus.WearLevel))
 			sc.drivePowerOnHours.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.Hours))
-			sc.driveReallocSectors.WithLabelValues(labels...).Add(float64(drive.Stats.ReallocSectors))
+			// Use the reallocated sectors from physical_status instead of stats
+			sc.driveReallocSectors.WithLabelValues(labels...).Add(float64(drive.PhysicalStatus.ReallocSectors))
 			sc.driveTemperature.WithLabelValues(labels...).Set(drive.PhysicalStatus.Temp)
 			sc.driveServiceTime.WithLabelValues(labels...).Set(drive.Stats.ServiceTime)
 		}

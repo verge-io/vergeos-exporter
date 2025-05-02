@@ -10,13 +10,17 @@
 ### CPU Metrics
 - **CPU Usage per Core**: `vergeos_node_cpu_core_usage` (Gauge, labeled by `system_name`, `cluster`, `node_name`, and `core_id`)
 - **CPU Temperature**: `vergeos_node_core_temp` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
+- **Running Cores**: `vergeos_node_running_cores` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
 
+---
 ### Memory Metrics
 - **RAM Used (MB)**: `vergeos_node_ram_used` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
 - **RAM Usage Percentage**: `vergeos_node_ram_pct` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
 - **VM RAM (MB)**: `vergeos_node_ram_allocated` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
 - **Total RAM (MB)**: `vergeos_node_ram_total` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
+- **Running RAM (MB)**: `vergeos_node_running_ram` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
 
+---
 ### Storage Metrics
 - **Drive Read Operations**: `vergeos_drive_read_ops` (Counter, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
 - **Drive Write Operations**: `vergeos_drive_write_ops` (Counter, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
@@ -24,6 +28,7 @@
 - **Drive Write Bytes**: `vergeos_drive_write_bytes` (Counter, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
 - **Drive Utilization**: `vergeos_drive_util` (Gauge, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
 
+---
 ### Drive Health Metrics
 - **Drive Read Errors**: `vergeos_drive_read_errors` (Counter, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
 - **Drive Write Errors**: `vergeos_drive_write_errors` (Counter, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
@@ -43,6 +48,7 @@ All drive metrics include the following labels:
 - `tier`: VSAN tier number (0 or 1)
 - `serial`: Drive serial number
 
+---
 ## Network Metrics
 - **NIC Transmit Packets**: `vergeos_nic_tx_packets_total` (Counter, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
 - **NIC Receive Packets**: `vergeos_nic_rx_packets_total` (Counter, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
@@ -77,13 +83,6 @@ All drive metrics include the following labels:
 - **VSAN Nodes Online**: `vergeos_vsan_nodes_online` (Gauge, labeled by `system_name`, `tier`, and `status`)
 - **VSAN Drives Online**: `vergeos_vsan_drives_online` (Gauge, labeled by `system_name`, `tier`, and `status`)
 - **VSAN Drive States**: `vergeos_vsan_drive_states` (Gauge, labeled by `system_name`, `tier`, and `state`, counts drives in each state: online, offline, repairing, initializing, verifying, noredundant, outofspace)
-### Recent Changes to Tier Information
-
-1. **Fixing Tier Information**: The recent changes address an issue where tier information was not accurately captured. This update ensures that the metric now correctly reflects the tier details associated with each drive.
-
-2. **New Implementation**: The updated implementation leverages the `/api/v4/machine_drives` endpoint to directly fetch accurate tier information. This change improves data reliability and reduces dependencies on previous, less precise methods.
-
-3. **Implementation Details**: The new approach involves parsing the response from the `/api/v4/machine_drives` endpoint to extract tier-specific data. This data is then used to label the `vergeos_vsan_drive_states` metric, ensuring that each drive's state is correctly associated with its tier.
 
 ---
 ## Cluster Overview
