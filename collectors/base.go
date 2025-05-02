@@ -65,12 +65,11 @@ func (bc *BaseCollector) getSystemName() (string, error) {
 	}
 	defer resp.Body.Close()
 
-	// Read and log the response body
+	// Read the response body
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("error reading response body: %v", err)
 	}
-	fmt.Printf("Base collector settings API response: %s\n", string(bodyBytes))
 
 	// Create a new reader with the same bytes for JSON decoding
 	var systemNameResp []struct {
