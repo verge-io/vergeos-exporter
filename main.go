@@ -37,11 +37,13 @@ func main() {
 	storageCollector := collectors.NewStorageCollector(*vergeURL, httpClient, *vergeUsername, *vergePassword)
 	networkCollector := collectors.NewNetworkCollector(*vergeURL, httpClient, *vergeUsername, *vergePassword)
 	clusterCollector := collectors.NewClusterCollector(*vergeURL, httpClient, *vergeUsername, *vergePassword)
+	systemCollector := collectors.NewSystemCollector(*vergeURL, httpClient, *vergeUsername, *vergePassword)
 
 	prometheus.MustRegister(nodeCollector)
 	prometheus.MustRegister(storageCollector)
 	prometheus.MustRegister(networkCollector)
 	prometheus.MustRegister(clusterCollector)
+	prometheus.MustRegister(systemCollector)
 
 	http.Handle(*metricsPath, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

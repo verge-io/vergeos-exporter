@@ -29,6 +29,8 @@ A Prometheus exporter for VergeOS that collects metrics about VSAN tiers, cluste
 
 Prebuilt binaries for Linux, Windows, and macOS (both amd64 and arm64) are available on the [Releases](https://github.com/verge-io/vergeos-exporter/releases) page.
 
+Note that the version number is included in the filename (e.g., vergeos-exporter_1.1.6_Darwin_x86_64.tar.gz), so ensure you download the correct version for your system.
+
 1. Download the appropriate binary for your system
 2. Extract the archive:
    ```bash
