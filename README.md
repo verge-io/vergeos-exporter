@@ -61,7 +61,7 @@ go build -o vergeos-exporter
 
 - `-web.listen-address`: Address to listen on for web interface and telemetry (default: ":9888")
 - `-web.telemetry-path`: Path under which to expose metrics
-- `-verge.url`: VergeOS API URL (default: "http://localhost")
+- `-verge.url`: VergeOS API URL (default: "https://localhost")
 - `-verge.username`: VergeOS API username (required)
 - `-verge.password`: VergeOS API password (required)
 - `-scrape.timeout`: Timeout for scraping VergeOS API (default: 30s)
@@ -69,7 +69,7 @@ go build -o vergeos-exporter
 ### Example
 
 ```bash
-./vergeos-exporter -verge.url="http://VERGEURL" -verge.username="admin" -verge.password="password"
+./vergeos-exporter -verge.url="https://VERGEURL" -verge.username="admin" -verge.password="password"
 ```
 
 ## Metrics
@@ -168,7 +168,7 @@ copy vergeos-exporter.exe "C:\Program Files\vergeos-exporter"
 5. Install the service using NSSM (run Command Prompt as Administrator):
 ```batch
 nssm install VergeOSExporter "C:\Program Files\vergeos-exporter\vergeos-exporter.exe"
-nssm set VergeOSExporter AppParameters "-verge.url=http://VERGEURL -verge.username=admin -verge.password=PASSWORD"
+nssm set VergeOSExporter AppParameters "-verge.url=https://VERGEURL -verge.username=admin -verge.password=PASSWORD"
 nssm set VergeOSExporter DisplayName "VergeOS Exporter"
 nssm set VergeOSExporter Description "Prometheus exporter for VergeOS metrics"
 nssm set VergeOSExporter Start SERVICE_AUTO_START
