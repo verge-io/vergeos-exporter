@@ -72,6 +72,17 @@ go build -o vergeos-exporter
 ./vergeos-exporter -verge.url="https://VERGEURL" -verge.username="admin" -verge.password="password"
 ```
 
+### Permissions
+
+Either a Normal or an API user can be used for the connecting user. Connecting user is required to have sufficient rights to query needed stats. Only list and read permissions to the cloud are required. MFA should be disabled. For more information on VergeOS permissions, please visit [Permissions](https://docs.verge.io/product-guide/system/permissions/)
+
+### Connectivity
+
+After the exporter is running, you may verify basic connectity and metrics are being exported via the VergeOS exporter HTTP endpoint by either opening a web browser to the configured port or running a curl command such as:
+```bash
+curl -s http://localhost:9888/metrics
+```
+
 ## Metrics
 
 See [metrics.md](metrics.md) for a complete list of exported metrics.
