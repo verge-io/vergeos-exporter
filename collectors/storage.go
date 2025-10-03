@@ -130,7 +130,7 @@ func NewStorageCollector(url string, client *http.Client, username, password str
 		}, driveLabels),
 		driveServiceTime: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "vergeos_drive_service_time",
-			Help: "Drive service time in seconds",
+			Help: "Drive service time in milliseconds",
 		}, driveLabels),
 		vsanCapacity: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "vergeos_vsan_tier_capacity",
