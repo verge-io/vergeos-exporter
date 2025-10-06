@@ -38,7 +38,7 @@
 - **Drive Power On Hours**: `vergeos_drive_power_on_hours` (Counter, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
 - **Drive Reallocated Sectors**: `vergeos_drive_reallocated_sectors` (Counter, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
 - **Drive Temperature**: `vergeos_drive_temperature` (Gauge, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
-- **Drive Service Time**: `vergeos_drive_service_time` (Gauge, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`, in seconds)
+- **Drive Service Time**: `vergeos_drive_service_time` (Gauge, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`, in milliseconds)
 
 ### Drive Metrics
 All drive metrics include the following labels:
