@@ -206,6 +206,14 @@ nssm remove VergeOSExporter confirm
 
 The service will now start automatically when Windows boots. Logs can be found in the specified log directory.
 
+## Running with Docker Compose demo/example
+
+To quickly spin up and run the VergeOS Exporter, Prometheus, Grafana with a demo VergeOS dashboard. 
+
+1. See [Docker Compose VergeOS Exporter Prometheus & Grafana monitoring stack demo](https://github.com/verge-io/exporter-prom-grafana-demo).
+
+This self-contained stack will download and run the latest binary release for your architecture(x86_64/arm64). This will allow you to see VergeOSExport in action without an existing Prometheus or Grafana installation/configuration. Docker/Docker Compose required.
+
 ## Development
 
 ### Prerequisites
