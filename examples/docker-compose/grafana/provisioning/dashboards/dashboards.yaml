@@ -1,0 +1,11 @@
+apiVersion: 1
+providers:
+  - name: VergeOS
+    orgId: 1
+    folder: VergeOS
+    type: file
+    disableDeletion: false
+    allowUiUpdates: true
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/provisioning/dashboards

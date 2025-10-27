@@ -210,9 +210,8 @@ The service will now start automatically when Windows boots. Logs can be found i
 
 To quickly spin up and run the VergeOS Exporter, Prometheus, Grafana with a demo VergeOS dashboard. 
 
-1. See [Docker Compose VergeOS Exporter Prometheus & Grafana monitoring stack demo](https://github.com/verge-io/exporter-prom-grafana-demo).
-
-This self-contained stack will download and run the latest binary release for your architecture(x86_64/arm64). This will allow you to see VergeOSExport in action without an existing Prometheus or Grafana installation/configuration. Docker/Docker Compose required.
+1. You can find a ready-to-run example under ```examples/docker-compose```, along with a README describing setup and usage.
+This self-contained environment automatically retrieves the tagged binary release for your platform (x86_64 or arm64) and lets you explore VergeOS Exporter without a preconfigured Prometheus or Grafana instance. Docker and Docker Compose are prerequisites.
 
 ## Development
 
