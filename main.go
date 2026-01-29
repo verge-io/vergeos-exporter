@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"log"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	vergeos "github.com/verge-io/goVergeOS"
 
 	"vergeos-exporter/collectors"
 )
@@ -26,6 +28,36 @@ var (
 func main() {
 	flag.Parse()
 
+	// Validate required flags
+	if *vergeUsername == "" || *vergePassword == "" {
+		log.Fatal("verge.username and verge.password are required")
+	}
+
+	// Create SDK client for API operations
+	client, err := vergeos.NewClient(
+		vergeos.WithBaseURL(*vergeURL),
+		vergeos.WithCredentials(*vergeUsername, *vergePassword),
+		vergeos.WithInsecureTLS(*insecure),
+		vergeos.WithTimeout(*scrapeTimeout),
+	)
+	if err != nil {
+		log.Fatalf("Failed to create VergeOS client: %v", err)
+	}
+
+	// Validate credentials at startup (Bug #34: fail fast with clear error message)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cloudName, err := client.Settings.GetCloudName(ctx)
+	if err != nil {
+		if vergeos.IsAuthError(err) {
+			log.Fatalf("Authentication failed: check username/password for %s", *vergeURL)
+		}
+		log.Fatalf("Failed to connect to VergeOS API at %s: %v", *vergeURL, err)
+	}
+	log.Printf("Successfully connected to VergeOS system: %s", cloudName)
+
+	// Create HTTP client for collectors (legacy - will be replaced with SDK client in later phases)
 	httpClient := &http.Client{
 		Timeout: *scrapeTimeout,
 		Transport: &http.Transport{
@@ -33,6 +65,7 @@ func main() {
 		},
 	}
 
+	// Initialize collectors (will be migrated to use SDK client in later phases)
 	nodeCollector := collectors.NewNodeCollector(*vergeURL, httpClient, *vergeUsername, *vergePassword)
 	storageCollector := collectors.NewStorageCollector(*vergeURL, httpClient, *vergeUsername, *vergePassword)
 	networkCollector := collectors.NewNetworkCollector(*vergeURL, httpClient, *vergeUsername, *vergePassword)
