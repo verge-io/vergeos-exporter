@@ -1,87 +1,57 @@
 package collectors
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"sync"
+
+	vergeos "github.com/verge-io/goVergeOS"
 )
 
 // BaseCollector provides common functionality for all collectors
 type BaseCollector struct {
-	url        string
-	httpClient *http.Client
-	username   string
-	password   string
-	mutex      sync.Mutex
+	// SDK client for API operations
+	client *vergeos.Client
+
+	// Cached system name
+	systemName string
+
+	mutex sync.Mutex
 }
 
-// AuthResponse represents the API response for authentication
-type AuthResponse struct {
-	Location string `json:"location"`
-	DBPath   string `json:"dbpath"`
-	Row      int    `json:"$row"`
-	Key      string `json:"$key"`
+// NewBaseCollector creates a new BaseCollector with SDK client
+func NewBaseCollector(client *vergeos.Client) *BaseCollector {
+	return &BaseCollector{
+		client: client,
+	}
 }
 
-// makeRequest creates an HTTP request with proper authentication
-func (bc *BaseCollector) makeRequest(method, path string) (*http.Request, error) {
+// Client returns the SDK client for direct access by collectors
+func (bc *BaseCollector) Client() *vergeos.Client {
+	return bc.client
+}
+
+// GetSystemName retrieves the system name using the SDK with caching
+// This method provides typed error handling for auth/permission issues (Bug #34)
+func (bc *BaseCollector) GetSystemName(ctx context.Context) (string, error) {
 	bc.mutex.Lock()
 	defer bc.mutex.Unlock()
 
-	req, err := http.NewRequest(method, bc.url+path, nil)
+	// Return cached value if available
+	if bc.systemName != "" {
+		return bc.systemName, nil
+	}
+
+	// Fetch using SDK
+	name, err := bc.client.Settings.GetCloudName(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("error creating request: %v", err)
+		// Provide typed error handling for better debugging
+		if vergeos.IsAuthError(err) {
+			return "", fmt.Errorf("authentication failed (check credentials): %w", err)
+		}
+		return "", fmt.Errorf("failed to get system name: %w", err)
 	}
 
-	// Use basic auth for all requests
-	req.SetBasicAuth(bc.username, bc.password)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-JSON-Non-Compact", "1")
-
-	return req, nil
-}
-
-// authenticate is no longer needed since we use basic auth
-func (bc *BaseCollector) authenticate(username, password string) error {
-	bc.username = username
-	bc.password = password
-	return nil
-}
-
-// getSystemName retrieves the system name from the settings API
-func (bc *BaseCollector) getSystemName() (string, error) {
-	// Get system name
-	req, err := bc.makeRequest("GET", "/api/v4/settings?fields=most&filter=key%20eq%20%22cloud_name%22")
-	if err != nil {
-		return "", fmt.Errorf("error creating system name request: %v", err)
-	}
-
-	resp, err := bc.httpClient.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("error getting system name: %v", err)
-	}
-	defer resp.Body.Close()
-
-	// Read the response body
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("error reading response body: %v", err)
-	}
-
-	// Create a new reader with the same bytes for JSON decoding
-	var systemNameResp []struct {
-		Value string `json:"value"`
-	}
-	if err := json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&systemNameResp); err != nil {
-		return "", fmt.Errorf("error decoding system name response: %v", err)
-	}
-
-	if len(systemNameResp) == 0 {
-		return "", fmt.Errorf("no system name found in response")
-	}
-
-	return systemNameResp[0].Value, nil
+	bc.systemName = name
+	return name, nil
 }

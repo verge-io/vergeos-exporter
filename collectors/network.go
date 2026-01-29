@@ -1,18 +1,26 @@
 package collectors
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
+	vergeos "github.com/verge-io/goVergeOS"
 )
 
 // NetworkCollector collects metrics about network interfaces
 type NetworkCollector struct {
 	BaseCollector
 	mutex sync.Mutex
+
+	// Temporary HTTP client until this collector is migrated to SDK (Phase 6)
+	httpClient *http.Client
+	url        string
+	username   string
+	password   string
 
 	// System info
 	systemName string
@@ -42,13 +50,21 @@ type NetworkInterface struct {
 }
 
 // NewNetworkCollector creates a new NetworkCollector
-func NewNetworkCollector(url string, client *http.Client, username, password string) *NetworkCollector {
-	nc := &NetworkCollector{
-		BaseCollector: BaseCollector{
-			url:        url,
-			httpClient: client,
+func NewNetworkCollector(client *vergeos.Client, url, username, password string) *NetworkCollector {
+	// Create temporary HTTP client for legacy operations (will be removed in Phase 6)
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
-		systemName: "unknown", // Will be updated in Collect
+	}
+
+	nc := &NetworkCollector{
+		BaseCollector: *NewBaseCollector(client),
+		httpClient:    httpClient,
+		url:           url,
+		username:      username,
+		password:      password,
+		systemName:    "unknown", // Will be updated in Collect
 		nicTxPackets: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "vergeos_nic_tx_packets_total",
@@ -100,12 +116,22 @@ func NewNetworkCollector(url string, client *http.Client, username, password str
 		),
 	}
 
-	// Authenticate with the API
-	if err := nc.authenticate(username, password); err != nil {
-		fmt.Printf("Error authenticating with VergeOS API: %v\n", err)
+	return nc
+}
+
+// makeRequest creates an HTTP request with proper authentication
+// TODO: Remove after Phase 6 migration to SDK
+func (nc *NetworkCollector) makeRequest(method, path string) (*http.Request, error) {
+	req, err := http.NewRequest(method, nc.url+path, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %v", err)
 	}
 
-	return nc
+	req.SetBasicAuth(nc.username, nc.password)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-JSON-Non-Compact", "1")
+
+	return req, nil
 }
 
 // Describe implements prometheus.Collector

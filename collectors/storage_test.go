@@ -9,7 +9,18 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
+	vergeos "github.com/verge-io/goVergeOS"
 )
+
+// createTestSDKClient creates an SDK client configured for testing with the mock server
+func createTestSDKClient(mockServerURL string) *vergeos.Client {
+	client, _ := vergeos.NewClient(
+		vergeos.WithBaseURL(mockServerURL),
+		vergeos.WithCredentials("testuser", "testpass"),
+		vergeos.WithInsecureTLS(true),
+	)
+	return client
+}
 
 func TestDriveStateMonitoring(t *testing.T) {
 	// Create a mock server to simulate the VergeOS API
@@ -612,7 +623,8 @@ func TestDriveStateMonitoring(t *testing.T) {
 	registry := prometheus.NewRegistry()
 
 	// Create a storage collector with the mock server
-	sc := NewStorageCollector(mockServer.URL, mockServer.Client(), "testuser", "testpass")
+	sdkClient := createTestSDKClient(mockServer.URL)
+	sc := NewStorageCollector(sdkClient, mockServer.URL, "testuser", "testpass")
 	registry.MustRegister(sc)
 
 	// Define expected metrics for both tiers
@@ -925,7 +937,8 @@ func TestDriveStateEdgeCases(t *testing.T) {
 	registry := prometheus.NewRegistry()
 
 	// Create a storage collector with the mock server
-	sc := NewStorageCollector(mockServer.URL, mockServer.Client(), "testuser", "testpass")
+	sdkClient := createTestSDKClient(mockServer.URL)
+	sc := NewStorageCollector(sdkClient, mockServer.URL, "testuser", "testpass")
 	registry.MustRegister(sc)
 
 	// Define expected metrics for both tiers

@@ -1,12 +1,14 @@
 package collectors
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
+	vergeos "github.com/verge-io/goVergeOS"
 )
 
 // UpdatePackage represents a package in the update_dashboard response
@@ -34,6 +36,12 @@ type SystemCollector struct {
 	BaseCollector
 	mutex sync.Mutex
 
+	// Temporary HTTP client until this collector is migrated to SDK (Phase 7)
+	httpClient *http.Client
+	url        string
+	username   string
+	password   string
+
 	// System info
 	systemName string
 
@@ -45,13 +53,21 @@ type SystemCollector struct {
 }
 
 // NewSystemCollector creates a new SystemCollector
-func NewSystemCollector(url string, client *http.Client, username, password string) *SystemCollector {
-	sc := &SystemCollector{
-		BaseCollector: BaseCollector{
-			url:        url,
-			httpClient: client,
+func NewSystemCollector(client *vergeos.Client, url, username, password string) *SystemCollector {
+	// Create temporary HTTP client for legacy operations (will be removed in Phase 7)
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
-		systemName: "unknown", // Will be updated in Collect
+	}
+
+	sc := &SystemCollector{
+		BaseCollector: *NewBaseCollector(client),
+		httpClient:    httpClient,
+		url:           url,
+		username:      username,
+		password:      password,
+		systemName:    "unknown", // Will be updated in Collect
 		systemVersion: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "vergeos_system_version",
 			Help: "Current version of the VergeOS system (always 1, version in label)",
@@ -70,12 +86,50 @@ func NewSystemCollector(url string, client *http.Client, username, password stri
 		}, []string{"system_name", "current_version", "latest_version", "branch"}),
 	}
 
-	// Authenticate with the API
-	if err := sc.authenticate(username, password); err != nil {
-		fmt.Printf("Error authenticating with VergeOS API: %v\n", err)
+	return sc
+}
+
+// makeRequest creates an HTTP request with proper authentication
+// TODO: Remove after Phase 7 migration to SDK
+func (sc *SystemCollector) makeRequest(method, path string) (*http.Request, error) {
+	req, err := http.NewRequest(method, sc.url+path, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %v", err)
 	}
 
-	return sc
+	req.SetBasicAuth(sc.username, sc.password)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-JSON-Non-Compact", "1")
+
+	return req, nil
+}
+
+// getSystemName retrieves the system name from the settings API
+// TODO: Remove after Phase 7 migration to SDK (use BaseCollector.GetSystemName instead)
+func (sc *SystemCollector) getSystemName() (string, error) {
+	req, err := sc.makeRequest("GET", "/api/v4/settings?fields=most&filter=key%20eq%20%22cloud_name%22")
+	if err != nil {
+		return "", fmt.Errorf("error creating system name request: %v", err)
+	}
+
+	resp, err := sc.httpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("error getting system name: %v", err)
+	}
+	defer resp.Body.Close()
+
+	var systemNameResp []struct {
+		Value string `json:"value"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&systemNameResp); err != nil {
+		return "", fmt.Errorf("error decoding system name response: %v", err)
+	}
+
+	if len(systemNameResp) == 0 {
+		return "", fmt.Errorf("no system name found in response")
+	}
+
+	return systemNameResp[0].Value, nil
 }
 
 // Describe implements prometheus.Collector
