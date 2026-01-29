@@ -11,6 +11,13 @@ import (
 	vergeos "github.com/verge-io/goVergeOS"
 )
 
+// nodeBasic is a minimal node type for JSON unmarshaling (used until Phase 6 migration)
+type nodeBasic struct {
+	Name    string `json:"name"`
+	ID      int    `json:"id"`
+	Cluster int    `json:"cluster"`
+}
+
 // NetworkCollector collects metrics about network interfaces
 type NetworkCollector struct {
 	BaseCollector
@@ -194,7 +201,7 @@ func (nc *NetworkCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 	defer resp.Body.Close()
 
-	var nodes []Node
+	var nodes []nodeBasic
 	if err := json.NewDecoder(resp.Body).Decode(&nodes); err != nil {
 		fmt.Printf("Error decoding response: %v\n", err)
 		return
