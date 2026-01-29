@@ -1,63 +1,34 @@
-package collectors
+package tests
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"vergeos-exporter/collectors"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	dto "github.com/prometheus/client_model/go"
-	vergeos "github.com/verge-io/goVergeOS"
 )
 
 func TestSystemCollector(t *testing.T) {
-	// Create mock server
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		switch {
-		case strings.Contains(r.URL.Path, "/settings") && strings.Contains(r.URL.RawQuery, "cloud_name"):
-			// Settings API response for GetCloudName
-			json.NewEncoder(w).Encode([]map[string]string{
-				{"key": "cloud_name", "value": "testcloud"},
-			})
-
-		case strings.HasSuffix(r.URL.Path, "/version.json"):
-			// System version info (SDK's System.GetInfo() endpoint)
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"name":    "v4",
-				"version": "26.0.2.1",
-				"hash":    "abc123def456",
-			})
-
-		default:
-			t.Logf("Unhandled request: %s %s", r.Method, r.URL.String())
-			http.Error(w, "not found", http.StatusNotFound)
-		}
-	}))
-	defer mockServer.Close()
-
-	// Create SDK client pointing to mock server
-	client, err := vergeos.NewClient(
-		vergeos.WithBaseURL(mockServer.URL),
-		vergeos.WithCredentials("test", "test"),
-		vergeos.WithInsecureTLS(true),
-	)
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
+	config := MockServerConfig{
+		CloudName: "testcloud",
+		Version:   "26.0.2.1",
+		Hash:      "abc123def456",
 	}
 
-	// Create collector
-	collector := NewSystemCollector(client)
+	mockServer := NewBaseMockServer(t, config, nil)
+	defer mockServer.Close()
 
-	// Create a new registry and register the collector
+	client := CreateTestSDKClient(t, mockServer.URL)
+	collector := collectors.NewSystemCollector(client)
+
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
 
-	// Collect metrics
 	metrics, err := registry.Gather()
 	if err != nil {
 		t.Fatalf("Failed to gather metrics: %v", err)
@@ -112,35 +83,30 @@ func TestSystemCollector_StaleMetrics(t *testing.T) {
 	currentVersion := "26.0.2.1"
 	currentHash := "abc123"
 
+	// Create a custom mock server to allow dynamic version changes
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
-		case strings.Contains(r.URL.Path, "/settings"):
-			json.NewEncoder(w).Encode([]map[string]string{
-				{"key": "cloud_name", "value": "testcloud"},
-			})
-
-		case strings.HasSuffix(r.URL.Path, "/version.json"):
-			json.NewEncoder(w).Encode(map[string]interface{}{
+		case IsVersionCheck(r):
+			WriteJSONResponse(w, map[string]interface{}{
 				"name":    "v4",
 				"version": currentVersion,
 				"hash":    currentHash,
 			})
-
+		case IsSettingsRequest(r):
+			WriteJSONResponse(w, []map[string]string{
+				{"key": "cloud_name", "value": "testcloud"},
+			})
 		default:
 			http.Error(w, "not found", http.StatusNotFound)
 		}
 	}))
 	defer mockServer.Close()
 
-	client, _ := vergeos.NewClient(
-		vergeos.WithBaseURL(mockServer.URL),
-		vergeos.WithCredentials("test", "test"),
-		vergeos.WithInsecureTLS(true),
-	)
+	client := CreateTestSDKClient(t, mockServer.URL)
+	collector := collectors.NewSystemCollector(client)
 
-	collector := NewSystemCollector(client)
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
 
@@ -193,39 +159,17 @@ func TestSystemCollector_StaleMetrics(t *testing.T) {
 
 func TestSystemCollector_DifferentVersion(t *testing.T) {
 	// Test with a different version format
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		switch {
-		case strings.Contains(r.URL.Path, "/settings") && strings.Contains(r.URL.RawQuery, "cloud_name"):
-			json.NewEncoder(w).Encode([]map[string]string{
-				{"key": "cloud_name", "value": "production-cloud"},
-			})
-
-		case strings.HasSuffix(r.URL.Path, "/version.json"):
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"name":    "v4",
-				"version": "26.1.0.0",
-				"hash":    "xyz789abc123def456",
-			})
-
-		default:
-			t.Logf("Unhandled request: %s %s", r.Method, r.URL.String())
-			http.Error(w, "not found", http.StatusNotFound)
-		}
-	}))
-	defer mockServer.Close()
-
-	client, err := vergeos.NewClient(
-		vergeos.WithBaseURL(mockServer.URL),
-		vergeos.WithCredentials("test", "test"),
-		vergeos.WithInsecureTLS(true),
-	)
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
+	config := MockServerConfig{
+		CloudName: "production-cloud",
+		Version:   "26.1.0.0",
+		Hash:      "xyz789abc123def456",
 	}
 
-	collector := NewSystemCollector(client)
+	mockServer := NewBaseMockServer(t, config, nil)
+	defer mockServer.Close()
+
+	client := CreateTestSDKClient(t, mockServer.URL)
+	collector := collectors.NewSystemCollector(client)
 
 	t.Run("different_system_name", func(t *testing.T) {
 		expected := `
