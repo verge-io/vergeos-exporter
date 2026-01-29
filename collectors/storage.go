@@ -1,9 +1,11 @@
 package collectors
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 
@@ -16,7 +18,8 @@ type StorageCollector struct {
 	BaseCollector
 	mutex sync.Mutex
 
-	// Temporary HTTP client until this collector is migrated to SDK (Phase 3)
+	// Temporary HTTP client for drive metrics until Phase 3b migration
+	// Storage tiers now use SDK (Phase 3a complete)
 	httpClient *http.Client
 	url        string
 	username   string
@@ -59,8 +62,9 @@ type StorageCollector struct {
 	vsanFullwalkStatus   *prometheus.GaugeVec
 	vsanFullwalkProgress *prometheus.GaugeVec
 	vsanCurSpaceThrottle *prometheus.GaugeVec
-	vsanNodesOnline      *prometheus.GaugeVec
-	vsanDrivesOnline     *prometheus.GaugeVec
+	// Note: vsanNodesOnline and vsanDrivesOnline removed - SDK doesn't provide nodes_online/drives_online fields
+	// See .claude/GAPS.md for details. Use drive state metrics for detailed counts.
+
 	// VSAN drive state metrics (per node)
 	vsanDriveOnline       *prometheus.GaugeVec
 	vsanDriveOffline      *prometheus.GaugeVec
@@ -72,8 +76,9 @@ type StorageCollector struct {
 }
 
 // NewStorageCollector creates a new StorageCollector
+// Note: url, username, password are temporary until Phase 3b migrates drive metrics to SDK
 func NewStorageCollector(client *vergeos.Client, url, username, password string) *StorageCollector {
-	// Create temporary HTTP client for legacy operations (will be removed in Phase 3)
+	// Create temporary HTTP client for drive metrics (will be removed in Phase 3b)
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -210,14 +215,8 @@ func NewStorageCollector(client *vergeos.Client, url, username, password string)
 			Name: "vergeos_vsan_cur_space_throttle_ms",
 			Help: "Current space throttle in milliseconds",
 		}, []string{"system_name", "tier", "status"}),
-		vsanNodesOnline: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "vergeos_vsan_nodes_online",
-			Help: "Number of online nodes in VSAN tier",
-		}, []string{"system_name", "tier", "status"}),
-		vsanDrivesOnline: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "vergeos_vsan_drives_online",
-			Help: "Number of online drives in VSAN tier",
-		}, []string{"system_name", "tier", "status"}),
+		// Note: vsanNodesOnline and vsanDrivesOnline removed - SDK gap (see .claude/GAPS.md)
+
 		// Initialize new drive state metrics
 		vsanDriveOnline: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "vergeos_vsan_drive_online_count",
@@ -253,7 +252,7 @@ func NewStorageCollector(client *vergeos.Client, url, username, password string)
 }
 
 // makeRequest creates an HTTP request with proper authentication
-// TODO: Remove after Phase 3 migration to SDK
+// TODO: Remove after Phase 3b migration of drive metrics to SDK
 func (sc *StorageCollector) makeRequest(method, path string) (*http.Request, error) {
 	req, err := http.NewRequest(method, sc.url+path, nil)
 	if err != nil {
@@ -300,8 +299,8 @@ func (sc *StorageCollector) Describe(ch chan<- *prometheus.Desc) {
 	sc.vsanFullwalkStatus.Describe(ch)
 	sc.vsanFullwalkProgress.Describe(ch)
 	sc.vsanCurSpaceThrottle.Describe(ch)
-	sc.vsanNodesOnline.Describe(ch)
-	sc.vsanDrivesOnline.Describe(ch)
+	// Note: vsanNodesOnline and vsanDrivesOnline removed - SDK gap
+
 	// Describe new drive state metrics
 	sc.vsanDriveOnline.Describe(ch)
 	sc.vsanDriveOffline.Describe(ch)
@@ -317,93 +316,61 @@ func (sc *StorageCollector) Collect(ch chan<- prometheus.Metric) {
 	sc.mutex.Lock()
 	defer sc.mutex.Unlock()
 
-	// Get settings to determine system name
-	req, err := sc.makeRequest("GET", "/api/v4/settings")
+	ctx := context.Background()
+
+	// Get system name using SDK (via BaseCollector)
+	systemName, err := sc.GetSystemName(ctx)
 	if err != nil {
-		fmt.Printf("Error creating request for settings: %v\n", err)
+		log.Printf("Error getting system name: %v", err)
 		return
 	}
+	sc.systemName = systemName
 
-	resp, err := sc.httpClient.Do(req)
+	// Collect VSAN tier metrics using SDK
+	storageTiers, err := sc.Client().StorageTiers.List(ctx)
 	if err != nil {
-		fmt.Printf("Error executing request for settings: %v\n", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	var settings []Setting
-	if err := json.NewDecoder(resp.Body).Decode(&settings); err != nil {
-		fmt.Printf("Error decoding settings response: %v\n", err)
+		log.Printf("Error fetching storage tiers: %v", err)
 		return
 	}
 
-	// Find cloud_name setting
-	for _, setting := range settings {
-		if setting.Key == "cloud_name" {
-			sc.systemName = setting.Value
-			break
-		}
-	}
+	// Build validTiers set for Bug #27 (phantom tiers fix)
+	// Only tiers returned by storage_tiers API are valid
+	validTiers := make(map[int]bool)
+	for _, tier := range storageTiers {
+		validTiers[tier.Tier] = true
 
-	if sc.systemName == "" {
-		fmt.Printf("No system name found in response\n")
-		return
-	}
-
-	// Collect VSAN tier metrics
-	req, err = sc.makeRequest("GET", "/api/v4/storage_tiers?fields=most")
-	if err != nil {
-		fmt.Printf("Error creating request: %v\n", err)
-		return
-	}
-
-	resp, err = sc.httpClient.Do(req)
-	if err != nil {
-		fmt.Printf("Error executing request: %v\n", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	var response VSANResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		fmt.Printf("Error decoding VSAN response: %v\n", err)
-		return
-	}
-
-	for _, tier := range response {
 		tierStr := fmt.Sprintf("%d", tier.Tier)
 		sc.vsanCapacity.WithLabelValues(sc.systemName, tierStr, tier.Description).Set(float64(tier.Capacity))
 		sc.vsanUsed.WithLabelValues(sc.systemName, tierStr, tier.Description).Set(float64(tier.Used))
 		sc.vsanAllocated.WithLabelValues(sc.systemName, tierStr, tier.Description).Set(float64(tier.Allocated))
-		sc.vsanDedupeRatio.WithLabelValues(sc.systemName, tierStr, tier.Description).Set(tier.DedupeRatio)
+		// SDK DedupeRatio is uint32 (multiply by 0.01 for ratio), convert to float
+		sc.vsanDedupeRatio.WithLabelValues(sc.systemName, tierStr, tier.Description).Set(float64(tier.DedupeRatio) / 100.0)
 	}
 
-	// Get VSAN tier details
-	req, err = sc.makeRequest("GET", "/api/v4/cluster_tiers?fields=all")
+	// Get VSAN tier details using SDK
+	clusterTiers, err := sc.Client().ClusterTiers.List(ctx)
 	if err != nil {
-		fmt.Printf("Error creating request for VSAN tier details: %v\n", err)
-		return
-	}
-
-	resp, err = sc.httpClient.Do(req)
-	if err != nil {
-		fmt.Printf("Error executing request for VSAN tier details: %v\n", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	var tierDetails ClusterTierResponse
-	if err := json.NewDecoder(resp.Body).Decode(&tierDetails); err != nil {
-		fmt.Printf("Error decoding VSAN tier status response: %v\n", err)
+		log.Printf("Error fetching cluster tiers: %v", err)
 		return
 	}
 
 	// Process tier details
-	for _, tier := range tierDetails {
+	for _, tier := range clusterTiers {
+		// Bug #27: Skip phantom tiers not in validTiers
+		if !validTiers[tier.Tier] {
+			log.Printf("Skipping phantom tier %d (not configured in storage_tiers)", tier.Tier)
+			continue
+		}
+
+		// Skip tiers without status
+		if tier.Status == nil {
+			continue
+		}
+
 		labels := []string{
 			sc.systemName,
-			fmt.Sprintf("%d", tier.Status.Tier),
-			tier.Status.StatusDisplay,
+			fmt.Sprintf("%d", tier.Tier),
+			tier.Status.Status, // SDK uses Status field (not StatusDisplay)
 		}
 
 		// Update counters
@@ -412,74 +379,61 @@ func (sc *StorageCollector) Collect(ch chan<- prometheus.Metric) {
 		// Update gauges
 		sc.vsanTierRepairs.WithLabelValues(labels...).Set(float64(tier.Status.Repairs))
 		sc.vsanTierState.WithLabelValues(labels...).Set(boolToFloat64(tier.Status.Working))
-		sc.vsanBadDrives.WithLabelValues(labels...).Set(float64(tier.Status.BadDrives))
+		sc.vsanBadDrives.WithLabelValues(labels...).Set(tier.Status.BadDrives)
 		sc.vsanEncryptionStatus.WithLabelValues(labels...).Set(boolToFloat64(tier.Status.Encrypted))
 		sc.vsanRedundant.WithLabelValues(labels...).Set(boolToFloat64(tier.Status.Redundant))
 		sc.vsanLastWalkTime.WithLabelValues(labels...).Set(float64(tier.Status.LastWalkTimeMs))
 		sc.vsanLastFullwalkTime.WithLabelValues(labels...).Set(float64(tier.Status.LastFullwalkTimeMs))
 		sc.vsanFullwalkStatus.WithLabelValues(labels...).Set(boolToFloat64(tier.Status.Fullwalk))
-		sc.vsanFullwalkProgress.WithLabelValues(labels...).Set(float64(tier.Status.Progress))
-		sc.vsanCurSpaceThrottle.WithLabelValues(labels...).Set(float64(tier.Status.CurSpaceThrottleMs))
+		sc.vsanFullwalkProgress.WithLabelValues(labels...).Set(tier.Status.Progress)
+		sc.vsanCurSpaceThrottle.WithLabelValues(labels...).Set(tier.Status.CurSpaceThrottleMs)
 
-		// Count online nodes and drives
-		var onlineNodes, onlineDrives int
-		for _, node := range tier.NodesOnline.Nodes {
-			if node.State == "online" {
-				onlineNodes++
-			}
-		}
-		for _, drive := range tier.DrivesOnline {
-			if drive.State == "online" {
-				onlineDrives++
-			}
-		}
-		sc.vsanNodesOnline.WithLabelValues(labels...).Set(float64(onlineNodes))
-		sc.vsanDrivesOnline.WithLabelValues(labels...).Set(float64(onlineDrives))
+		// Note: vsanNodesOnline and vsanDrivesOnline removed - SDK gap (see .claude/GAPS.md)
 	}
 
 	// Collect drive state metrics using the new API endpoint
 	sc.collectDriveStateMetrics(ch)
 
-	// Collect drive metrics
-	req, err = sc.makeRequest("GET", "/api/v4/nodes?filter=physical%20eq%20true")
+	// Collect drive metrics (TODO: Migrate to SDK in Phase 3b)
+	req, err := sc.makeRequest("GET", "/api/v4/nodes?filter=physical%20eq%20true")
 	if err != nil {
-		fmt.Printf("Error creating request: %v\n", err)
+		log.Printf("Error creating request: %v", err)
 		return
 	}
 
-	resp, err = sc.httpClient.Do(req)
+	resp, err := sc.httpClient.Do(req)
 	if err != nil {
-		fmt.Printf("Error executing request: %v\n", err)
+		log.Printf("Error executing request: %v", err)
 		return
 	}
 
 	var nodeResp PhysicalNodeResponse
 	if err := json.NewDecoder(resp.Body).Decode(&nodeResp); err != nil {
-		fmt.Printf("Error decoding nodes response: %v\n", err)
+		log.Printf("Error decoding nodes response: %v", err)
 		return
 	}
 	resp.Body.Close()
 
 	for _, node := range nodeResp {
-		req, err := sc.makeRequest("GET", fmt.Sprintf("/api/v4/nodes/%d?fields=dashboard", node.ID))
+		nodeReq, err := sc.makeRequest("GET", fmt.Sprintf("/api/v4/nodes/%d?fields=dashboard", node.ID))
 		if err != nil {
-			fmt.Printf("Error creating request for node %s: %v\n", node.Name, err)
+			log.Printf("Error creating request for node %s: %v", node.Name, err)
 			continue
 		}
 
-		resp, err := sc.httpClient.Do(req)
+		nodeResp, err := sc.httpClient.Do(nodeReq)
 		if err != nil {
-			fmt.Printf("Error executing request for node %s: %v\n", node.Name, err)
+			log.Printf("Error executing request for node %s: %v", node.Name, err)
 			continue
 		}
 
 		var nodeStats NodeResponse
-		if err := json.NewDecoder(resp.Body).Decode(&nodeStats); err != nil {
-			fmt.Printf("Error decoding stats for node %s: %v\n", node.Name, err)
-			resp.Body.Close()
+		if err := json.NewDecoder(nodeResp.Body).Decode(&nodeStats); err != nil {
+			log.Printf("Error decoding stats for node %s: %v", node.Name, err)
+			nodeResp.Body.Close()
 			continue
 		}
-		resp.Body.Close()
+		nodeResp.Body.Close()
 
 		// Process drive metrics
 		for _, drive := range nodeStats.Machine.Drives {
@@ -543,8 +497,8 @@ func (sc *StorageCollector) Collect(ch chan<- prometheus.Metric) {
 	sc.vsanFullwalkStatus.Collect(ch)
 	sc.vsanFullwalkProgress.Collect(ch)
 	sc.vsanCurSpaceThrottle.Collect(ch)
-	sc.vsanNodesOnline.Collect(ch)
-	sc.vsanDrivesOnline.Collect(ch)
+	// Note: vsanNodesOnline and vsanDrivesOnline removed - SDK gap
+
 	// Collect new drive state metrics
 	sc.vsanDriveOnline.Collect(ch)
 	sc.vsanDriveOffline.Collect(ch)

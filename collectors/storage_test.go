@@ -45,573 +45,105 @@ func TestDriveStateMonitoring(t *testing.T) {
 			json.NewEncoder(w).Encode(settings)
 
 		case strings.Contains(r.URL.Path, "/api/v4/storage_tiers"):
-			// Return tier information
-			tiers := VSANResponse{
+			// Return tier information - SDK compatible format
+			// Using tiers 0 and 1 (valid in test environments)
+			tiers := []map[string]interface{}{
 				{
-					Tier:        0,
-					Description: "SSD Tier",
-					Capacity:    1000000000000,
-					Used:        100000000000,
-					Allocated:   500000000000,
-					DedupeRatio: 2.0,
+					"$key":         0,
+					"tier":         0,
+					"description":  "SSD Tier",
+					"capacity":     uint64(1000000000000),
+					"used":         uint64(100000000000),
+					"allocated":    uint64(500000000000),
+					"dedupe_ratio": uint32(200),
 				},
 				{
-					Tier:        1,
-					Description: "HDD Tier",
-					Capacity:    5000000000000,
-					Used:        2000000000000,
-					Allocated:   3000000000000,
-					DedupeRatio: 1.5,
+					"$key":         1,
+					"tier":         1,
+					"description":  "HDD Tier",
+					"capacity":     uint64(5000000000000),
+					"used":         uint64(2000000000000),
+					"allocated":    uint64(3000000000000),
+					"dedupe_ratio": uint32(150),
 				},
 			}
 			json.NewEncoder(w).Encode(tiers)
 
 		case strings.Contains(r.URL.Path, "/api/v4/cluster_tiers"):
-			// Return tier details for other metrics
-			response := []struct {
-				Key    int `json:"$key"`
-				Status struct {
-					Tier               int    `json:"tier"`
-					StatusDisplay      string `json:"status_display"`
-					Transaction        int64  `json:"transaction"`
-					Repairs            int64  `json:"repairs"`
-					Working            bool   `json:"working"`
-					BadDrives          int    `json:"bad_drives"`
-					Encrypted          bool   `json:"encrypted"`
-					Redundant          bool   `json:"redundant"`
-					LastWalkTimeMs     int64  `json:"last_walk_time_ms"`
-					LastFullwalkTimeMs int64  `json:"last_fullwalk_time_ms"`
-					Fullwalk           bool   `json:"fullwalk"`
-					Progress           int    `json:"progress"`
-					CurSpaceThrottleMs int    `json:"cur_space_throttle_ms"`
-				} `json:"status"`
-				NodesOnline struct {
-					Nodes []struct {
-						State string `json:"state"`
-					} `json:"nodes"`
-				} `json:"nodes_online"`
-				DrivesOnline []struct {
-					State string `json:"state"`
-				} `json:"drives_online"`
-			}{
+			// Return tier details - SDK compatible format
+			response := []map[string]interface{}{
 				{
-					Key: 1,
-					Status: struct {
-						Tier               int    `json:"tier"`
-						StatusDisplay      string `json:"status_display"`
-						Transaction        int64  `json:"transaction"`
-						Repairs            int64  `json:"repairs"`
-						Working            bool   `json:"working"`
-						BadDrives          int    `json:"bad_drives"`
-						Encrypted          bool   `json:"encrypted"`
-						Redundant          bool   `json:"redundant"`
-						LastWalkTimeMs     int64  `json:"last_walk_time_ms"`
-						LastFullwalkTimeMs int64  `json:"last_fullwalk_time_ms"`
-						Fullwalk           bool   `json:"fullwalk"`
-						Progress           int    `json:"progress"`
-						CurSpaceThrottleMs int    `json:"cur_space_throttle_ms"`
-					}{
-						Tier:               0,
-						StatusDisplay:      "Online",
-						Transaction:        100,
-						Repairs:            5,
-						Working:            true,
-						BadDrives:          0,
-						Encrypted:          true,
-						Redundant:          true,
-						LastWalkTimeMs:     1000,
-						LastFullwalkTimeMs: 5000,
-						Fullwalk:           false,
-						Progress:           100,
-						CurSpaceThrottleMs: 0,
-					},
-					NodesOnline: struct {
-						Nodes []struct {
-							State string `json:"state"`
-						} `json:"nodes"`
-					}{
-						Nodes: []struct {
-							State string `json:"state"`
-						}{
-							{State: "online"},
-							{State: "online"},
-						},
-					},
-					DrivesOnline: []struct {
-						State string `json:"state"`
-					}{
-						{State: "online"},
-						{State: "online"},
+					"$key":    1,
+					"cluster": 1,
+					"tier":    0,
+					"status": map[string]interface{}{
+						"tier":                  0,
+						"status":                "online",
+						"state":                 "online",
+						"transaction":           uint64(100),
+						"repairs":               uint64(5),
+						"working":               true,
+						"bad_drives":            float64(0),
+						"encrypted":             true,
+						"redundant":             true,
+						"last_walk_time_ms":     uint64(1000),
+						"last_fullwalk_time_ms": uint64(5000),
+						"fullwalk":              false,
+						"progress":              float64(100),
+						"cur_space_throttle_ms": float64(0),
 					},
 				},
 				{
-					Key: 2,
-					Status: struct {
-						Tier               int    `json:"tier"`
-						StatusDisplay      string `json:"status_display"`
-						Transaction        int64  `json:"transaction"`
-						Repairs            int64  `json:"repairs"`
-						Working            bool   `json:"working"`
-						BadDrives          int    `json:"bad_drives"`
-						Encrypted          bool   `json:"encrypted"`
-						Redundant          bool   `json:"redundant"`
-						LastWalkTimeMs     int64  `json:"last_walk_time_ms"`
-						LastFullwalkTimeMs int64  `json:"last_fullwalk_time_ms"`
-						Fullwalk           bool   `json:"fullwalk"`
-						Progress           int    `json:"progress"`
-						CurSpaceThrottleMs int    `json:"cur_space_throttle_ms"`
-					}{
-						Tier:               1,
-						StatusDisplay:      "Online",
-						Transaction:        200,
-						Repairs:            10,
-						Working:            true,
-						BadDrives:          0,
-						Encrypted:          true,
-						Redundant:          true,
-						LastWalkTimeMs:     1500,
-						LastFullwalkTimeMs: 7500,
-						Fullwalk:           false,
-						Progress:           100,
-						CurSpaceThrottleMs: 0,
-					},
-					NodesOnline: struct {
-						Nodes []struct {
-							State string `json:"state"`
-						} `json:"nodes"`
-					}{
-						Nodes: []struct {
-							State string `json:"state"`
-						}{
-							{State: "online"},
-							{State: "online"},
-						},
-					},
-					DrivesOnline: []struct {
-						State string `json:"state"`
-					}{
-						{State: "online"},
-						{State: "online"},
+					"$key":    2,
+					"cluster": 1,
+					"tier":    1,
+					"status": map[string]interface{}{
+						"tier":                  1,
+						"status":                "online",
+						"state":                 "online",
+						"transaction":           uint64(200),
+						"repairs":               uint64(10),
+						"working":               true,
+						"bad_drives":            float64(0),
+						"encrypted":             true,
+						"redundant":             true,
+						"last_walk_time_ms":     uint64(1500),
+						"last_fullwalk_time_ms": uint64(7500),
+						"fullwalk":              false,
+						"progress":              float64(100),
+						"cur_space_throttle_ms": float64(0),
 					},
 				},
 			}
 			json.NewEncoder(w).Encode(response)
 
 		case strings.Contains(r.URL.Path, "/api/v4/machine_drives"):
-			// Return drive information using the new API endpoint format
-			response := MachineDriveResponse{
+			// Return drive information - use JSON maps with correct field names
+			// collectDriveStateMetrics uses: vsan_tier, vsan_repairing, statuslist, node_display
+			// Tier 0: node1 (3 online), node2 (1 offline, 1 initializing, 1 verifying), node3 (1 repairing)
+			// Tier 1: node1 (2 online), node2 (2 online), node3 (1 noredundant, 1 outofspace)
+			response := []map[string]interface{}{
 				// Tier 0 drives
-				{
-					Key:         1,
-					Name:        "sda",
-					Node:        101,
-					Type:        "node",
-					NodeDisplay: "node1",
-					StatusList:  "online",
-					PhysicalStatus: struct {
-						Bus             string  `json:"bus"`
-						Model           string  `json:"model"`
-						DriveSize       int64   `json:"drive_size"`
-						Fw              string  `json:"fw"`
-						Path            string  `json:"path"`
-						Serial          string  `json:"phys_serial"`
-						VsanTier        int     `json:"vsan_tier"`
-						VsanPath        string  `json:"vsan_path"`
-						VsanDriveID     int     `json:"vsan_driveid"`
-						LocateStatus    string  `json:"locate_status"`
-						VsanRepairing   int     `json:"vsan_repairing"`
-						VsanReadErrors  int     `json:"vsan_read_errors"`
-						VsanWriteErrors int     `json:"vsan_write_errors"`
-						Temp            float64 `json:"temp"`
-						Location        string  `json:"location"`
-						Hours           int     `json:"hours"`
-						ReallocSectors  int     `json:"realloc_sectors"`
-						WearLevel       int     `json:"wear_level"`
-					}{
-						VsanTier:      2,
-						VsanRepairing: 0,
-					},
-				},
-				{
-					Key:         2,
-					Name:        "sdb",
-					Node:        101,
-					Type:        "node",
-					NodeDisplay: "node1",
-					StatusList:  "online",
-					PhysicalStatus: struct {
-						Bus             string  `json:"bus"`
-						Model           string  `json:"model"`
-						DriveSize       int64   `json:"drive_size"`
-						Fw              string  `json:"fw"`
-						Path            string  `json:"path"`
-						Serial          string  `json:"phys_serial"`
-						VsanTier        int     `json:"vsan_tier"`
-						VsanPath        string  `json:"vsan_path"`
-						VsanDriveID     int     `json:"vsan_driveid"`
-						LocateStatus    string  `json:"locate_status"`
-						VsanRepairing   int     `json:"vsan_repairing"`
-						VsanReadErrors  int     `json:"vsan_read_errors"`
-						VsanWriteErrors int     `json:"vsan_write_errors"`
-						Temp            float64 `json:"temp"`
-						Location        string  `json:"location"`
-						Hours           int     `json:"hours"`
-						ReallocSectors  int     `json:"realloc_sectors"`
-						WearLevel       int     `json:"wear_level"`
-					}{
-						VsanTier:      2,
-						VsanRepairing: 0,
-					},
-				},
-				{
-					Key:         3,
-					Name:        "sdc",
-					Node:        101,
-					Type:        "node",
-					NodeDisplay: "node1",
-					StatusList:  "online",
-					PhysicalStatus: struct {
-						Bus             string  `json:"bus"`
-						Model           string  `json:"model"`
-						DriveSize       int64   `json:"drive_size"`
-						Fw              string  `json:"fw"`
-						Path            string  `json:"path"`
-						Serial          string  `json:"phys_serial"`
-						VsanTier        int     `json:"vsan_tier"`
-						VsanPath        string  `json:"vsan_path"`
-						VsanDriveID     int     `json:"vsan_driveid"`
-						LocateStatus    string  `json:"locate_status"`
-						VsanRepairing   int     `json:"vsan_repairing"`
-						VsanReadErrors  int     `json:"vsan_read_errors"`
-						VsanWriteErrors int     `json:"vsan_write_errors"`
-						Temp            float64 `json:"temp"`
-						Location        string  `json:"location"`
-						Hours           int     `json:"hours"`
-						ReallocSectors  int     `json:"realloc_sectors"`
-						WearLevel       int     `json:"wear_level"`
-					}{
-						VsanTier:      2,
-						VsanRepairing: 0,
-					},
-				},
-				{
-					Key:         4,
-					Name:        "sdd",
-					Node:        102,
-					Type:        "node",
-					NodeDisplay: "node2",
-					StatusList:  "offline",
-					PhysicalStatus: struct {
-						Bus             string  `json:"bus"`
-						Model           string  `json:"model"`
-						DriveSize       int64   `json:"drive_size"`
-						Fw              string  `json:"fw"`
-						Path            string  `json:"path"`
-						Serial          string  `json:"phys_serial"`
-						VsanTier        int     `json:"vsan_tier"`
-						VsanPath        string  `json:"vsan_path"`
-						VsanDriveID     int     `json:"vsan_driveid"`
-						LocateStatus    string  `json:"locate_status"`
-						VsanRepairing   int     `json:"vsan_repairing"`
-						VsanReadErrors  int     `json:"vsan_read_errors"`
-						VsanWriteErrors int     `json:"vsan_write_errors"`
-						Temp            float64 `json:"temp"`
-						Location        string  `json:"location"`
-						Hours           int     `json:"hours"`
-						ReallocSectors  int     `json:"realloc_sectors"`
-						WearLevel       int     `json:"wear_level"`
-					}{
-						VsanTier:      2,
-						VsanRepairing: 0,
-					},
-				},
-				{
-					Key:         5,
-					Name:        "sde",
-					Node:        102,
-					Type:        "node",
-					NodeDisplay: "node2",
-					StatusList:  "initializing",
-					PhysicalStatus: struct {
-						Bus             string  `json:"bus"`
-						Model           string  `json:"model"`
-						DriveSize       int64   `json:"drive_size"`
-						Fw              string  `json:"fw"`
-						Path            string  `json:"path"`
-						Serial          string  `json:"phys_serial"`
-						VsanTier        int     `json:"vsan_tier"`
-						VsanPath        string  `json:"vsan_path"`
-						VsanDriveID     int     `json:"vsan_driveid"`
-						LocateStatus    string  `json:"locate_status"`
-						VsanRepairing   int     `json:"vsan_repairing"`
-						VsanReadErrors  int     `json:"vsan_read_errors"`
-						VsanWriteErrors int     `json:"vsan_write_errors"`
-						Temp            float64 `json:"temp"`
-						Location        string  `json:"location"`
-						Hours           int     `json:"hours"`
-						ReallocSectors  int     `json:"realloc_sectors"`
-						WearLevel       int     `json:"wear_level"`
-					}{
-						VsanTier:      0,
-						VsanRepairing: 0,
-					},
-				},
-				{
-					Key:         6,
-					Name:        "sdf",
-					Node:        102,
-					Type:        "node",
-					NodeDisplay: "node2",
-					StatusList:  "verifying",
-					PhysicalStatus: struct {
-						Bus             string  `json:"bus"`
-						Model           string  `json:"model"`
-						DriveSize       int64   `json:"drive_size"`
-						Fw              string  `json:"fw"`
-						Path            string  `json:"path"`
-						Serial          string  `json:"phys_serial"`
-						VsanTier        int     `json:"vsan_tier"`
-						VsanPath        string  `json:"vsan_path"`
-						VsanDriveID     int     `json:"vsan_driveid"`
-						LocateStatus    string  `json:"locate_status"`
-						VsanRepairing   int     `json:"vsan_repairing"`
-						VsanReadErrors  int     `json:"vsan_read_errors"`
-						VsanWriteErrors int     `json:"vsan_write_errors"`
-						Temp            float64 `json:"temp"`
-						Location        string  `json:"location"`
-						Hours           int     `json:"hours"`
-						ReallocSectors  int     `json:"realloc_sectors"`
-						WearLevel       int     `json:"wear_level"`
-					}{
-						VsanTier:      0,
-						VsanRepairing: 0,
-					},
-				},
-				{
-					Key:         7,
-					Name:        "sdg",
-					Node:        103,
-					Type:        "node",
-					NodeDisplay: "node3",
-					StatusList:  "online",
-					PhysicalStatus: struct {
-						Bus             string  `json:"bus"`
-						Model           string  `json:"model"`
-						DriveSize       int64   `json:"drive_size"`
-						Fw              string  `json:"fw"`
-						Path            string  `json:"path"`
-						Serial          string  `json:"phys_serial"`
-						VsanTier        int     `json:"vsan_tier"`
-						VsanPath        string  `json:"vsan_path"`
-						VsanDriveID     int     `json:"vsan_driveid"`
-						LocateStatus    string  `json:"locate_status"`
-						VsanRepairing   int     `json:"vsan_repairing"`
-						VsanReadErrors  int     `json:"vsan_read_errors"`
-						VsanWriteErrors int     `json:"vsan_write_errors"`
-						Temp            float64 `json:"temp"`
-						Location        string  `json:"location"`
-						Hours           int     `json:"hours"`
-						ReallocSectors  int     `json:"realloc_sectors"`
-						WearLevel       int     `json:"wear_level"`
-					}{
-						VsanTier:      0,
-						VsanRepairing: 1, // This will be marked as "repairing"
-					},
-				},
+				{"$key": 1, "name": "sda", "node": 101, "node_display": "node1", "statuslist": "online", "vsan_tier": 0},
+				{"$key": 2, "name": "sdb", "node": 101, "node_display": "node1", "statuslist": "online", "vsan_tier": 0},
+				{"$key": 3, "name": "sdc", "node": 101, "node_display": "node1", "statuslist": "online", "vsan_tier": 0},
+				{"$key": 4, "name": "sdd", "node": 102, "node_display": "node2", "statuslist": "offline", "vsan_tier": 0},
+				{"$key": 5, "name": "sde", "node": 102, "node_display": "node2", "statuslist": "initializing", "vsan_tier": 0},
+				{"$key": 6, "name": "sdf", "node": 102, "node_display": "node2", "statuslist": "verifying", "vsan_tier": 0},
+				{"$key": 7, "name": "sdg", "node": 103, "node_display": "node3", "statuslist": "online", "vsan_tier": 0, "vsan_repairing": 1}, // repairing overrides online
 				// Tier 1 drives
-				{
-					Key:         8,
-					Name:        "sdh",
-					Node:        101,
-					Type:        "node",
-					NodeDisplay: "node1",
-					StatusList:  "online",
-					PhysicalStatus: struct {
-						Bus             string  `json:"bus"`
-						Model           string  `json:"model"`
-						DriveSize       int64   `json:"drive_size"`
-						Fw              string  `json:"fw"`
-						Path            string  `json:"path"`
-						Serial          string  `json:"phys_serial"`
-						VsanTier        int     `json:"vsan_tier"`
-						VsanPath        string  `json:"vsan_path"`
-						VsanDriveID     int     `json:"vsan_driveid"`
-						LocateStatus    string  `json:"locate_status"`
-						VsanRepairing   int     `json:"vsan_repairing"`
-						VsanReadErrors  int     `json:"vsan_read_errors"`
-						VsanWriteErrors int     `json:"vsan_write_errors"`
-						Temp            float64 `json:"temp"`
-						Location        string  `json:"location"`
-						Hours           int     `json:"hours"`
-						ReallocSectors  int     `json:"realloc_sectors"`
-						WearLevel       int     `json:"wear_level"`
-					}{
-						VsanTier:      1,
-						VsanRepairing: 0,
-					},
-				},
-				{
-					Key:         9,
-					Name:        "sdi",
-					Node:        101,
-					Type:        "node",
-					NodeDisplay: "node1",
-					StatusList:  "online",
-					PhysicalStatus: struct {
-						Bus             string  `json:"bus"`
-						Model           string  `json:"model"`
-						DriveSize       int64   `json:"drive_size"`
-						Fw              string  `json:"fw"`
-						Path            string  `json:"path"`
-						Serial          string  `json:"phys_serial"`
-						VsanTier        int     `json:"vsan_tier"`
-						VsanPath        string  `json:"vsan_path"`
-						VsanDriveID     int     `json:"vsan_driveid"`
-						LocateStatus    string  `json:"locate_status"`
-						VsanRepairing   int     `json:"vsan_repairing"`
-						VsanReadErrors  int     `json:"vsan_read_errors"`
-						VsanWriteErrors int     `json:"vsan_write_errors"`
-						Temp            float64 `json:"temp"`
-						Location        string  `json:"location"`
-						Hours           int     `json:"hours"`
-						ReallocSectors  int     `json:"realloc_sectors"`
-						WearLevel       int     `json:"wear_level"`
-					}{
-						VsanTier:      1,
-						VsanRepairing: 0,
-					},
-				},
-				{
-					Key:         10,
-					Name:        "sdj",
-					Node:        102,
-					Type:        "node",
-					NodeDisplay: "node2",
-					StatusList:  "online",
-					PhysicalStatus: struct {
-						Bus             string  `json:"bus"`
-						Model           string  `json:"model"`
-						DriveSize       int64   `json:"drive_size"`
-						Fw              string  `json:"fw"`
-						Path            string  `json:"path"`
-						Serial          string  `json:"phys_serial"`
-						VsanTier        int     `json:"vsan_tier"`
-						VsanPath        string  `json:"vsan_path"`
-						VsanDriveID     int     `json:"vsan_driveid"`
-						LocateStatus    string  `json:"locate_status"`
-						VsanRepairing   int     `json:"vsan_repairing"`
-						VsanReadErrors  int     `json:"vsan_read_errors"`
-						VsanWriteErrors int     `json:"vsan_write_errors"`
-						Temp            float64 `json:"temp"`
-						Location        string  `json:"location"`
-						Hours           int     `json:"hours"`
-						ReallocSectors  int     `json:"realloc_sectors"`
-						WearLevel       int     `json:"wear_level"`
-					}{
-						VsanTier:      1,
-						VsanRepairing: 0,
-					},
-				},
-				{
-					Key:         11,
-					Name:        "sdk",
-					Node:        102,
-					Type:        "node",
-					NodeDisplay: "node2",
-					StatusList:  "online",
-					PhysicalStatus: struct {
-						Bus             string  `json:"bus"`
-						Model           string  `json:"model"`
-						DriveSize       int64   `json:"drive_size"`
-						Fw              string  `json:"fw"`
-						Path            string  `json:"path"`
-						Serial          string  `json:"phys_serial"`
-						VsanTier        int     `json:"vsan_tier"`
-						VsanPath        string  `json:"vsan_path"`
-						VsanDriveID     int     `json:"vsan_driveid"`
-						LocateStatus    string  `json:"locate_status"`
-						VsanRepairing   int     `json:"vsan_repairing"`
-						VsanReadErrors  int     `json:"vsan_read_errors"`
-						VsanWriteErrors int     `json:"vsan_write_errors"`
-						Temp            float64 `json:"temp"`
-						Location        string  `json:"location"`
-						Hours           int     `json:"hours"`
-						ReallocSectors  int     `json:"realloc_sectors"`
-						WearLevel       int     `json:"wear_level"`
-					}{
-						VsanTier:      1,
-						VsanRepairing: 0,
-					},
-				},
-				{
-					Key:         12,
-					Name:        "sdl",
-					Node:        103,
-					Type:        "node",
-					NodeDisplay: "node3",
-					StatusList:  "noredundant",
-					PhysicalStatus: struct {
-						Bus             string  `json:"bus"`
-						Model           string  `json:"model"`
-						DriveSize       int64   `json:"drive_size"`
-						Fw              string  `json:"fw"`
-						Path            string  `json:"path"`
-						Serial          string  `json:"phys_serial"`
-						VsanTier        int     `json:"vsan_tier"`
-						VsanPath        string  `json:"vsan_path"`
-						VsanDriveID     int     `json:"vsan_driveid"`
-						LocateStatus    string  `json:"locate_status"`
-						VsanRepairing   int     `json:"vsan_repairing"`
-						VsanReadErrors  int     `json:"vsan_read_errors"`
-						VsanWriteErrors int     `json:"vsan_write_errors"`
-						Temp            float64 `json:"temp"`
-						Location        string  `json:"location"`
-						Hours           int     `json:"hours"`
-						ReallocSectors  int     `json:"realloc_sectors"`
-						WearLevel       int     `json:"wear_level"`
-					}{
-						VsanTier:      1,
-						VsanRepairing: 0,
-					},
-				},
-				{
-					Key:         13,
-					Name:        "sdm",
-					Node:        103,
-					Type:        "node",
-					NodeDisplay: "node3",
-					StatusList:  "outofspace",
-					PhysicalStatus: struct {
-						Bus             string  `json:"bus"`
-						Model           string  `json:"model"`
-						DriveSize       int64   `json:"drive_size"`
-						Fw              string  `json:"fw"`
-						Path            string  `json:"path"`
-						Serial          string  `json:"phys_serial"`
-						VsanTier        int     `json:"vsan_tier"`
-						VsanPath        string  `json:"vsan_path"`
-						VsanDriveID     int     `json:"vsan_driveid"`
-						LocateStatus    string  `json:"locate_status"`
-						VsanRepairing   int     `json:"vsan_repairing"`
-						VsanReadErrors  int     `json:"vsan_read_errors"`
-						VsanWriteErrors int     `json:"vsan_write_errors"`
-						Temp            float64 `json:"temp"`
-						Location        string  `json:"location"`
-						Hours           int     `json:"hours"`
-						ReallocSectors  int     `json:"realloc_sectors"`
-						WearLevel       int     `json:"wear_level"`
-					}{
-						VsanTier:      1,
-						VsanRepairing: 0,
-					},
-				},
+				{"$key": 8, "name": "sdh", "node": 101, "node_display": "node1", "statuslist": "online", "vsan_tier": 1},
+				{"$key": 9, "name": "sdi", "node": 101, "node_display": "node1", "statuslist": "online", "vsan_tier": 1},
+				{"$key": 10, "name": "sdj", "node": 102, "node_display": "node2", "statuslist": "online", "vsan_tier": 1},
+				{"$key": 11, "name": "sdk", "node": 102, "node_display": "node2", "statuslist": "online", "vsan_tier": 1},
+				{"$key": 12, "name": "sdl", "node": 103, "node_display": "node3", "statuslist": "noredundant", "vsan_tier": 1},
+				{"$key": 13, "name": "sdm", "node": 103, "node_display": "node3", "statuslist": "outofspace", "vsan_tier": 1},
 			}
 			json.NewEncoder(w).Encode(response)
 
 		case strings.Contains(r.URL.Path, "/api/v4/nodes"):
-			// Return empty node list for simplicity
-			nodes := []struct{}{}
-			json.NewEncoder(w).Encode(nodes)
+			// Return empty node list - we're testing collectDriveStateMetrics, not drive metrics from nodes
+			json.NewEncoder(w).Encode([]struct{}{})
 
 		default:
 			w.WriteHeader(http.StatusNotFound)
@@ -627,305 +159,104 @@ func TestDriveStateMonitoring(t *testing.T) {
 	sc := NewStorageCollector(sdkClient, mockServer.URL, "testuser", "testpass")
 	registry.MustRegister(sc)
 
-	// Define expected metrics for both tiers
-	expected := `
-# HELP vergeos_vsan_drive_states Number of drives in each state (online, offline, repairing, initializing, verifying, noredundant, outofspace)
-# TYPE vergeos_vsan_drive_states gauge
-vergeos_vsan_drive_states{state="initializing",system_name="test-system",tier="1"} 0
-vergeos_vsan_drive_states{state="initializing",system_name="test-system",tier="2"} 1
-vergeos_vsan_drive_states{state="noredundant",system_name="test-system",tier="1"} 1
-vergeos_vsan_drive_states{state="noredundant",system_name="test-system",tier="2"} 0
-vergeos_vsan_drive_states{state="offline",system_name="test-system",tier="1"} 0
-vergeos_vsan_drive_states{state="offline",system_name="test-system",tier="2"} 1
-vergeos_vsan_drive_states{state="online",system_name="test-system",tier="1"} 4
-vergeos_vsan_drive_states{state="online",system_name="test-system",tier="2"} 3
-vergeos_vsan_drive_states{state="outofspace",system_name="test-system",tier="1"} 1
-vergeos_vsan_drive_states{state="outofspace",system_name="test-system",tier="2"} 0
-vergeos_vsan_drive_states{state="repairing",system_name="test-system",tier="1"} 0
-vergeos_vsan_drive_states{state="repairing",system_name="test-system",tier="2"} 1
-vergeos_vsan_drive_states{state="verifying",system_name="test-system",tier="1"} 0
-vergeos_vsan_drive_states{state="verifying",system_name="test-system",tier="2"} 1
+	// Test online counts
+	// Tier 0: node1=3, node2=0, node3=0 (node3 has 1 repairing which overrides online)
+	// Tier 1: node1=2, node2=2, node3=0
+	expectedOnline := `
+# HELP vergeos_vsan_drive_online_count Number of drives in the 'online' state per node and tier
+# TYPE vergeos_vsan_drive_online_count gauge
+vergeos_vsan_drive_online_count{node_name="node1",system_name="test-system",tier="0"} 3
+vergeos_vsan_drive_online_count{node_name="node1",system_name="test-system",tier="1"} 2
+vergeos_vsan_drive_online_count{node_name="node2",system_name="test-system",tier="0"} 0
+vergeos_vsan_drive_online_count{node_name="node2",system_name="test-system",tier="1"} 2
+vergeos_vsan_drive_online_count{node_name="node3",system_name="test-system",tier="0"} 0
+vergeos_vsan_drive_online_count{node_name="node3",system_name="test-system",tier="1"} 0
 `
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedOnline), "vergeos_vsan_drive_online_count"); err != nil {
+		t.Errorf("Online count metrics do not match expected values: %v", err)
+	}
 
-	// Gather metrics
-	if err := testutil.GatherAndCompare(registry, strings.NewReader(expected), "vergeos_vsan_drive_states"); err != nil {
-		t.Errorf("Metrics do not match expected values: %v", err)
+	// Test offline counts
+	// Tier 0: node1=0, node2=1, node3=0
+	// Tier 1: all 0
+	expectedOffline := `
+# HELP vergeos_vsan_drive_offline_count Number of drives in the 'offline' state per node and tier
+# TYPE vergeos_vsan_drive_offline_count gauge
+vergeos_vsan_drive_offline_count{node_name="node1",system_name="test-system",tier="0"} 0
+vergeos_vsan_drive_offline_count{node_name="node1",system_name="test-system",tier="1"} 0
+vergeos_vsan_drive_offline_count{node_name="node2",system_name="test-system",tier="0"} 1
+vergeos_vsan_drive_offline_count{node_name="node2",system_name="test-system",tier="1"} 0
+vergeos_vsan_drive_offline_count{node_name="node3",system_name="test-system",tier="0"} 0
+vergeos_vsan_drive_offline_count{node_name="node3",system_name="test-system",tier="1"} 0
+`
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedOffline), "vergeos_vsan_drive_offline_count"); err != nil {
+		t.Errorf("Offline count metrics do not match expected values: %v", err)
+	}
+
+	// Test repairing counts
+	// Tier 0: node3=1 (vsan_repairing overrides statuslist)
+	expectedRepairing := `
+# HELP vergeos_vsan_drive_repairing_count Number of drives in the 'repairing' state per node and tier
+# TYPE vergeos_vsan_drive_repairing_count gauge
+vergeos_vsan_drive_repairing_count{node_name="node1",system_name="test-system",tier="0"} 0
+vergeos_vsan_drive_repairing_count{node_name="node1",system_name="test-system",tier="1"} 0
+vergeos_vsan_drive_repairing_count{node_name="node2",system_name="test-system",tier="0"} 0
+vergeos_vsan_drive_repairing_count{node_name="node2",system_name="test-system",tier="1"} 0
+vergeos_vsan_drive_repairing_count{node_name="node3",system_name="test-system",tier="0"} 1
+vergeos_vsan_drive_repairing_count{node_name="node3",system_name="test-system",tier="1"} 0
+`
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedRepairing), "vergeos_vsan_drive_repairing_count"); err != nil {
+		t.Errorf("Repairing count metrics do not match expected values: %v", err)
 	}
 }
 
 func TestDriveStateEdgeCases(t *testing.T) {
-	// Create a mock server to simulate the VergeOS API with edge cases
+	// Create a mock server to simulate edge cases
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Add basic auth check
 		username, password, ok := r.BasicAuth()
 		if !ok || username != "testuser" || password != "testpass" {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		// Handle different API endpoints
 		switch {
 		case strings.Contains(r.URL.Path, "/api/v4/settings"):
-			// Return system name
-			settings := []Setting{
-				{
-					Key:   "cloud_name",
-					Value: "test-system",
-				},
-			}
+			settings := []Setting{{Key: "cloud_name", Value: "test-system"}}
 			json.NewEncoder(w).Encode(settings)
 
 		case strings.Contains(r.URL.Path, "/api/v4/storage_tiers"):
-			// Return tier information
-			tiers := VSANResponse{
-				{
-					Tier:        0,
-					Description: "Empty Tier",
-					Capacity:    1000000000000,
-					Used:        0,
-					Allocated:   0,
-					DedupeRatio: 1.0,
-				},
-				{
-					Tier:        1,
-					Description: "Unknown States Tier",
-					Capacity:    5000000000000,
-					Used:        2000000000000,
-					Allocated:   3000000000000,
-					DedupeRatio: 1.5,
-				},
+			// Only tier 1 configured
+			tiers := []map[string]interface{}{
+				{"$key": 1, "tier": 1, "description": "Test Tier", "capacity": uint64(1000000000000), "used": uint64(0), "allocated": uint64(0), "dedupe_ratio": uint32(100)},
 			}
 			json.NewEncoder(w).Encode(tiers)
 
 		case strings.Contains(r.URL.Path, "/api/v4/cluster_tiers"):
-			// Return tier details for other metrics
-			clusterResponse := []struct {
-				Key    int `json:"$key"`
-				Status struct {
-					Tier               int    `json:"tier"`
-					StatusDisplay      string `json:"status_display"`
-					Transaction        int64  `json:"transaction"`
-					Repairs            int64  `json:"repairs"`
-					Working            bool   `json:"working"`
-					BadDrives          int    `json:"bad_drives"`
-					Encrypted          bool   `json:"encrypted"`
-					Redundant          bool   `json:"redundant"`
-					LastWalkTimeMs     int64  `json:"last_walk_time_ms"`
-					LastFullwalkTimeMs int64  `json:"last_fullwalk_time_ms"`
-					Fullwalk           bool   `json:"fullwalk"`
-					Progress           int    `json:"progress"`
-					CurSpaceThrottleMs int    `json:"cur_space_throttle_ms"`
-				} `json:"status"`
-				NodesOnline struct {
-					Nodes []struct {
-						State string `json:"state"`
-					} `json:"nodes"`
-				} `json:"nodes_online"`
-				DrivesOnline []struct {
-					State string `json:"state"`
-				} `json:"drives_online"`
-			}{
+			response := []map[string]interface{}{
 				{
-					Key: 1,
-					Status: struct {
-						Tier               int    `json:"tier"`
-						StatusDisplay      string `json:"status_display"`
-						Transaction        int64  `json:"transaction"`
-						Repairs            int64  `json:"repairs"`
-						Working            bool   `json:"working"`
-						BadDrives          int    `json:"bad_drives"`
-						Encrypted          bool   `json:"encrypted"`
-						Redundant          bool   `json:"redundant"`
-						LastWalkTimeMs     int64  `json:"last_walk_time_ms"`
-						LastFullwalkTimeMs int64  `json:"last_fullwalk_time_ms"`
-						Fullwalk           bool   `json:"fullwalk"`
-						Progress           int    `json:"progress"`
-						CurSpaceThrottleMs int    `json:"cur_space_throttle_ms"`
-					}{
-						Tier:               0,
-						StatusDisplay:      "Online",
-						Transaction:        100,
-						Repairs:            5,
-						Working:            true,
-						BadDrives:          0,
-						Encrypted:          true,
-						Redundant:          true,
-						LastWalkTimeMs:     1000,
-						LastFullwalkTimeMs: 5000,
-						Fullwalk:           false,
-						Progress:           100,
-						CurSpaceThrottleMs: 0,
-					},
-					NodesOnline: struct {
-						Nodes []struct {
-							State string `json:"state"`
-						} `json:"nodes"`
-					}{
-						Nodes: []struct {
-							State string `json:"state"`
-						}{
-							{State: "online"},
-						},
-					},
-					DrivesOnline: []struct {
-						State string `json:"state"`
-					}{},
-				},
-				{
-					Key: 2,
-					Status: struct {
-						Tier               int    `json:"tier"`
-						StatusDisplay      string `json:"status_display"`
-						Transaction        int64  `json:"transaction"`
-						Repairs            int64  `json:"repairs"`
-						Working            bool   `json:"working"`
-						BadDrives          int    `json:"bad_drives"`
-						Encrypted          bool   `json:"encrypted"`
-						Redundant          bool   `json:"redundant"`
-						LastWalkTimeMs     int64  `json:"last_walk_time_ms"`
-						LastFullwalkTimeMs int64  `json:"last_fullwalk_time_ms"`
-						Fullwalk           bool   `json:"fullwalk"`
-						Progress           int    `json:"progress"`
-						CurSpaceThrottleMs int    `json:"cur_space_throttle_ms"`
-					}{
-						Tier:               1,
-						StatusDisplay:      "Online",
-						Transaction:        200,
-						Repairs:            10,
-						Working:            true,
-						BadDrives:          0,
-						Encrypted:          true,
-						Redundant:          true,
-						LastWalkTimeMs:     1500,
-						LastFullwalkTimeMs: 7500,
-						Fullwalk:           false,
-						Progress:           100,
-						CurSpaceThrottleMs: 0,
-					},
-					NodesOnline: struct {
-						Nodes []struct {
-							State string `json:"state"`
-						} `json:"nodes"`
-					}{
-						Nodes: []struct {
-							State string `json:"state"`
-						}{
-							{State: "online"},
-						},
-					},
-					DrivesOnline: []struct {
-						State string `json:"state"`
-					}{
-						{State: "online"},
-					},
-				},
-			}
-			json.NewEncoder(w).Encode(clusterResponse)
-
-		case strings.Contains(r.URL.Path, "/api/v4/machine_drives"):
-			// Return edge cases: empty tier and unknown states
-			response := MachineDriveResponse{
-				// Tier 1 - One online drive and two with unknown states
-				{
-					Key:         1,
-					Name:        "sda",
-					Node:        101,
-					Type:        "node",
-					NodeDisplay: "node1",
-					StatusList:  "online",
-					PhysicalStatus: struct {
-						Bus             string  `json:"bus"`
-						Model           string  `json:"model"`
-						DriveSize       int64   `json:"drive_size"`
-						Fw              string  `json:"fw"`
-						Path            string  `json:"path"`
-						Serial          string  `json:"phys_serial"`
-						VsanTier        int     `json:"vsan_tier"`
-						VsanPath        string  `json:"vsan_path"`
-						VsanDriveID     int     `json:"vsan_driveid"`
-						LocateStatus    string  `json:"locate_status"`
-						VsanRepairing   int     `json:"vsan_repairing"`
-						VsanReadErrors  int     `json:"vsan_read_errors"`
-						VsanWriteErrors int     `json:"vsan_write_errors"`
-						Temp            float64 `json:"temp"`
-						Location        string  `json:"location"`
-						Hours           int     `json:"hours"`
-						ReallocSectors  int     `json:"realloc_sectors"`
-						WearLevel       int     `json:"wear_level"`
-					}{
-						VsanTier:      1, // Keep tier 1 for this drive
-						VsanRepairing: 0,
-					},
-				},
-				{
-					Key:         2,
-					Name:        "sdb",
-					Node:        101,
-					Type:        "node",
-					NodeDisplay: "node1",
-					StatusList:  "unknown_state", // Unknown state
-					PhysicalStatus: struct {
-						Bus             string  `json:"bus"`
-						Model           string  `json:"model"`
-						DriveSize       int64   `json:"drive_size"`
-						Fw              string  `json:"fw"`
-						Path            string  `json:"path"`
-						Serial          string  `json:"phys_serial"`
-						VsanTier        int     `json:"vsan_tier"`
-						VsanPath        string  `json:"vsan_path"`
-						VsanDriveID     int     `json:"vsan_driveid"`
-						LocateStatus    string  `json:"locate_status"`
-						VsanRepairing   int     `json:"vsan_repairing"`
-						VsanReadErrors  int     `json:"vsan_read_errors"`
-						VsanWriteErrors int     `json:"vsan_write_errors"`
-						Temp            float64 `json:"temp"`
-						Location        string  `json:"location"`
-						Hours           int     `json:"hours"`
-						ReallocSectors  int     `json:"realloc_sectors"`
-						WearLevel       int     `json:"wear_level"`
-					}{
-						VsanTier:      1, // Keep tier 1 for this drive
-						VsanRepairing: 0,
-					},
-				},
-				{
-					Key:         3,
-					Name:        "sdc",
-					Node:        102,
-					Type:        "node",
-					NodeDisplay: "node2",
-					StatusList:  "another_unknown", // Another unknown state
-					PhysicalStatus: struct {
-						Bus             string  `json:"bus"`
-						Model           string  `json:"model"`
-						DriveSize       int64   `json:"drive_size"`
-						Fw              string  `json:"fw"`
-						Path            string  `json:"path"`
-						Serial          string  `json:"phys_serial"`
-						VsanTier        int     `json:"vsan_tier"`
-						VsanPath        string  `json:"vsan_path"`
-						VsanDriveID     int     `json:"vsan_driveid"`
-						LocateStatus    string  `json:"locate_status"`
-						VsanRepairing   int     `json:"vsan_repairing"`
-						VsanReadErrors  int     `json:"vsan_read_errors"`
-						VsanWriteErrors int     `json:"vsan_write_errors"`
-						Temp            float64 `json:"temp"`
-						Location        string  `json:"location"`
-						Hours           int     `json:"hours"`
-						ReallocSectors  int     `json:"realloc_sectors"`
-						WearLevel       int     `json:"wear_level"`
-					}{
-						VsanTier:      1, // Keep tier 1 for this drive
-						VsanRepairing: 0,
+					"$key": 1, "cluster": 1, "tier": 1,
+					"status": map[string]interface{}{
+						"tier": 1, "status": "online", "state": "online", "transaction": uint64(100),
+						"repairs": uint64(0), "working": true, "bad_drives": float64(0),
+						"encrypted": true, "redundant": true, "last_walk_time_ms": uint64(1000),
+						"last_fullwalk_time_ms": uint64(5000), "fullwalk": false,
+						"progress": float64(100), "cur_space_throttle_ms": float64(0),
 					},
 				},
 			}
 			json.NewEncoder(w).Encode(response)
 
+		case strings.Contains(r.URL.Path, "/api/v4/machine_drives"):
+			// Test edge cases: one online drive, two with unknown states (should be ignored)
+			response := []map[string]interface{}{
+				{"$key": 1, "name": "sda", "node": 101, "node_display": "node1", "statuslist": "online", "vsan_tier": 1},
+				{"$key": 2, "name": "sdb", "node": 101, "node_display": "node1", "statuslist": "unknown_state", "vsan_tier": 1},
+				{"$key": 3, "name": "sdc", "node": 102, "node_display": "node2", "statuslist": "another_unknown", "vsan_tier": 1},
+			}
+			json.NewEncoder(w).Encode(response)
+
 		case strings.Contains(r.URL.Path, "/api/v4/nodes"):
-			// Return empty node list for simplicity
-			nodes := []struct{}{}
-			json.NewEncoder(w).Encode(nodes)
+			json.NewEncoder(w).Encode([]struct{}{})
 
 		default:
 			w.WriteHeader(http.StatusNotFound)
@@ -933,36 +264,20 @@ func TestDriveStateEdgeCases(t *testing.T) {
 	}))
 	defer mockServer.Close()
 
-	// Create a registry for testing
 	registry := prometheus.NewRegistry()
-
-	// Create a storage collector with the mock server
 	sdkClient := createTestSDKClient(mockServer.URL)
 	sc := NewStorageCollector(sdkClient, mockServer.URL, "testuser", "testpass")
 	registry.MustRegister(sc)
 
-	// Define expected metrics for both tiers
-	expected := `
-# HELP vergeos_vsan_drive_states Number of drives in each state (online, offline, repairing, initializing, verifying, noredundant, outofspace)
-# TYPE vergeos_vsan_drive_states gauge
-vergeos_vsan_drive_states{state="initializing",system_name="test-system",tier="1"} 0
-vergeos_vsan_drive_states{state="initializing",system_name="test-system",tier="2"} 0
-vergeos_vsan_drive_states{state="noredundant",system_name="test-system",tier="1"} 0
-vergeos_vsan_drive_states{state="noredundant",system_name="test-system",tier="2"} 0
-vergeos_vsan_drive_states{state="offline",system_name="test-system",tier="1"} 0
-vergeos_vsan_drive_states{state="offline",system_name="test-system",tier="2"} 0
-vergeos_vsan_drive_states{state="online",system_name="test-system",tier="1"} 1
-vergeos_vsan_drive_states{state="online",system_name="test-system",tier="2"} 0
-vergeos_vsan_drive_states{state="outofspace",system_name="test-system",tier="1"} 0
-vergeos_vsan_drive_states{state="outofspace",system_name="test-system",tier="2"} 0
-vergeos_vsan_drive_states{state="repairing",system_name="test-system",tier="1"} 0
-vergeos_vsan_drive_states{state="repairing",system_name="test-system",tier="2"} 0
-vergeos_vsan_drive_states{state="verifying",system_name="test-system",tier="1"} 0
-vergeos_vsan_drive_states{state="verifying",system_name="test-system",tier="2"} 0
+	// With unknown states, only node1 should have 1 online drive
+	// Unknown states don't increment any counter
+	expectedOnline := `
+# HELP vergeos_vsan_drive_online_count Number of drives in the 'online' state per node and tier
+# TYPE vergeos_vsan_drive_online_count gauge
+vergeos_vsan_drive_online_count{node_name="node1",system_name="test-system",tier="1"} 1
+vergeos_vsan_drive_online_count{node_name="node2",system_name="test-system",tier="1"} 0
 `
-
-	// Gather metrics
-	if err := testutil.GatherAndCompare(registry, strings.NewReader(expected), "vergeos_vsan_drive_states"); err != nil {
-		t.Errorf("Metrics do not match expected values: %v", err)
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedOnline), "vergeos_vsan_drive_online_count"); err != nil {
+		t.Errorf("Edge case metrics do not match expected values: %v", err)
 	}
 }
