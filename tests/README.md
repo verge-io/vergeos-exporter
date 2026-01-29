@@ -1,81 +1,91 @@
 # VergeOS Exporter Tests
 
-This directory contains tests for the VergeOS exporter.
+This directory contains unit tests for the VergeOS exporter collectors.
 
-## Drive State Monitoring Test
+## Test Structure
 
-The `drive_state_test.go` file contains a test for the drive state monitoring functionality. This test verifies that all drive states (online, offline, repairing, initializing, verifying, noredundant, outofspace) are properly tracked by the exporter.
+```
+tests/
+├── testhelpers.go     # Shared test utilities and mock types
+├── storage_test.go    # VSAN tier metrics tests
+├── node_test.go       # Node metrics tests
+├── cluster_test.go    # Cluster metrics tests
+├── network_test.go    # Network collector tests (info metric only due to SDK gaps)
+└── system_test.go     # System version metrics tests
+```
 
-### Running the Test
+## Running Tests
 
-You can run the test using the provided shell script:
+Run all tests:
 
 ```bash
-./run_drive_state_test.sh --verge-url=https://your-vergeos-instance --verge-user=admin --verge-pass=password
+go test ./tests/...
 ```
 
-#### Options
-
-- `--exporter-url=URL`: URL of the VergeOS exporter (default: http://localhost:9888)
-- `--metrics-path=PATH`: Path to metrics endpoint (default: /metrics)
-- `--verge-url=URL`: VergeOS API URL (required)
-- `--verge-user=USER`: VergeOS API username (required)
-- `--verge-pass=PASS`: VergeOS API password (required)
-- `--start-exporter`: Start the exporter as part of the test
-- `--help`: Show help message
-
-### Test Procedure
-
-The test performs the following steps:
-
-1. Connects to the VergeOS exporter (or starts it if `--start-exporter` is specified)
-2. Fetches metrics from the exporter
-3. Parses the drive state metrics
-4. Prints a table of drive states for each tier
-5. Verifies that all expected drive states are present for each tier
-
-### Expected Output
-
-The test will output a table of drive states for each tier, showing the count of drives in each state:
-
-```
-Drive State Metrics:
-------------------------------------------------------------
-System          Tier       State           Count     
-------------------------------------------------------------
-test-system     0          online          3         
-test-system     0          offline         1         
-test-system     0          repairing       1         
-test-system     0          initializing    1         
-test-system     0          verifying       1         
-test-system     0          noredundant     0         
-test-system     0          outofspace      0         
-test-system     1          online          4         
-test-system     1          offline         0         
-test-system     1          repairing       0         
-test-system     1          initializing    0         
-test-system     1          verifying       0         
-test-system     1          noredundant     1         
-test-system     1          outofspace      1         
-------------------------------------------------------------
-
-Verifying all states are present:
-All expected states are present for all tiers.
-```
-
-If any states are missing, the test will output warnings:
-
-```
-Verifying all states are present:
-WARNING: State 'repairing' is missing for tier 1
-WARNING: State 'initializing' is missing for tier 1
-```
-
-## Unit Tests
-
-The unit tests for the drive state monitoring functionality are in `collectors/storage_test.go`. These tests use mock API responses to verify that the exporter correctly counts drives in each state.
-
-To run the unit tests:
+Run with verbose output:
 
 ```bash
-go test -v ./collectors
+go test -v ./tests/...
+```
+
+Run a specific test:
+
+```bash
+go test -v ./tests/... -run TestStorageTierMetrics
+```
+
+## Test Coverage
+
+The tests cover:
+
+### Storage Collector (`storage_test.go`)
+- VSAN tier capacity, usage, and allocation metrics
+- Tier encryption and redundancy status
+- Bad drives and fullwalk progress
+- **Bug #27**: Phantom tier filtering (non-contiguous tiers)
+- **Bug #28**: Stale metrics prevention (status transitions)
+- Edge case: No tiers configured
+
+### Node Collector (`node_test.go`)
+- Physical node enumeration by cluster
+- IPMI status reporting
+- RAM total and allocation metrics
+- Stale metrics prevention when nodes are removed
+- Multiple cluster support
+
+### Cluster Collector (`cluster_test.go`)
+- Cluster count and status metrics
+- Health status (online state detection)
+- Enabled/disabled status
+- RAM, cores, and running machines metrics
+- Stale metrics prevention
+- Offline cluster detection
+
+### Network Collector (`network_test.go`)
+- Info metric emission (SDK gaps prevent NIC metrics)
+- Descriptor count verification
+- Verification that NIC metrics are not emitted
+
+### System Collector (`system_test.go`)
+- Version and hash metrics
+- Stale metrics prevention on version changes
+- Different version format handling
+
+## Test Helpers
+
+The `testhelpers.go` file provides shared utilities:
+
+- `CreateTestSDKClient()` - Creates an SDK client for testing
+- `NewBaseMockServer()` - Creates a mock HTTP server with version/settings support
+- Mock types for API responses (StorageTierMock, ClusterTierMock, etc.)
+- Helper functions for JSON response writing and auth checking
+
+## SDK Gaps
+
+Some metrics are not tested because they cannot be implemented due to SDK gaps:
+
+- **Drive metrics**: SDK lacks `node_display` and `statuslist` fields
+- **NIC metrics**: SDK doesn't capture dashboard NIC data
+- **Node dashboard metrics**: SDK doesn't expose `machine.stats` fields
+
+See `.claude/GAPS.md` for comprehensive documentation of SDK limitations.

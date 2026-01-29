@@ -1,92 +1,48 @@
-package collectors
+package tests
 
 import (
-	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"vergeos-exporter/collectors"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	dto "github.com/prometheus/client_model/go"
-	vergeos "github.com/verge-io/goVergeOS"
 )
 
 func TestNodeCollector(t *testing.T) {
-	// Create mock server
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+	config := DefaultMockConfig()
 
-		switch {
-		case strings.HasSuffix(r.URL.Path, "/version.json"):
-			// SDK version check during client creation
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"name":    "v4",
-				"version": "26.0.2.1",
-				"hash":    "testbuild",
-			})
-
-		case strings.Contains(r.URL.Path, "/settings") && strings.Contains(r.URL.RawQuery, "cloud_name"):
-			// Settings API response
-			json.NewEncoder(w).Encode([]map[string]string{
-				{"key": "cloud_name", "value": "testcloud"},
-			})
-
-		case strings.Contains(r.URL.Path, "/clusters"):
-			// Clusters list response
-			json.NewEncoder(w).Encode([]map[string]interface{}{
-				{"$key": 1, "name": "cluster1", "enabled": true},
-			})
-
-		case strings.Contains(r.URL.Path, "/nodes") && strings.Contains(r.URL.RawQuery, "physical"):
-			// Physical nodes list response
-			json.NewEncoder(w).Encode([]map[string]interface{}{
-				{
-					"id":          1,
-					"name":        "node1",
-					"physical":    true,
-					"cluster":     1,
-					"ipmi_status": "ok",
-					"ram":         65536,
-					"vm_ram":      32768,
-				},
-				{
-					"id":          2,
-					"name":        "node2",
-					"physical":    true,
-					"cluster":     1,
-					"ipmi_status": "offline",
-					"ram":         65536,
-					"vm_ram":      16384,
-				},
-			})
-
-		default:
-			t.Logf("Unhandled request: %s %s", r.Method, r.URL.String())
-			http.Error(w, "not found", http.StatusNotFound)
-		}
-	}))
-	defer mockServer.Close()
-
-	// Create SDK client pointing to mock server
-	client, err := vergeos.NewClient(
-		vergeos.WithBaseURL(mockServer.URL),
-		vergeos.WithCredentials("test", "test"),
-		vergeos.WithInsecureTLS(true),
-	)
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
+	nodes := []NodeMock{
+		{ID: 1, Name: "node1", Physical: true, Cluster: 1, IPMIStatus: "ok", RAM: 65536, VMRAM: 32768},
+		{ID: 2, Name: "node2", Physical: true, Cluster: 1, IPMIStatus: "offline", RAM: 65536, VMRAM: 16384},
 	}
 
-	// Create collector
-	collector := NewNodeCollector(client)
+	clusters := []ClusterMock{
+		{Key: 1, Name: "cluster1", Enabled: true},
+	}
 
-	// Create a new registry and register the collector
+	mockServer := NewBaseMockServer(t, config, func(w http.ResponseWriter, r *http.Request) bool {
+		switch {
+		case strings.Contains(r.URL.Path, "/clusters"):
+			WriteJSONResponse(w, clusters)
+			return true
+		case strings.Contains(r.URL.Path, "/nodes") && strings.Contains(r.URL.RawQuery, "physical"):
+			WriteJSONResponse(w, nodes)
+			return true
+		}
+		return false
+	})
+	defer mockServer.Close()
+
+	client := CreateTestSDKClient(t, mockServer.URL)
+	collector := collectors.NewNodeCollector(client)
+
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
 
-	// Collect metrics
 	metrics, err := registry.Gather()
 	if err != nil {
 		t.Fatalf("Failed to gather metrics: %v", err)
@@ -165,60 +121,41 @@ func TestNodeCollector(t *testing.T) {
 func TestNodeCollector_StaleMetrics(t *testing.T) {
 	// This test verifies that the MustNewConstMetric pattern doesn't produce stale metrics
 	// when nodes are removed between scrapes
+	config := DefaultMockConfig()
 
 	nodeCount := 2
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		switch {
-		case strings.HasSuffix(r.URL.Path, "/version.json"):
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"name":    "v4",
-				"version": "26.0.2.1",
-				"hash":    "testbuild",
-			})
-
-		case strings.Contains(r.URL.Path, "/settings"):
-			json.NewEncoder(w).Encode([]map[string]string{
-				{"key": "cloud_name", "value": "testcloud"},
-			})
-
-		case strings.Contains(r.URL.Path, "/clusters"):
-			json.NewEncoder(w).Encode([]map[string]interface{}{
-				{"$key": 1, "name": "cluster1", "enabled": true},
-			})
-
-		case strings.Contains(r.URL.Path, "/nodes"):
-			nodes := []map[string]interface{}{}
-			for i := 1; i <= nodeCount; i++ {
-				nodes = append(nodes, map[string]interface{}{
-					"id":          i,
-					"name":        "node" + string(rune('0'+i)),
-					"physical":    true,
-					"cluster":     1,
-					"ipmi_status": "ok",
-					"ram":         65536,
-					"vm_ram":      32768,
-				})
-			}
-			json.NewEncoder(w).Encode(nodes)
-
-		default:
-			http.Error(w, "not found", http.StatusNotFound)
-		}
-	}))
-	defer mockServer.Close()
-
-	client, err := vergeos.NewClient(
-		vergeos.WithBaseURL(mockServer.URL),
-		vergeos.WithCredentials("test", "test"),
-		vergeos.WithInsecureTLS(true),
-	)
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
+	clusters := []ClusterMock{
+		{Key: 1, Name: "cluster1", Enabled: true},
 	}
 
-	collector := NewNodeCollector(client)
+	mockServer := NewBaseMockServer(t, config, func(w http.ResponseWriter, r *http.Request) bool {
+		switch {
+		case strings.Contains(r.URL.Path, "/clusters"):
+			WriteJSONResponse(w, clusters)
+			return true
+		case strings.Contains(r.URL.Path, "/nodes"):
+			nodes := []NodeMock{}
+			for i := 1; i <= nodeCount; i++ {
+				nodes = append(nodes, NodeMock{
+					ID:         i,
+					Name:       "node" + string(rune('0'+i)),
+					Physical:   true,
+					Cluster:    1,
+					IPMIStatus: "ok",
+					RAM:        65536,
+					VMRAM:      32768,
+				})
+			}
+			WriteJSONResponse(w, nodes)
+			return true
+		}
+		return false
+	})
+	defer mockServer.Close()
+
+	client := CreateTestSDKClient(t, mockServer.URL)
+	collector := collectors.NewNodeCollector(client)
+
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
 
@@ -253,4 +190,48 @@ func TestNodeCollector_StaleMetrics(t *testing.T) {
 	if count := countIpmiMetrics(metrics2); count != 1 {
 		t.Errorf("Second scrape: expected 1 IPMI metric (no stale), got %d", count)
 	}
+}
+
+func TestNodeCollector_MultipleClusters(t *testing.T) {
+	config := DefaultMockConfig()
+
+	nodes := []NodeMock{
+		{ID: 1, Name: "prod-node1", Physical: true, Cluster: 1, IPMIStatus: "ok", RAM: 65536, VMRAM: 32768},
+		{ID: 2, Name: "prod-node2", Physical: true, Cluster: 1, IPMIStatus: "ok", RAM: 65536, VMRAM: 32768},
+		{ID: 3, Name: "dev-node1", Physical: true, Cluster: 2, IPMIStatus: "ok", RAM: 32768, VMRAM: 16384},
+	}
+
+	clusters := []ClusterMock{
+		{Key: 1, Name: "production", Enabled: true},
+		{Key: 2, Name: "development", Enabled: true},
+	}
+
+	mockServer := NewBaseMockServer(t, config, func(w http.ResponseWriter, r *http.Request) bool {
+		switch {
+		case strings.Contains(r.URL.Path, "/clusters"):
+			WriteJSONResponse(w, clusters)
+			return true
+		case strings.Contains(r.URL.Path, "/nodes"):
+			WriteJSONResponse(w, nodes)
+			return true
+		}
+		return false
+	})
+	defer mockServer.Close()
+
+	client := CreateTestSDKClient(t, mockServer.URL)
+	collector := collectors.NewNodeCollector(client)
+
+	t.Run("nodes_total_per_cluster", func(t *testing.T) {
+		expected := `
+			# HELP vergeos_nodes_total Total number of physical nodes
+			# TYPE vergeos_nodes_total gauge
+			vergeos_nodes_total{cluster="all",system_name="testcloud"} 3
+			vergeos_nodes_total{cluster="production",system_name="testcloud"} 2
+			vergeos_nodes_total{cluster="development",system_name="testcloud"} 1
+		`
+		if err := testutil.CollectAndCompare(collector, strings.NewReader(expected), "vergeos_nodes_total"); err != nil {
+			t.Errorf("Unexpected metric values: %v", err)
+		}
+	})
 }

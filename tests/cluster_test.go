@@ -1,97 +1,51 @@
-package collectors
+package tests
 
 import (
-	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"vergeos-exporter/collectors"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	dto "github.com/prometheus/client_model/go"
-	vergeos "github.com/verge-io/goVergeOS"
 )
 
 func TestClusterCollector(t *testing.T) {
-	// Create mock server
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+	config := DefaultMockConfig()
 
-		switch {
-		case strings.HasSuffix(r.URL.Path, "/version.json"):
-			// SDK version check during client creation
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"name":    "v4",
-				"version": "26.0.2.1",
-				"hash":    "testbuild",
-			})
-
-		case strings.Contains(r.URL.Path, "/settings") && strings.Contains(r.URL.RawQuery, "cloud_name"):
-			// Settings API response
-			json.NewEncoder(w).Encode([]map[string]string{
-				{"key": "cloud_name", "value": "testcloud"},
-			})
-
-		case strings.HasPrefix(r.URL.Path, "/api/v4/clusters/"):
-			// Single cluster status response (GetStatus call)
-			// The SDK requests fields=status[...] for GetStatus
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"status": map[string]interface{}{
-					"cluster":          1,
-					"status":           "online",
-					"state":            "online",
-					"total_nodes":      2,
-					"online_nodes":     2,
-					"running_machines": 5,
-					"total_ram":        131072,
-					"online_ram":       131072,
-					"used_ram":         65536,
-					"total_cores":      32,
-					"online_cores":     32,
-					"used_cores":       16,
-					"phys_ram_used":    45000,
-				},
-			})
-
-		case strings.Contains(r.URL.Path, "/clusters"):
-			// Clusters list response
-			json.NewEncoder(w).Encode([]map[string]interface{}{
-				{
-					"$key":           1,
-					"name":           "cluster1",
-					"enabled":        true,
-					"ram_per_unit":   4096,
-					"cores_per_unit": 1,
-					"target_ram_pct": 80.0,
-				},
-			})
-
-		default:
-			t.Logf("Unhandled request: %s %s", r.Method, r.URL.String())
-			http.Error(w, "not found", http.StatusNotFound)
-		}
-	}))
-	defer mockServer.Close()
-
-	// Create SDK client pointing to mock server
-	client, err := vergeos.NewClient(
-		vergeos.WithBaseURL(mockServer.URL),
-		vergeos.WithCredentials("test", "test"),
-		vergeos.WithInsecureTLS(true),
-	)
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
+	clusters := []ClusterMock{
+		{Key: 1, Name: "cluster1", Enabled: true, RAMPerUnit: 4096, CoresPerUnit: 1, TargetRAMPct: 80.0},
 	}
 
-	// Create collector
-	collector := NewClusterCollector(client)
+	clusterStatus := ClusterStatusMock{
+		Cluster: 1, Status: "online", State: "online",
+		TotalNodes: 2, OnlineNodes: 2, RunningMachines: 5,
+		TotalRAM: 131072, OnlineRAM: 131072, UsedRAM: 65536,
+		TotalCores: 32, OnlineCores: 32, UsedCores: 16,
+		PhysRAMUsed: 45000,
+	}
 
-	// Create a new registry and register the collector
+	mockServer := NewBaseMockServer(t, config, func(w http.ResponseWriter, r *http.Request) bool {
+		switch {
+		case strings.HasPrefix(r.URL.Path, "/api/v4/clusters/"):
+			WriteJSONResponse(w, map[string]interface{}{"status": clusterStatus})
+			return true
+		case strings.Contains(r.URL.Path, "/clusters"):
+			WriteJSONResponse(w, clusters)
+			return true
+		}
+		return false
+	})
+	defer mockServer.Close()
+
+	client := CreateTestSDKClient(t, mockServer.URL)
+	collector := collectors.NewClusterCollector(client)
+
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
 
-	// Collect metrics
 	metrics, err := registry.Gather()
 	if err != nil {
 		t.Fatalf("Failed to gather metrics: %v", err)
@@ -232,95 +186,47 @@ func TestClusterCollector(t *testing.T) {
 }
 
 func TestClusterCollector_MultipleClusters(t *testing.T) {
-	// Test with multiple clusters to verify all are processed
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+	config := DefaultMockConfig()
 
+	clusters := []ClusterMock{
+		{Key: 1, Name: "production", Enabled: true, RAMPerUnit: 4096, CoresPerUnit: 1, TargetRAMPct: 80.0},
+		{Key: 2, Name: "development", Enabled: false, RAMPerUnit: 2048, CoresPerUnit: 2, TargetRAMPct: 90.0},
+	}
+
+	mockServer := NewBaseMockServer(t, config, func(w http.ResponseWriter, r *http.Request) bool {
 		switch {
-		case strings.HasSuffix(r.URL.Path, "/version.json"):
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"name":    "v4",
-				"version": "26.0.2.1",
-				"hash":    "testbuild",
-			})
-
-		case strings.Contains(r.URL.Path, "/settings"):
-			json.NewEncoder(w).Encode([]map[string]string{
-				{"key": "cloud_name", "value": "testcloud"},
-			})
-
 		case strings.HasPrefix(r.URL.Path, "/api/v4/clusters/1"):
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"status": map[string]interface{}{
-					"cluster":          1,
-					"status":           "online",
-					"state":            "online",
-					"total_nodes":      2,
-					"online_nodes":     2,
-					"running_machines": 10,
-					"total_ram":        65536,
-					"online_ram":       65536,
-					"used_ram":         32768,
-					"total_cores":      16,
-					"online_cores":     16,
-					"used_cores":       8,
-					"phys_ram_used":    20000,
+			WriteJSONResponse(w, map[string]interface{}{
+				"status": ClusterStatusMock{
+					Cluster: 1, Status: "online", State: "online",
+					TotalNodes: 2, OnlineNodes: 2, RunningMachines: 10,
+					TotalRAM: 65536, OnlineRAM: 65536, UsedRAM: 32768,
+					TotalCores: 16, OnlineCores: 16, UsedCores: 8,
+					PhysRAMUsed: 20000,
 				},
 			})
-
+			return true
 		case strings.HasPrefix(r.URL.Path, "/api/v4/clusters/2"):
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"status": map[string]interface{}{
-					"cluster":          2,
-					"status":           "online",
-					"state":            "warning",
-					"total_nodes":      1,
-					"online_nodes":     1,
-					"running_machines": 3,
-					"total_ram":        32768,
-					"online_ram":       32768,
-					"used_ram":         16384,
-					"total_cores":      8,
-					"online_cores":     8,
-					"used_cores":       4,
-					"phys_ram_used":    10000,
+			WriteJSONResponse(w, map[string]interface{}{
+				"status": ClusterStatusMock{
+					Cluster: 2, Status: "online", State: "warning",
+					TotalNodes: 1, OnlineNodes: 1, RunningMachines: 3,
+					TotalRAM: 32768, OnlineRAM: 32768, UsedRAM: 16384,
+					TotalCores: 8, OnlineCores: 8, UsedCores: 4,
+					PhysRAMUsed: 10000,
 				},
 			})
-
+			return true
 		case strings.Contains(r.URL.Path, "/clusters"):
-			json.NewEncoder(w).Encode([]map[string]interface{}{
-				{
-					"$key":           1,
-					"name":           "production",
-					"enabled":        true,
-					"ram_per_unit":   4096,
-					"cores_per_unit": 1,
-					"target_ram_pct": 80.0,
-				},
-				{
-					"$key":           2,
-					"name":           "development",
-					"enabled":        false,
-					"ram_per_unit":   2048,
-					"cores_per_unit": 2,
-					"target_ram_pct": 90.0,
-				},
-			})
-
-		default:
-			t.Logf("Unhandled request: %s %s", r.Method, r.URL.String())
-			http.Error(w, "not found", http.StatusNotFound)
+			WriteJSONResponse(w, clusters)
+			return true
 		}
-	}))
+		return false
+	})
 	defer mockServer.Close()
 
-	client, _ := vergeos.NewClient(
-		vergeos.WithBaseURL(mockServer.URL),
-		vergeos.WithCredentials("test", "test"),
-		vergeos.WithInsecureTLS(true),
-	)
-
-	collector := NewClusterCollector(client)
+	client := CreateTestSDKClient(t, mockServer.URL)
+	collector := collectors.NewClusterCollector(client)
 
 	// Verify clusters_total shows 2
 	t.Run("clusters_total", func(t *testing.T) {
@@ -377,71 +283,45 @@ func TestClusterCollector_MultipleClusters(t *testing.T) {
 func TestClusterCollector_StaleMetrics(t *testing.T) {
 	// This test verifies that the MustNewConstMetric pattern doesn't produce stale metrics
 	// when clusters are removed between scrapes
+	config := DefaultMockConfig()
 
 	clusterCount := 2
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
 
+	mockServer := NewBaseMockServer(t, config, func(w http.ResponseWriter, r *http.Request) bool {
 		switch {
-		case strings.HasSuffix(r.URL.Path, "/version.json"):
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"name":    "v4",
-				"version": "26.0.2.1",
-				"hash":    "testbuild",
-			})
-
-		case strings.Contains(r.URL.Path, "/settings"):
-			json.NewEncoder(w).Encode([]map[string]string{
-				{"key": "cloud_name", "value": "testcloud"},
-			})
-
 		case strings.HasPrefix(r.URL.Path, "/api/v4/clusters/"):
-			// Extract cluster ID and return status
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"status": map[string]interface{}{
-					"cluster":          1,
-					"status":           "online",
-					"state":            "online",
-					"total_nodes":      2,
-					"online_nodes":     2,
-					"running_machines": 5,
-					"total_ram":        65536,
-					"online_ram":       65536,
-					"used_ram":         32768,
-					"total_cores":      16,
-					"online_cores":     16,
-					"used_cores":       8,
-					"phys_ram_used":    20000,
+			WriteJSONResponse(w, map[string]interface{}{
+				"status": ClusterStatusMock{
+					Cluster: 1, Status: "online", State: "online",
+					TotalNodes: 2, OnlineNodes: 2, RunningMachines: 5,
+					TotalRAM: 65536, OnlineRAM: 65536, UsedRAM: 32768,
+					TotalCores: 16, OnlineCores: 16, UsedCores: 8,
+					PhysRAMUsed: 20000,
 				},
 			})
-
+			return true
 		case strings.Contains(r.URL.Path, "/clusters"):
-			clusters := []map[string]interface{}{}
+			clusters := []ClusterMock{}
 			for i := 1; i <= clusterCount; i++ {
-				clusters = append(clusters, map[string]interface{}{
-					"$key":           i,
-					"name":           "cluster" + string(rune('0'+i)),
-					"enabled":        true,
-					"ram_per_unit":   4096,
-					"cores_per_unit": 1,
-					"target_ram_pct": 80.0,
+				clusters = append(clusters, ClusterMock{
+					Key:          i,
+					Name:         "cluster" + string(rune('0'+i)),
+					Enabled:      true,
+					RAMPerUnit:   4096,
+					CoresPerUnit: 1,
+					TargetRAMPct: 80.0,
 				})
 			}
-			json.NewEncoder(w).Encode(clusters)
-
-		default:
-			http.Error(w, "not found", http.StatusNotFound)
+			WriteJSONResponse(w, clusters)
+			return true
 		}
-	}))
+		return false
+	})
 	defer mockServer.Close()
 
-	client, _ := vergeos.NewClient(
-		vergeos.WithBaseURL(mockServer.URL),
-		vergeos.WithCredentials("test", "test"),
-		vergeos.WithInsecureTLS(true),
-	)
+	client := CreateTestSDKClient(t, mockServer.URL)
+	collector := collectors.NewClusterCollector(client)
 
-	collector := NewClusterCollector(client)
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
 
@@ -485,66 +365,35 @@ func TestClusterCollector_StaleMetrics(t *testing.T) {
 
 func TestClusterCollector_OfflineCluster(t *testing.T) {
 	// Test that offline clusters (0 online nodes) show status=0
-	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+	config := DefaultMockConfig()
 
+	clusters := []ClusterMock{
+		{Key: 1, Name: "offline-cluster", Enabled: true, RAMPerUnit: 4096, CoresPerUnit: 1, TargetRAMPct: 80.0},
+	}
+
+	mockServer := NewBaseMockServer(t, config, func(w http.ResponseWriter, r *http.Request) bool {
 		switch {
-		case strings.HasSuffix(r.URL.Path, "/version.json"):
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"name":    "v4",
-				"version": "26.0.2.1",
-				"hash":    "testbuild",
-			})
-
-		case strings.Contains(r.URL.Path, "/settings"):
-			json.NewEncoder(w).Encode([]map[string]string{
-				{"key": "cloud_name", "value": "testcloud"},
-			})
-
 		case strings.HasPrefix(r.URL.Path, "/api/v4/clusters/"):
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"status": map[string]interface{}{
-					"cluster":          1,
-					"status":           "offline",
-					"state":            "offline",
-					"total_nodes":      2,
-					"online_nodes":     0, // No nodes online
-					"running_machines": 0,
-					"total_ram":        65536,
-					"online_ram":       0,
-					"used_ram":         0,
-					"total_cores":      16,
-					"online_cores":     0,
-					"used_cores":       0,
-					"phys_ram_used":    0,
+			WriteJSONResponse(w, map[string]interface{}{
+				"status": ClusterStatusMock{
+					Cluster: 1, Status: "offline", State: "offline",
+					TotalNodes: 2, OnlineNodes: 0, RunningMachines: 0,
+					TotalRAM: 65536, OnlineRAM: 0, UsedRAM: 0,
+					TotalCores: 16, OnlineCores: 0, UsedCores: 0,
+					PhysRAMUsed: 0,
 				},
 			})
-
+			return true
 		case strings.Contains(r.URL.Path, "/clusters"):
-			json.NewEncoder(w).Encode([]map[string]interface{}{
-				{
-					"$key":           1,
-					"name":           "offline-cluster",
-					"enabled":        true,
-					"ram_per_unit":   4096,
-					"cores_per_unit": 1,
-					"target_ram_pct": 80.0,
-				},
-			})
-
-		default:
-			http.Error(w, "not found", http.StatusNotFound)
+			WriteJSONResponse(w, clusters)
+			return true
 		}
-	}))
+		return false
+	})
 	defer mockServer.Close()
 
-	client, _ := vergeos.NewClient(
-		vergeos.WithBaseURL(mockServer.URL),
-		vergeos.WithCredentials("test", "test"),
-		vergeos.WithInsecureTLS(true),
-	)
-
-	collector := NewClusterCollector(client)
+	client := CreateTestSDKClient(t, mockServer.URL)
+	collector := collectors.NewClusterCollector(client)
 
 	t.Run("offline_cluster_status", func(t *testing.T) {
 		expected := `
