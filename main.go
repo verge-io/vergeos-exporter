@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"flag"
 	"log"
 	"net/http"
@@ -57,20 +56,13 @@ func main() {
 	}
 	log.Printf("Successfully connected to VergeOS system: %s", cloudName)
 
-	// Create HTTP client for collectors (legacy - will be replaced with SDK client in later phases)
-	httpClient := &http.Client{
-		Timeout: *scrapeTimeout,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: *insecure},
-		},
-	}
-
-	// Initialize collectors (will be migrated to use SDK client in later phases)
-	nodeCollector := collectors.NewNodeCollector(*vergeURL, httpClient, *vergeUsername, *vergePassword)
-	storageCollector := collectors.NewStorageCollector(*vergeURL, httpClient, *vergeUsername, *vergePassword)
-	networkCollector := collectors.NewNetworkCollector(*vergeURL, httpClient, *vergeUsername, *vergePassword)
-	clusterCollector := collectors.NewClusterCollector(*vergeURL, httpClient, *vergeUsername, *vergePassword)
-	systemCollector := collectors.NewSystemCollector(*vergeURL, httpClient, *vergeUsername, *vergePassword)
+	// Initialize collectors with SDK client
+	// Each collector also receives URL/credentials temporarily until fully migrated to SDK
+	nodeCollector := collectors.NewNodeCollector(client, *vergeURL, *vergeUsername, *vergePassword)
+	storageCollector := collectors.NewStorageCollector(client, *vergeURL, *vergeUsername, *vergePassword)
+	networkCollector := collectors.NewNetworkCollector(client, *vergeURL, *vergeUsername, *vergePassword)
+	clusterCollector := collectors.NewClusterCollector(client, *vergeURL, *vergeUsername, *vergePassword)
+	systemCollector := collectors.NewSystemCollector(client, *vergeURL, *vergeUsername, *vergePassword)
 
 	prometheus.MustRegister(nodeCollector)
 	prometheus.MustRegister(storageCollector)

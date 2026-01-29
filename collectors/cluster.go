@@ -2,6 +2,7 @@ package collectors
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
+	vergeos "github.com/verge-io/goVergeOS"
 )
 
 // ClusterResponse represents the API response for clusters
@@ -18,6 +20,12 @@ type ClusterResponse []ClusterInfo
 type ClusterCollector struct {
 	BaseCollector
 	mutex sync.Mutex
+
+	// Temporary HTTP client until this collector is migrated to SDK (Phase 5)
+	httpClient *http.Client
+	url        string
+	username   string
+	password   string
 
 	// Metrics
 	clusterStatus        *prometheus.GaugeVec
@@ -41,13 +49,21 @@ type ClusterCollector struct {
 }
 
 // NewClusterCollector creates a new ClusterCollector
-func NewClusterCollector(url string, client *http.Client, username, password string) *ClusterCollector {
-	cc := &ClusterCollector{
-		BaseCollector: BaseCollector{
-			url:        url,
-			httpClient: client,
+func NewClusterCollector(client *vergeos.Client, url, username, password string) *ClusterCollector {
+	// Create temporary HTTP client for legacy operations (will be removed in Phase 5)
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
-		systemName: "unknown", // Will be updated in Collect
+	}
+
+	cc := &ClusterCollector{
+		BaseCollector: *NewBaseCollector(client),
+		httpClient:    httpClient,
+		url:           url,
+		username:      username,
+		password:      password,
+		systemName:    "unknown", // Will be updated in Collect
 		clusterStatus: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "vergeos_cluster_status",
@@ -169,12 +185,22 @@ func NewClusterCollector(url string, client *http.Client, username, password str
 		),
 	}
 
-	// Authenticate with the API
-	if err := cc.authenticate(username, password); err != nil {
-		fmt.Printf("Error authenticating with VergeOS API: %v\n", err)
+	return cc
+}
+
+// makeRequest creates an HTTP request with proper authentication
+// TODO: Remove after Phase 5 migration to SDK
+func (cc *ClusterCollector) makeRequest(method, path string) (*http.Request, error) {
+	req, err := http.NewRequest(method, cc.url+path, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %v", err)
 	}
 
-	return cc
+	req.SetBasicAuth(cc.username, cc.password)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-JSON-Non-Compact", "1")
+
+	return req, nil
 }
 
 // Describe implements prometheus.Collector

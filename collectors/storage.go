@@ -1,18 +1,26 @@
 package collectors
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
+	vergeos "github.com/verge-io/goVergeOS"
 )
 
 // StorageCollector collects metrics about VergeOS storage
 type StorageCollector struct {
 	BaseCollector
 	mutex sync.Mutex
+
+	// Temporary HTTP client until this collector is migrated to SDK (Phase 3)
+	httpClient *http.Client
+	url        string
+	username   string
+	password   string
 
 	// System name for labeling metrics
 	systemName string
@@ -64,18 +72,26 @@ type StorageCollector struct {
 }
 
 // NewStorageCollector creates a new StorageCollector
-func NewStorageCollector(url string, client *http.Client, username, password string) *StorageCollector {
+func NewStorageCollector(client *vergeos.Client, url, username, password string) *StorageCollector {
+	// Create temporary HTTP client for legacy operations (will be removed in Phase 3)
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
 	driveLabels := []string{"system_name", "node_name", "drive_name", "tier", "serial"}
 	tierLabels := []string{"system_name", "tier", "description"}
 	// New labels for drive state metrics, including node_name
 	driveStateLabels := []string{"system_name", "node_name", "tier"}
 
 	sc := &StorageCollector{
-		BaseCollector: BaseCollector{
-			url:        url,
-			httpClient: client,
-		},
-		systemName: "unknown", // Will be updated in Collect
+		BaseCollector: *NewBaseCollector(client),
+		httpClient:    httpClient,
+		url:           url,
+		username:      username,
+		password:      password,
+		systemName:    "unknown", // Will be updated in Collect
 		driveReadOps: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "vergeos_drive_read_ops",
 			Help: "Total number of read operations",
@@ -233,12 +249,22 @@ func NewStorageCollector(url string, client *http.Client, username, password str
 		}, driveStateLabels),
 	}
 
-	// Authenticate immediately
-	if err := sc.authenticate(username, password); err != nil {
-		fmt.Printf("Error authenticating storage collector: %v\n", err)
+	return sc
+}
+
+// makeRequest creates an HTTP request with proper authentication
+// TODO: Remove after Phase 3 migration to SDK
+func (sc *StorageCollector) makeRequest(method, path string) (*http.Request, error) {
+	req, err := http.NewRequest(method, sc.url+path, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %v", err)
 	}
 
-	return sc
+	req.SetBasicAuth(sc.username, sc.password)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-JSON-Non-Compact", "1")
+
+	return req, nil
 }
 
 // Describe implements prometheus.Collector
