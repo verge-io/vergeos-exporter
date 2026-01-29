@@ -57,9 +57,10 @@ func main() {
 	log.Printf("Successfully connected to VergeOS system: %s", cloudName)
 
 	// Initialize collectors with SDK client
-	// Each collector also receives URL/credentials temporarily until fully migrated to SDK
+	// StorageCollector is fully migrated to SDK (Phase 3a/3b complete)
+	// Other collectors still need URL/credentials until their migration phase
+	storageCollector := collectors.NewStorageCollector(client)
 	nodeCollector := collectors.NewNodeCollector(client, *vergeURL, *vergeUsername, *vergePassword)
-	storageCollector := collectors.NewStorageCollector(client, *vergeURL, *vergeUsername, *vergePassword)
 	networkCollector := collectors.NewNetworkCollector(client, *vergeURL, *vergeUsername, *vergePassword)
 	clusterCollector := collectors.NewClusterCollector(client, *vergeURL, *vergeUsername, *vergePassword)
 	systemCollector := collectors.NewSystemCollector(client, *vergeURL, *vergeUsername, *vergePassword)

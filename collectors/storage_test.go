@@ -22,7 +22,7 @@ func createTestSDKClient(mockServerURL string) *vergeos.Client {
 	return client
 }
 
-func TestDriveStateMonitoring(t *testing.T) {
+func TestStorageTierMetrics(t *testing.T) {
 	// Create a mock server to simulate the VergeOS API
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Add basic auth check
@@ -46,25 +46,24 @@ func TestDriveStateMonitoring(t *testing.T) {
 
 		case strings.Contains(r.URL.Path, "/api/v4/storage_tiers"):
 			// Return tier information - SDK compatible format
-			// Using tiers 0 and 1 (valid in test environments)
 			tiers := []map[string]interface{}{
 				{
 					"$key":         0,
 					"tier":         0,
 					"description":  "SSD Tier",
-					"capacity":     uint64(1000000000000),
-					"used":         uint64(100000000000),
-					"allocated":    uint64(500000000000),
-					"dedupe_ratio": uint32(200),
+					"capacity":     uint64(1000000000000), // 1TB
+					"used":         uint64(100000000000),  // 100GB
+					"allocated":    uint64(500000000000),  // 500GB
+					"dedupe_ratio": uint32(200),           // 2.0x
 				},
 				{
 					"$key":         1,
 					"tier":         1,
 					"description":  "HDD Tier",
-					"capacity":     uint64(5000000000000),
-					"used":         uint64(2000000000000),
-					"allocated":    uint64(3000000000000),
-					"dedupe_ratio": uint32(150),
+					"capacity":     uint64(5000000000000), // 5TB
+					"used":         uint64(2000000000000), // 2TB
+					"allocated":    uint64(3000000000000), // 3TB
+					"dedupe_ratio": uint32(150),           // 1.5x
 				},
 			}
 			json.NewEncoder(w).Encode(tiers)
@@ -89,7 +88,7 @@ func TestDriveStateMonitoring(t *testing.T) {
 						"last_walk_time_ms":     uint64(1000),
 						"last_fullwalk_time_ms": uint64(5000),
 						"fullwalk":              false,
-						"progress":              float64(100),
+						"progress":              float64(0),
 						"cur_space_throttle_ms": float64(0),
 					},
 				},
@@ -99,51 +98,23 @@ func TestDriveStateMonitoring(t *testing.T) {
 					"tier":    1,
 					"status": map[string]interface{}{
 						"tier":                  1,
-						"status":                "online",
-						"state":                 "online",
+						"status":                "repairing",
+						"state":                 "warning",
 						"transaction":           uint64(200),
 						"repairs":               uint64(10),
 						"working":               true,
-						"bad_drives":            float64(0),
-						"encrypted":             true,
-						"redundant":             true,
+						"bad_drives":            float64(1),
+						"encrypted":             false,
+						"redundant":             false,
 						"last_walk_time_ms":     uint64(1500),
 						"last_fullwalk_time_ms": uint64(7500),
-						"fullwalk":              false,
-						"progress":              float64(100),
-						"cur_space_throttle_ms": float64(0),
+						"fullwalk":              true,
+						"progress":              float64(50),
+						"cur_space_throttle_ms": float64(100),
 					},
 				},
 			}
 			json.NewEncoder(w).Encode(response)
-
-		case strings.Contains(r.URL.Path, "/api/v4/machine_drives"):
-			// Return drive information - use JSON maps with correct field names
-			// collectDriveStateMetrics uses: vsan_tier, vsan_repairing, statuslist, node_display
-			// Tier 0: node1 (3 online), node2 (1 offline, 1 initializing, 1 verifying), node3 (1 repairing)
-			// Tier 1: node1 (2 online), node2 (2 online), node3 (1 noredundant, 1 outofspace)
-			response := []map[string]interface{}{
-				// Tier 0 drives
-				{"$key": 1, "name": "sda", "node": 101, "node_display": "node1", "statuslist": "online", "vsan_tier": 0},
-				{"$key": 2, "name": "sdb", "node": 101, "node_display": "node1", "statuslist": "online", "vsan_tier": 0},
-				{"$key": 3, "name": "sdc", "node": 101, "node_display": "node1", "statuslist": "online", "vsan_tier": 0},
-				{"$key": 4, "name": "sdd", "node": 102, "node_display": "node2", "statuslist": "offline", "vsan_tier": 0},
-				{"$key": 5, "name": "sde", "node": 102, "node_display": "node2", "statuslist": "initializing", "vsan_tier": 0},
-				{"$key": 6, "name": "sdf", "node": 102, "node_display": "node2", "statuslist": "verifying", "vsan_tier": 0},
-				{"$key": 7, "name": "sdg", "node": 103, "node_display": "node3", "statuslist": "online", "vsan_tier": 0, "vsan_repairing": 1}, // repairing overrides online
-				// Tier 1 drives
-				{"$key": 8, "name": "sdh", "node": 101, "node_display": "node1", "statuslist": "online", "vsan_tier": 1},
-				{"$key": 9, "name": "sdi", "node": 101, "node_display": "node1", "statuslist": "online", "vsan_tier": 1},
-				{"$key": 10, "name": "sdj", "node": 102, "node_display": "node2", "statuslist": "online", "vsan_tier": 1},
-				{"$key": 11, "name": "sdk", "node": 102, "node_display": "node2", "statuslist": "online", "vsan_tier": 1},
-				{"$key": 12, "name": "sdl", "node": 103, "node_display": "node3", "statuslist": "noredundant", "vsan_tier": 1},
-				{"$key": 13, "name": "sdm", "node": 103, "node_display": "node3", "statuslist": "outofspace", "vsan_tier": 1},
-			}
-			json.NewEncoder(w).Encode(response)
-
-		case strings.Contains(r.URL.Path, "/api/v4/nodes"):
-			// Return empty node list - we're testing collectDriveStateMetrics, not drive metrics from nodes
-			json.NewEncoder(w).Encode([]struct{}{})
 
 		default:
 			w.WriteHeader(http.StatusNotFound)
@@ -156,62 +127,91 @@ func TestDriveStateMonitoring(t *testing.T) {
 
 	// Create a storage collector with the mock server
 	sdkClient := createTestSDKClient(mockServer.URL)
-	sc := NewStorageCollector(sdkClient, mockServer.URL, "testuser", "testpass")
+	sc := NewStorageCollector(sdkClient)
 	registry.MustRegister(sc)
 
-	// Test online counts
-	// Tier 0: node1=3, node2=0, node3=0 (node3 has 1 repairing which overrides online)
-	// Tier 1: node1=2, node2=2, node3=0
-	expectedOnline := `
-# HELP vergeos_vsan_drive_online_count Number of drives in the 'online' state per node and tier
-# TYPE vergeos_vsan_drive_online_count gauge
-vergeos_vsan_drive_online_count{node_name="node1",system_name="test-system",tier="0"} 3
-vergeos_vsan_drive_online_count{node_name="node1",system_name="test-system",tier="1"} 2
-vergeos_vsan_drive_online_count{node_name="node2",system_name="test-system",tier="0"} 0
-vergeos_vsan_drive_online_count{node_name="node2",system_name="test-system",tier="1"} 2
-vergeos_vsan_drive_online_count{node_name="node3",system_name="test-system",tier="0"} 0
-vergeos_vsan_drive_online_count{node_name="node3",system_name="test-system",tier="1"} 0
+	// Test tier capacity metrics
+	expectedCapacity := `
+# HELP vergeos_vsan_tier_capacity VSAN tier capacity in bytes
+# TYPE vergeos_vsan_tier_capacity gauge
+vergeos_vsan_tier_capacity{description="SSD Tier",system_name="test-system",tier="0"} 1e+12
+vergeos_vsan_tier_capacity{description="HDD Tier",system_name="test-system",tier="1"} 5e+12
 `
-	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedOnline), "vergeos_vsan_drive_online_count"); err != nil {
-		t.Errorf("Online count metrics do not match expected values: %v", err)
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedCapacity), "vergeos_vsan_tier_capacity"); err != nil {
+		t.Errorf("Capacity metrics do not match expected values: %v", err)
 	}
 
-	// Test offline counts
-	// Tier 0: node1=0, node2=1, node3=0
-	// Tier 1: all 0
-	expectedOffline := `
-# HELP vergeos_vsan_drive_offline_count Number of drives in the 'offline' state per node and tier
-# TYPE vergeos_vsan_drive_offline_count gauge
-vergeos_vsan_drive_offline_count{node_name="node1",system_name="test-system",tier="0"} 0
-vergeos_vsan_drive_offline_count{node_name="node1",system_name="test-system",tier="1"} 0
-vergeos_vsan_drive_offline_count{node_name="node2",system_name="test-system",tier="0"} 1
-vergeos_vsan_drive_offline_count{node_name="node2",system_name="test-system",tier="1"} 0
-vergeos_vsan_drive_offline_count{node_name="node3",system_name="test-system",tier="0"} 0
-vergeos_vsan_drive_offline_count{node_name="node3",system_name="test-system",tier="1"} 0
+	// Test tier used metrics
+	expectedUsed := `
+# HELP vergeos_vsan_tier_used VSAN tier used space in bytes
+# TYPE vergeos_vsan_tier_used gauge
+vergeos_vsan_tier_used{description="SSD Tier",system_name="test-system",tier="0"} 1e+11
+vergeos_vsan_tier_used{description="HDD Tier",system_name="test-system",tier="1"} 2e+12
 `
-	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedOffline), "vergeos_vsan_drive_offline_count"); err != nil {
-		t.Errorf("Offline count metrics do not match expected values: %v", err)
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedUsed), "vergeos_vsan_tier_used"); err != nil {
+		t.Errorf("Used metrics do not match expected values: %v", err)
 	}
 
-	// Test repairing counts
-	// Tier 0: node3=1 (vsan_repairing overrides statuslist)
-	expectedRepairing := `
-# HELP vergeos_vsan_drive_repairing_count Number of drives in the 'repairing' state per node and tier
-# TYPE vergeos_vsan_drive_repairing_count gauge
-vergeos_vsan_drive_repairing_count{node_name="node1",system_name="test-system",tier="0"} 0
-vergeos_vsan_drive_repairing_count{node_name="node1",system_name="test-system",tier="1"} 0
-vergeos_vsan_drive_repairing_count{node_name="node2",system_name="test-system",tier="0"} 0
-vergeos_vsan_drive_repairing_count{node_name="node2",system_name="test-system",tier="1"} 0
-vergeos_vsan_drive_repairing_count{node_name="node3",system_name="test-system",tier="0"} 1
-vergeos_vsan_drive_repairing_count{node_name="node3",system_name="test-system",tier="1"} 0
+	// Test dedupe ratio
+	expectedDedupe := `
+# HELP vergeos_vsan_tier_dedupe_ratio VSAN tier deduplication ratio
+# TYPE vergeos_vsan_tier_dedupe_ratio gauge
+vergeos_vsan_tier_dedupe_ratio{description="SSD Tier",system_name="test-system",tier="0"} 2
+vergeos_vsan_tier_dedupe_ratio{description="HDD Tier",system_name="test-system",tier="1"} 1.5
 `
-	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedRepairing), "vergeos_vsan_drive_repairing_count"); err != nil {
-		t.Errorf("Repairing count metrics do not match expected values: %v", err)
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedDedupe), "vergeos_vsan_tier_dedupe_ratio"); err != nil {
+		t.Errorf("Dedupe ratio metrics do not match expected values: %v", err)
+	}
+
+	// Test encryption status (tier 0 = encrypted, tier 1 = not encrypted)
+	expectedEncryption := `
+# HELP vergeos_vsan_encryption_status VSAN tier encryption status (1=encrypted, 0=not encrypted)
+# TYPE vergeos_vsan_encryption_status gauge
+vergeos_vsan_encryption_status{status="online",system_name="test-system",tier="0"} 1
+vergeos_vsan_encryption_status{status="repairing",system_name="test-system",tier="1"} 0
+`
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedEncryption), "vergeos_vsan_encryption_status"); err != nil {
+		t.Errorf("Encryption status metrics do not match expected values: %v", err)
+	}
+
+	// Test redundancy status (tier 0 = redundant, tier 1 = not redundant)
+	expectedRedundant := `
+# HELP vergeos_vsan_redundant VSAN tier redundancy status (1=redundant, 0=not redundant)
+# TYPE vergeos_vsan_redundant gauge
+vergeos_vsan_redundant{status="online",system_name="test-system",tier="0"} 1
+vergeos_vsan_redundant{status="repairing",system_name="test-system",tier="1"} 0
+`
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedRedundant), "vergeos_vsan_redundant"); err != nil {
+		t.Errorf("Redundancy status metrics do not match expected values: %v", err)
+	}
+
+	// Test bad drives
+	expectedBadDrives := `
+# HELP vergeos_vsan_bad_drives Number of bad drives in VSAN tier
+# TYPE vergeos_vsan_bad_drives gauge
+vergeos_vsan_bad_drives{status="online",system_name="test-system",tier="0"} 0
+vergeos_vsan_bad_drives{status="repairing",system_name="test-system",tier="1"} 1
+`
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedBadDrives), "vergeos_vsan_bad_drives"); err != nil {
+		t.Errorf("Bad drives metrics do not match expected values: %v", err)
+	}
+
+	// Test fullwalk progress (tier 1 is at 50%)
+	expectedProgress := `
+# HELP vergeos_vsan_fullwalk_progress VSAN tier fullwalk progress percentage
+# TYPE vergeos_vsan_fullwalk_progress gauge
+vergeos_vsan_fullwalk_progress{status="online",system_name="test-system",tier="0"} 0
+vergeos_vsan_fullwalk_progress{status="repairing",system_name="test-system",tier="1"} 50
+`
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedProgress), "vergeos_vsan_fullwalk_progress"); err != nil {
+		t.Errorf("Fullwalk progress metrics do not match expected values: %v", err)
 	}
 }
 
-func TestDriveStateEdgeCases(t *testing.T) {
-	// Create a mock server to simulate edge cases
+// TestPhantomTierFiltering tests Bug #27 - phantom tier filtering
+// When cluster_tiers returns a tier that doesn't exist in storage_tiers,
+// it should be skipped (not reported as a metric)
+func TestPhantomTierFiltering(t *testing.T) {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		username, password, ok := r.BasicAuth()
 		if !ok || username != "testuser" || password != "testpass" {
@@ -225,38 +225,60 @@ func TestDriveStateEdgeCases(t *testing.T) {
 			json.NewEncoder(w).Encode(settings)
 
 		case strings.Contains(r.URL.Path, "/api/v4/storage_tiers"):
-			// Only tier 1 configured
+			// Only tier 0 and 3 configured (non-contiguous)
 			tiers := []map[string]interface{}{
-				{"$key": 1, "tier": 1, "description": "Test Tier", "capacity": uint64(1000000000000), "used": uint64(0), "allocated": uint64(0), "dedupe_ratio": uint32(100)},
+				{"$key": 0, "tier": 0, "description": "Tier 0", "capacity": uint64(1000000000000), "used": uint64(0), "allocated": uint64(0), "dedupe_ratio": uint32(100)},
+				{"$key": 3, "tier": 3, "description": "Tier 3", "capacity": uint64(2000000000000), "used": uint64(0), "allocated": uint64(0), "dedupe_ratio": uint32(100)},
 			}
 			json.NewEncoder(w).Encode(tiers)
 
 		case strings.Contains(r.URL.Path, "/api/v4/cluster_tiers"):
+			// cluster_tiers returns tier 0, 1, 2, 3 - but 1 and 2 are phantom tiers
 			response := []map[string]interface{}{
 				{
-					"$key": 1, "cluster": 1, "tier": 1,
+					"$key": 1, "cluster": 1, "tier": 0,
 					"status": map[string]interface{}{
-						"tier": 1, "status": "online", "state": "online", "transaction": uint64(100),
+						"tier": 0, "status": "online", "state": "online", "transaction": uint64(100),
 						"repairs": uint64(0), "working": true, "bad_drives": float64(0),
 						"encrypted": true, "redundant": true, "last_walk_time_ms": uint64(1000),
 						"last_fullwalk_time_ms": uint64(5000), "fullwalk": false,
-						"progress": float64(100), "cur_space_throttle_ms": float64(0),
+						"progress": float64(0), "cur_space_throttle_ms": float64(0),
+					},
+				},
+				{
+					// Phantom tier 1 - should be skipped
+					"$key": 2, "cluster": 1, "tier": 1,
+					"status": map[string]interface{}{
+						"tier": 1, "status": "phantom", "state": "error", "transaction": uint64(999),
+						"repairs": uint64(999), "working": false, "bad_drives": float64(999),
+						"encrypted": false, "redundant": false, "last_walk_time_ms": uint64(999),
+						"last_fullwalk_time_ms": uint64(999), "fullwalk": false,
+						"progress": float64(0), "cur_space_throttle_ms": float64(0),
+					},
+				},
+				{
+					// Phantom tier 2 - should be skipped
+					"$key": 3, "cluster": 1, "tier": 2,
+					"status": map[string]interface{}{
+						"tier": 2, "status": "phantom", "state": "error", "transaction": uint64(999),
+						"repairs": uint64(999), "working": false, "bad_drives": float64(999),
+						"encrypted": false, "redundant": false, "last_walk_time_ms": uint64(999),
+						"last_fullwalk_time_ms": uint64(999), "fullwalk": false,
+						"progress": float64(0), "cur_space_throttle_ms": float64(0),
+					},
+				},
+				{
+					"$key": 4, "cluster": 1, "tier": 3,
+					"status": map[string]interface{}{
+						"tier": 3, "status": "online", "state": "online", "transaction": uint64(200),
+						"repairs": uint64(0), "working": true, "bad_drives": float64(0),
+						"encrypted": true, "redundant": true, "last_walk_time_ms": uint64(2000),
+						"last_fullwalk_time_ms": uint64(10000), "fullwalk": false,
+						"progress": float64(0), "cur_space_throttle_ms": float64(0),
 					},
 				},
 			}
 			json.NewEncoder(w).Encode(response)
-
-		case strings.Contains(r.URL.Path, "/api/v4/machine_drives"):
-			// Test edge cases: one online drive, two with unknown states (should be ignored)
-			response := []map[string]interface{}{
-				{"$key": 1, "name": "sda", "node": 101, "node_display": "node1", "statuslist": "online", "vsan_tier": 1},
-				{"$key": 2, "name": "sdb", "node": 101, "node_display": "node1", "statuslist": "unknown_state", "vsan_tier": 1},
-				{"$key": 3, "name": "sdc", "node": 102, "node_display": "node2", "statuslist": "another_unknown", "vsan_tier": 1},
-			}
-			json.NewEncoder(w).Encode(response)
-
-		case strings.Contains(r.URL.Path, "/api/v4/nodes"):
-			json.NewEncoder(w).Encode([]struct{}{})
 
 		default:
 			w.WriteHeader(http.StatusNotFound)
@@ -266,18 +288,88 @@ func TestDriveStateEdgeCases(t *testing.T) {
 
 	registry := prometheus.NewRegistry()
 	sdkClient := createTestSDKClient(mockServer.URL)
-	sc := NewStorageCollector(sdkClient, mockServer.URL, "testuser", "testpass")
+	sc := NewStorageCollector(sdkClient)
 	registry.MustRegister(sc)
 
-	// With unknown states, only node1 should have 1 online drive
-	// Unknown states don't increment any counter
-	expectedOnline := `
-# HELP vergeos_vsan_drive_online_count Number of drives in the 'online' state per node and tier
-# TYPE vergeos_vsan_drive_online_count gauge
-vergeos_vsan_drive_online_count{node_name="node1",system_name="test-system",tier="1"} 1
-vergeos_vsan_drive_online_count{node_name="node2",system_name="test-system",tier="1"} 0
+	// Only tier 0 and 3 should be reported (not phantom tiers 1 and 2)
+	expectedCapacity := `
+# HELP vergeos_vsan_tier_capacity VSAN tier capacity in bytes
+# TYPE vergeos_vsan_tier_capacity gauge
+vergeos_vsan_tier_capacity{description="Tier 0",system_name="test-system",tier="0"} 1e+12
+vergeos_vsan_tier_capacity{description="Tier 3",system_name="test-system",tier="3"} 2e+12
 `
-	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedOnline), "vergeos_vsan_drive_online_count"); err != nil {
-		t.Errorf("Edge case metrics do not match expected values: %v", err)
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedCapacity), "vergeos_vsan_tier_capacity"); err != nil {
+		t.Errorf("Bug #27: Phantom tier filtering failed. Capacity metrics do not match expected values: %v", err)
+	}
+
+	// Verify tier status metrics only include valid tiers (0 and 3)
+	expectedRedundant := `
+# HELP vergeos_vsan_redundant VSAN tier redundancy status (1=redundant, 0=not redundant)
+# TYPE vergeos_vsan_redundant gauge
+vergeos_vsan_redundant{status="online",system_name="test-system",tier="0"} 1
+vergeos_vsan_redundant{status="online",system_name="test-system",tier="3"} 1
+`
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedRedundant), "vergeos_vsan_redundant"); err != nil {
+		t.Errorf("Bug #27: Phantom tier filtering failed. Redundancy metrics do not match expected values: %v", err)
+	}
+
+	// Verify bad_drives from phantom tiers is NOT reported
+	expectedBadDrives := `
+# HELP vergeos_vsan_bad_drives Number of bad drives in VSAN tier
+# TYPE vergeos_vsan_bad_drives gauge
+vergeos_vsan_bad_drives{status="online",system_name="test-system",tier="0"} 0
+vergeos_vsan_bad_drives{status="online",system_name="test-system",tier="3"} 0
+`
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedBadDrives), "vergeos_vsan_bad_drives"); err != nil {
+		t.Errorf("Bug #27: Phantom tier bad_drives leaked. Metrics do not match expected values: %v", err)
+	}
+}
+
+// TestNoTiersConfigured tests behavior when no storage tiers are configured
+func TestNoTiersConfigured(t *testing.T) {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		username, password, ok := r.BasicAuth()
+		if !ok || username != "testuser" || password != "testpass" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		switch {
+		case strings.Contains(r.URL.Path, "/api/v4/settings"):
+			settings := []Setting{{Key: "cloud_name", Value: "test-system"}}
+			json.NewEncoder(w).Encode(settings)
+
+		case strings.Contains(r.URL.Path, "/api/v4/storage_tiers"):
+			// No tiers configured
+			json.NewEncoder(w).Encode([]map[string]interface{}{})
+
+		case strings.Contains(r.URL.Path, "/api/v4/cluster_tiers"):
+			// No cluster tiers
+			json.NewEncoder(w).Encode([]map[string]interface{}{})
+
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer mockServer.Close()
+
+	registry := prometheus.NewRegistry()
+	sdkClient := createTestSDKClient(mockServer.URL)
+	sc := NewStorageCollector(sdkClient)
+	registry.MustRegister(sc)
+
+	// No metrics should be emitted for capacity when no tiers exist
+	metrics, err := registry.Gather()
+	if err != nil {
+		t.Fatalf("Failed to gather metrics: %v", err)
+	}
+
+	// Check that no capacity metrics are present
+	for _, mf := range metrics {
+		if *mf.Name == "vergeos_vsan_tier_capacity" {
+			if len(mf.Metric) > 0 {
+				t.Errorf("Expected no capacity metrics when no tiers configured, but got %d", len(mf.Metric))
+			}
+		}
 	}
 }
