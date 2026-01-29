@@ -45,3 +45,7 @@ dist/
 .env
 *.env
 .env.local
+
+# Claude Code local files
+.claude/
+.mcp.json
