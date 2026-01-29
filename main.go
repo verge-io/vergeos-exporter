@@ -59,11 +59,12 @@ func main() {
 	// Initialize collectors with SDK client
 	// StorageCollector is fully migrated to SDK (Phase 3a/3b/3c complete)
 	// NodeCollector is fully migrated to SDK (Phase 4 complete)
+	// ClusterCollector is fully migrated to SDK (Phase 5 complete)
 	// Other collectors still need URL/credentials until their migration phase
 	storageCollector := collectors.NewStorageCollector(client)
 	nodeCollector := collectors.NewNodeCollector(client)
+	clusterCollector := collectors.NewClusterCollector(client)
 	networkCollector := collectors.NewNetworkCollector(client, *vergeURL, *vergeUsername, *vergePassword)
-	clusterCollector := collectors.NewClusterCollector(client, *vergeURL, *vergeUsername, *vergePassword)
 	systemCollector := collectors.NewSystemCollector(client, *vergeURL, *vergeUsername, *vergePassword)
 
 	prometheus.MustRegister(nodeCollector)
