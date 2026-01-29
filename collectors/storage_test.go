@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -322,6 +323,107 @@ vergeos_vsan_bad_drives{status="online",system_name="test-system",tier="3"} 0
 `
 	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedBadDrives), "vergeos_vsan_bad_drives"); err != nil {
 		t.Errorf("Bug #27: Phantom tier bad_drives leaked. Metrics do not match expected values: %v", err)
+	}
+}
+
+// TestStaleMetricsFix tests Bug #28 - stale metrics when tier status changes
+// With GaugeVec, old label combinations would persist after status changes.
+// With MustNewConstMetric pattern, only current state is emitted each scrape.
+func TestStaleMetricsFix(t *testing.T) {
+	// Use atomic value to dynamically change tier status during test
+	currentStatus := "online"
+	statusMutex := &sync.Mutex{}
+
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		username, password, ok := r.BasicAuth()
+		if !ok || username != "testuser" || password != "testpass" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		switch {
+		case strings.Contains(r.URL.Path, "/api/v4/settings"):
+			settings := []Setting{{Key: "cloud_name", Value: "test-system"}}
+			json.NewEncoder(w).Encode(settings)
+
+		case strings.Contains(r.URL.Path, "/api/v4/storage_tiers"):
+			tiers := []map[string]interface{}{
+				{"$key": 0, "tier": 0, "description": "Test Tier", "capacity": uint64(1000000000000), "used": uint64(0), "allocated": uint64(0), "dedupe_ratio": uint32(100)},
+			}
+			json.NewEncoder(w).Encode(tiers)
+
+		case strings.Contains(r.URL.Path, "/api/v4/cluster_tiers"):
+			statusMutex.Lock()
+			status := currentStatus
+			statusMutex.Unlock()
+
+			response := []map[string]interface{}{
+				{
+					"$key": 1, "cluster": 1, "tier": 0,
+					"status": map[string]interface{}{
+						"tier": 0, "status": status, "state": status, "transaction": uint64(100),
+						"repairs": uint64(0), "working": true, "bad_drives": float64(0),
+						"encrypted": true, "redundant": true, "last_walk_time_ms": uint64(1000),
+						"last_fullwalk_time_ms": uint64(5000), "fullwalk": false,
+						"progress": float64(0), "cur_space_throttle_ms": float64(0),
+					},
+				},
+			}
+			json.NewEncoder(w).Encode(response)
+
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer mockServer.Close()
+
+	registry := prometheus.NewRegistry()
+	sdkClient := createTestSDKClient(mockServer.URL)
+	sc := NewStorageCollector(sdkClient)
+	registry.MustRegister(sc)
+
+	// First gather - status is "online"
+	expectedOnline := `
+# HELP vergeos_vsan_redundant VSAN tier redundancy status (1=redundant, 0=not redundant)
+# TYPE vergeos_vsan_redundant gauge
+vergeos_vsan_redundant{status="online",system_name="test-system",tier="0"} 1
+`
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedOnline), "vergeos_vsan_redundant"); err != nil {
+		t.Errorf("Bug #28 test step 1 failed - expected online status: %v", err)
+	}
+
+	// Change status to "repairing"
+	statusMutex.Lock()
+	currentStatus = "repairing"
+	statusMutex.Unlock()
+
+	// Second gather - status should now be ONLY "repairing", NOT "online"
+	// With the old GaugeVec approach, this would fail because "online" would still be present
+	expectedRepairing := `
+# HELP vergeos_vsan_redundant VSAN tier redundancy status (1=redundant, 0=not redundant)
+# TYPE vergeos_vsan_redundant gauge
+vergeos_vsan_redundant{status="repairing",system_name="test-system",tier="0"} 1
+`
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedRepairing), "vergeos_vsan_redundant"); err != nil {
+		t.Errorf("Bug #28 test step 2 failed - expected only 'repairing' status (no stale 'online'): %v", err)
+	}
+
+	// Verify "online" is completely gone by checking gathered metrics directly
+	metrics, err := registry.Gather()
+	if err != nil {
+		t.Fatalf("Failed to gather metrics: %v", err)
+	}
+
+	for _, mf := range metrics {
+		if *mf.Name == "vergeos_vsan_redundant" {
+			for _, m := range mf.Metric {
+				for _, lp := range m.Label {
+					if *lp.Name == "status" && *lp.Value == "online" {
+						t.Errorf("Bug #28: Stale metric found! 'online' status should not persist after changing to 'repairing'")
+					}
+				}
+			}
+		}
 	}
 }
 
