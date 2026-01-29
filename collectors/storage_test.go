@@ -51,12 +51,12 @@ func TestStorageTierMetrics(t *testing.T) {
 		// Handle different API endpoints
 		switch {
 		case strings.Contains(r.URL.Path, "/api/v4/settings"):
-			// Return system name
-			settings := []Setting{
-				{
-					Key:   "cloud_name",
-					Value: "test-system",
-				},
+			// Return system name (using inline struct - SDK handles response)
+			settings := []struct {
+				Key   string `json:"key"`
+				Value string `json:"value"`
+			}{
+				{Key: "cloud_name", Value: "test-system"},
 			}
 			json.NewEncoder(w).Encode(settings)
 
@@ -248,8 +248,7 @@ func TestPhantomTierFiltering(t *testing.T) {
 
 		switch {
 		case strings.Contains(r.URL.Path, "/api/v4/settings"):
-			settings := []Setting{{Key: "cloud_name", Value: "test-system"}}
-			json.NewEncoder(w).Encode(settings)
+			json.NewEncoder(w).Encode([]map[string]string{{"key": "cloud_name", "value": "test-system"}})
 
 		case strings.Contains(r.URL.Path, "/api/v4/storage_tiers"):
 			// Only tier 0 and 3 configured (non-contiguous)
@@ -380,8 +379,7 @@ func TestStaleMetricsFix(t *testing.T) {
 
 		switch {
 		case strings.Contains(r.URL.Path, "/api/v4/settings"):
-			settings := []Setting{{Key: "cloud_name", Value: "test-system"}}
-			json.NewEncoder(w).Encode(settings)
+			json.NewEncoder(w).Encode([]map[string]string{{"key": "cloud_name", "value": "test-system"}})
 
 		case strings.Contains(r.URL.Path, "/api/v4/storage_tiers"):
 			tiers := []map[string]interface{}{
@@ -486,8 +484,7 @@ func TestNoTiersConfigured(t *testing.T) {
 
 		switch {
 		case strings.Contains(r.URL.Path, "/api/v4/settings"):
-			settings := []Setting{{Key: "cloud_name", Value: "test-system"}}
-			json.NewEncoder(w).Encode(settings)
+			json.NewEncoder(w).Encode([]map[string]string{{"key": "cloud_name", "value": "test-system"}})
 
 		case strings.Contains(r.URL.Path, "/api/v4/storage_tiers"):
 			// No tiers configured
