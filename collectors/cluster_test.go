@@ -19,6 +19,14 @@ func TestClusterCollector(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
+		case strings.HasSuffix(r.URL.Path, "/version.json"):
+			// SDK version check during client creation
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"name":    "v4",
+				"version": "26.0.2.1",
+				"hash":    "testbuild",
+			})
+
 		case strings.Contains(r.URL.Path, "/settings") && strings.Contains(r.URL.RawQuery, "cloud_name"):
 			// Settings API response
 			json.NewEncoder(w).Encode([]map[string]string{
@@ -229,6 +237,13 @@ func TestClusterCollector_MultipleClusters(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
+		case strings.HasSuffix(r.URL.Path, "/version.json"):
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"name":    "v4",
+				"version": "26.0.2.1",
+				"hash":    "testbuild",
+			})
+
 		case strings.Contains(r.URL.Path, "/settings"):
 			json.NewEncoder(w).Encode([]map[string]string{
 				{"key": "cloud_name", "value": "testcloud"},
@@ -368,6 +383,13 @@ func TestClusterCollector_StaleMetrics(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
+		case strings.HasSuffix(r.URL.Path, "/version.json"):
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"name":    "v4",
+				"version": "26.0.2.1",
+				"hash":    "testbuild",
+			})
+
 		case strings.Contains(r.URL.Path, "/settings"):
 			json.NewEncoder(w).Encode([]map[string]string{
 				{"key": "cloud_name", "value": "testcloud"},
@@ -467,6 +489,13 @@ func TestClusterCollector_OfflineCluster(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
+		case strings.HasSuffix(r.URL.Path, "/version.json"):
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"name":    "v4",
+				"version": "26.0.2.1",
+				"hash":    "testbuild",
+			})
+
 		case strings.Contains(r.URL.Path, "/settings"):
 			json.NewEncoder(w).Encode([]map[string]string{
 				{"key": "cloud_name", "value": "testcloud"},

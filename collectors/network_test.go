@@ -16,6 +16,14 @@ func TestNetworkCollector_InfoMetric(t *testing.T) {
 	// Create mock server
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
+		case strings.HasSuffix(r.URL.Path, "/version.json"):
+			// SDK version check during client creation
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"name":    "v4",
+				"version": "26.0.2.1",
+				"hash":    "testbuild",
+			})
+
 		case strings.Contains(r.URL.Path, "/api/v4/settings"):
 			// Return cloud_name setting
 			settings := []map[string]interface{}{
@@ -57,14 +65,26 @@ func TestNetworkCollector_InfoMetric(t *testing.T) {
 func TestNetworkCollector_Describe(t *testing.T) {
 	// Create minimal mock server
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/version.json") {
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"name":    "v4",
+				"version": "26.0.2.1",
+				"hash":    "testbuild",
+			})
+			return
+		}
 		json.NewEncoder(w).Encode([]map[string]interface{}{})
 	}))
 	defer mockServer.Close()
 
-	client, _ := vergeos.NewClient(
+	client, err := vergeos.NewClient(
 		vergeos.WithBaseURL(mockServer.URL),
 		vergeos.WithCredentials("test", "test"),
+		vergeos.WithInsecureTLS(true),
 	)
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
 
 	collector := NewNetworkCollector(client)
 
@@ -90,6 +110,13 @@ func TestNetworkCollector_NoNICMetrics(t *testing.T) {
 	// This test verifies that NIC metrics are NOT emitted (due to SDK gaps)
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
+		case strings.HasSuffix(r.URL.Path, "/version.json"):
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"name":    "v4",
+				"version": "26.0.2.1",
+				"hash":    "testbuild",
+			})
+
 		case strings.Contains(r.URL.Path, "/api/v4/settings"):
 			settings := []map[string]interface{}{
 				{"key": "cloud_name", "value": "test-cloud"},
@@ -101,10 +128,14 @@ func TestNetworkCollector_NoNICMetrics(t *testing.T) {
 	}))
 	defer mockServer.Close()
 
-	client, _ := vergeos.NewClient(
+	client, err := vergeos.NewClient(
 		vergeos.WithBaseURL(mockServer.URL),
 		vergeos.WithCredentials("test", "test"),
+		vergeos.WithInsecureTLS(true),
 	)
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
 
 	collector := NewNetworkCollector(client)
 

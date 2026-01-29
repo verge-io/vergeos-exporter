@@ -14,19 +14,34 @@ import (
 )
 
 // createTestSDKClient creates an SDK client configured for testing with the mock server
-func createTestSDKClient(mockServerURL string) *vergeos.Client {
-	client, _ := vergeos.NewClient(
+// Note: The mock server must handle /version.json for SDK version validation
+func createTestSDKClient(t *testing.T, mockServerURL string) *vergeos.Client {
+	client, err := vergeos.NewClient(
 		vergeos.WithBaseURL(mockServerURL),
 		vergeos.WithCredentials("testuser", "testpass"),
 		vergeos.WithInsecureTLS(true),
 	)
+	if err != nil {
+		t.Fatalf("Failed to create SDK client: %v", err)
+	}
 	return client
 }
 
 func TestStorageTierMetrics(t *testing.T) {
 	// Create a mock server to simulate the VergeOS API
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Add basic auth check
+		// Handle version check first (no auth required by SDK)
+		if strings.HasSuffix(r.URL.Path, "/version.json") {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"name":    "v4",
+				"version": "26.0.2.1",
+				"hash":    "testbuild",
+			})
+			return
+		}
+
+		// Add basic auth check for API endpoints
 		username, password, ok := r.BasicAuth()
 		if !ok || username != "testuser" || password != "testpass" {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -127,7 +142,7 @@ func TestStorageTierMetrics(t *testing.T) {
 	registry := prometheus.NewRegistry()
 
 	// Create a storage collector with the mock server
-	sdkClient := createTestSDKClient(mockServer.URL)
+	sdkClient := createTestSDKClient(t, mockServer.URL)
 	sc := NewStorageCollector(sdkClient)
 	registry.MustRegister(sc)
 
@@ -214,6 +229,17 @@ vergeos_vsan_fullwalk_progress{status="repairing",system_name="test-system",tier
 // it should be skipped (not reported as a metric)
 func TestPhantomTierFiltering(t *testing.T) {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle version check first
+		if strings.HasSuffix(r.URL.Path, "/version.json") {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"name":    "v4",
+				"version": "26.0.2.1",
+				"hash":    "testbuild",
+			})
+			return
+		}
+
 		username, password, ok := r.BasicAuth()
 		if !ok || username != "testuser" || password != "testpass" {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -288,7 +314,7 @@ func TestPhantomTierFiltering(t *testing.T) {
 	defer mockServer.Close()
 
 	registry := prometheus.NewRegistry()
-	sdkClient := createTestSDKClient(mockServer.URL)
+	sdkClient := createTestSDKClient(t, mockServer.URL)
 	sc := NewStorageCollector(sdkClient)
 	registry.MustRegister(sc)
 
@@ -335,6 +361,17 @@ func TestStaleMetricsFix(t *testing.T) {
 	statusMutex := &sync.Mutex{}
 
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle version check first
+		if strings.HasSuffix(r.URL.Path, "/version.json") {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"name":    "v4",
+				"version": "26.0.2.1",
+				"hash":    "testbuild",
+			})
+			return
+		}
+
 		username, password, ok := r.BasicAuth()
 		if !ok || username != "testuser" || password != "testpass" {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -378,7 +415,7 @@ func TestStaleMetricsFix(t *testing.T) {
 	defer mockServer.Close()
 
 	registry := prometheus.NewRegistry()
-	sdkClient := createTestSDKClient(mockServer.URL)
+	sdkClient := createTestSDKClient(t, mockServer.URL)
 	sc := NewStorageCollector(sdkClient)
 	registry.MustRegister(sc)
 
@@ -430,6 +467,17 @@ vergeos_vsan_redundant{status="repairing",system_name="test-system",tier="0"} 1
 // TestNoTiersConfigured tests behavior when no storage tiers are configured
 func TestNoTiersConfigured(t *testing.T) {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle version check first
+		if strings.HasSuffix(r.URL.Path, "/version.json") {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"name":    "v4",
+				"version": "26.0.2.1",
+				"hash":    "testbuild",
+			})
+			return
+		}
+
 		username, password, ok := r.BasicAuth()
 		if !ok || username != "testuser" || password != "testpass" {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -456,7 +504,7 @@ func TestNoTiersConfigured(t *testing.T) {
 	defer mockServer.Close()
 
 	registry := prometheus.NewRegistry()
-	sdkClient := createTestSDKClient(mockServer.URL)
+	sdkClient := createTestSDKClient(t, mockServer.URL)
 	sc := NewStorageCollector(sdkClient)
 	registry.MustRegister(sc)
 
