@@ -2,7 +2,10 @@ module vergeos-exporter
 
 go 1.23.4
 
-require github.com/prometheus/client_golang v1.20.5
+require (
+	github.com/prometheus/client_golang v1.20.5
+	github.com/verge-io/goVergeOS v0.0.0
+)
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -16,3 +19,6 @@ require (
 	golang.org/x/sys v0.22.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 )
+
+// Use local SDK for development - remove before release
+replace github.com/verge-io/goVergeOS => ../goVergeOS
