@@ -159,6 +159,7 @@ type NodeMock struct {
 	Name       string `json:"name"`
 	Physical   bool   `json:"physical"`
 	Cluster    int    `json:"cluster"`
+	Machine    int    `json:"machine"`
 	IPMIStatus string `json:"ipmi_status"`
 	RAM        int64  `json:"ram"`
 	VMRAM      int64  `json:"vm_ram"`
@@ -189,4 +190,93 @@ type ClusterStatusMock struct {
 	OnlineCores     int    `json:"online_cores"`
 	UsedCores       int    `json:"used_cores"`
 	PhysRAMUsed     int64  `json:"phys_ram_used"`
+}
+
+// MachineStatsMock represents a mock machine stats record
+type MachineStatsMock struct {
+	Key           int             `json:"$key"`
+	Machine       int             `json:"machine"`
+	TotalCPU      uint8           `json:"total_cpu"`
+	UserCPU       uint8           `json:"user_cpu"`
+	SystemCPU     uint8           `json:"system_cpu"`
+	IOWaitCPU     uint8           `json:"iowait_cpu"`
+	RAMUsed       uint32          `json:"ram_used"`
+	RAMPct        uint8           `json:"ram_pct"`
+	CoreUsageList json.RawMessage `json:"core_usagelist"`
+	CoreTemp      uint16          `json:"core_temp"`
+	CoreTempTop   uint16          `json:"core_temp_top"`
+}
+
+// MachineNICStatsMock represents mock NIC traffic stats
+type MachineNICStatsMock struct {
+	Key     int    `json:"$key"`
+	TxPckts uint64 `json:"tx_pckts"`
+	RxPckts uint64 `json:"rx_pckts"`
+	TxBytes uint64 `json:"tx_bytes"`
+	RxBytes uint64 `json:"rx_bytes"`
+}
+
+// MachineNICStatusMock represents mock NIC link status
+type MachineNICStatusMock struct {
+	Key    int    `json:"$key"`
+	Status string `json:"status"`
+	Speed  uint32 `json:"speed"`
+}
+
+// MachineNICMock represents a mock machine NIC
+type MachineNICMock struct {
+	Key     int                   `json:"$key"`
+	Machine int                   `json:"machine"`
+	Name    string                `json:"name"`
+	Stats   *MachineNICStatsMock  `json:"stats,omitempty"`
+	Status  *MachineNICStatusMock `json:"status,omitempty"`
+}
+
+// MachineDrivePhysMock represents a mock physical drive
+type MachineDrivePhysMock struct {
+	Key             int    `json:"$key"`
+	ParentDrive     int    `json:"parent_drive"`
+	Path            string `json:"path"`
+	Serial          string `json:"serial"`
+	Temp            uint16 `json:"temp"`
+	WearLevel       uint32 `json:"wear_level"`
+	Hours           uint32 `json:"hours"`
+	ReallocSectors  uint32 `json:"realloc_sectors"`
+	VSANTier        int8   `json:"vsan_tier"`
+	VSANReadErrors  uint64 `json:"vsan_read_errors"`
+	VSANWriteErrors uint64 `json:"vsan_write_errors"`
+	VSANRepairing   uint64 `json:"vsan_repairing"`
+	VSANThrottle    uint64 `json:"vsan_throttle"`
+	NodeDisplay     string `json:"node_display"`
+	StatusList      string `json:"statuslist"`
+}
+
+// MachineDriveStatsMock represents mock drive I/O stats
+type MachineDriveStatsMock struct {
+	Key         int     `json:"$key"`
+	ParentDrive int     `json:"parent_drive"`
+	Reads       uint64  `json:"reads"`
+	Writes      uint64  `json:"writes"`
+	ReadBytes   uint64  `json:"read_bytes"`
+	WriteBytes  uint64  `json:"write_bytes"`
+	ServiceTime float64 `json:"service_time"`
+	Util        float64 `json:"util"`
+	Physical    bool    `json:"physical"`
+}
+
+// UpdateSettingsMock represents mock update settings
+type UpdateSettingsMock struct {
+	Key        int    `json:"$key"`
+	Source     int    `json:"source"`
+	Branch     int    `json:"branch"`
+	BranchName string `json:"branch_name"`
+}
+
+// UpdateSourcePackageMock represents a mock update source package
+type UpdateSourcePackageMock struct {
+	Key     int    `json:"$key"`
+	Name    string `json:"name"`
+	Branch  int    `json:"branch"`
+	Source  int    `json:"source"`
+	Version string `json:"version"`
 }
