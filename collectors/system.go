@@ -15,8 +15,10 @@ type SystemCollector struct {
 	mutex sync.Mutex
 
 	// Metric descriptors (using MustNewConstMetric pattern to avoid stale metrics)
-	systemVersion *prometheus.Desc
-	systemInfo    *prometheus.Desc
+	systemVersion       *prometheus.Desc
+	systemInfo          *prometheus.Desc
+	systemBranch        *prometheus.Desc
+	systemVersionLatest *prometheus.Desc
 }
 
 // NewSystemCollector creates a new SystemCollector
@@ -32,7 +34,19 @@ func NewSystemCollector(client *vergeos.Client) *SystemCollector {
 		systemInfo: prometheus.NewDesc(
 			"vergeos_system_info",
 			"Information about the VergeOS system",
-			[]string{"system_name", "version", "hash"},
+			[]string{"system_name", "current_version", "latest_version", "branch", "hash"},
+			nil,
+		),
+		systemBranch: prometheus.NewDesc(
+			"vergeos_system_branch",
+			"Update branch of the VergeOS system (always 1, branch in label)",
+			[]string{"system_name", "branch"},
+			nil,
+		),
+		systemVersionLatest: prometheus.NewDesc(
+			"vergeos_system_version_latest",
+			"Latest available version of the VergeOS system (always 1, version in label)",
+			[]string{"system_name", "version"},
 			nil,
 		),
 	}
@@ -42,6 +56,8 @@ func NewSystemCollector(client *vergeos.Client) *SystemCollector {
 func (sc *SystemCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- sc.systemVersion
 	ch <- sc.systemInfo
+	ch <- sc.systemBranch
+	ch <- sc.systemVersionLatest
 }
 
 // Collect implements prometheus.Collector
@@ -73,11 +89,49 @@ func (sc *SystemCollector) Collect(ch chan<- prometheus.Metric) {
 		systemName, info.Version,
 	)
 
-	// Emit system info metric with available fields
+	// Get update settings for branch and latest version
+	branchName := ""
+	latestVersion := ""
+
+	settings, err := sc.client.UpdateSettings.Get(ctx)
+	if err != nil {
+		log.Printf("Error getting update settings: %v", err)
+	} else {
+		branchName = settings.BranchName
+
+		// Emit branch metric
+		ch <- prometheus.MustNewConstMetric(
+			sc.systemBranch,
+			prometheus.GaugeValue,
+			1.0,
+			systemName, branchName,
+		)
+
+		// Get latest available version from source packages
+		pkgs, err := sc.client.UpdateSourcePackages.ListByBranchAndSource(ctx, settings.Branch, settings.Source)
+		if err != nil {
+			log.Printf("Error getting update source packages: %v", err)
+		} else {
+			for _, pkg := range pkgs {
+				if pkg.Name == "ybos" {
+					latestVersion = pkg.Version
+					ch <- prometheus.MustNewConstMetric(
+						sc.systemVersionLatest,
+						prometheus.GaugeValue,
+						1.0,
+						systemName, latestVersion,
+					)
+					break
+				}
+			}
+		}
+	}
+
+	// Emit system info metric with all available fields
 	ch <- prometheus.MustNewConstMetric(
 		sc.systemInfo,
 		prometheus.GaugeValue,
 		1.0,
-		systemName, info.Version, info.Hash,
+		systemName, info.Version, latestVersion, branchName, info.Hash,
 	)
 }

@@ -2,6 +2,7 @@ package collectors
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 
@@ -9,35 +10,61 @@ import (
 	vergeos "github.com/verge-io/goVergeOS"
 )
 
-// NetworkCollector collects metrics about physical node network interfaces.
-// Currently emits a placeholder info metric. NIC traffic metrics are pending
-// SDK support for machine_nics/machine_nic_stats/machine_nic_status tables.
-// See ISSUES.md Issue 2 for details.
+// NetworkCollector collects metrics about physical node network interfaces
+// using the MachineNICService for per-NIC traffic counters and link status.
 type NetworkCollector struct {
 	BaseCollector
 	mutex sync.Mutex
 
-	// Placeholder metric to indicate collector is registered but has no data
-	// This helps users understand the collector exists but SDK support is pending
-	collectorInfo *prometheus.Desc
+	// NIC traffic metrics
+	nicTxPackets *prometheus.Desc
+	nicRxPackets *prometheus.Desc
+	nicTxBytes   *prometheus.Desc
+	nicRxBytes   *prometheus.Desc
+	nicStatus    *prometheus.Desc
 }
 
 // NewNetworkCollector creates a new NetworkCollector.
 func NewNetworkCollector(client *vergeos.Client) *NetworkCollector {
+	nicLabels := []string{"system_name", "cluster", "node_name", "interface"}
+
 	return &NetworkCollector{
 		BaseCollector: *NewBaseCollector(client),
-		collectorInfo: prometheus.NewDesc(
-			"vergeos_network_collector_info",
-			"NetworkCollector status (1=active, metrics pending SDK support for node dashboard NICs)",
-			[]string{"system_name"},
-			nil,
+		nicTxPackets: prometheus.NewDesc(
+			"vergeos_nic_tx_packets_total",
+			"Total transmitted packets",
+			nicLabels, nil,
+		),
+		nicRxPackets: prometheus.NewDesc(
+			"vergeos_nic_rx_packets_total",
+			"Total received packets",
+			nicLabels, nil,
+		),
+		nicTxBytes: prometheus.NewDesc(
+			"vergeos_nic_tx_bytes_total",
+			"Total transmitted bytes",
+			nicLabels, nil,
+		),
+		nicRxBytes: prometheus.NewDesc(
+			"vergeos_nic_rx_bytes_total",
+			"Total received bytes",
+			nicLabels, nil,
+		),
+		nicStatus: prometheus.NewDesc(
+			"vergeos_nic_status",
+			"NIC link status (1=up, 0=other)",
+			nicLabels, nil,
 		),
 	}
 }
 
 // Describe implements prometheus.Collector.
 func (nc *NetworkCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- nc.collectorInfo
+	ch <- nc.nicTxPackets
+	ch <- nc.nicRxPackets
+	ch <- nc.nicTxBytes
+	ch <- nc.nicRxBytes
+	ch <- nc.nicStatus
 }
 
 // Collect implements prometheus.Collector.
@@ -54,12 +81,82 @@ func (nc *NetworkCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	// Emit info metric to indicate collector is active
-	ch <- prometheus.MustNewConstMetric(
-		nc.collectorInfo,
-		prometheus.GaugeValue,
-		1.0,
-		systemName,
-	)
+	// Build cluster ID -> name mapping
+	clusterMap, err := nc.buildClusterMap(ctx)
+	if err != nil {
+		log.Printf("NetworkCollector: Error building cluster map: %v", err)
+		return
+	}
 
+	// Get physical nodes
+	nodes, err := nc.Client().Nodes.ListPhysical(ctx)
+	if err != nil {
+		log.Printf("NetworkCollector: Error fetching physical nodes: %v", err)
+		return
+	}
+
+	// Fetch NICs for each physical node
+	for _, node := range nodes {
+		clusterName := clusterMap[node.Cluster]
+		if clusterName == "" {
+			clusterName = fmt.Sprintf("cluster_%d", node.Cluster)
+		}
+
+		nics, err := nc.Client().MachineNICs.ListByMachine(ctx, node.Machine)
+		if err != nil {
+			log.Printf("NetworkCollector: Error fetching NICs for node %s: %v", node.Name, err)
+			continue
+		}
+
+		for _, nic := range nics {
+			labels := []string{systemName, clusterName, node.Name, nic.Name}
+
+			// Traffic counters
+			if nic.Stats != nil {
+				ch <- prometheus.MustNewConstMetric(
+					nc.nicTxPackets, prometheus.CounterValue,
+					float64(nic.Stats.TxPckts), labels...,
+				)
+				ch <- prometheus.MustNewConstMetric(
+					nc.nicRxPackets, prometheus.CounterValue,
+					float64(nic.Stats.RxPckts), labels...,
+				)
+				ch <- prometheus.MustNewConstMetric(
+					nc.nicTxBytes, prometheus.CounterValue,
+					float64(nic.Stats.TxBytes), labels...,
+				)
+				ch <- prometheus.MustNewConstMetric(
+					nc.nicRxBytes, prometheus.CounterValue,
+					float64(nic.Stats.RxBytes), labels...,
+				)
+			}
+
+			// Link status
+			if nic.Status != nil {
+				statusValue := 0.0
+				if nic.Status.Status == "up" {
+					statusValue = 1.0
+				}
+				ch <- prometheus.MustNewConstMetric(
+					nc.nicStatus, prometheus.GaugeValue,
+					statusValue, labels...,
+				)
+			}
+		}
+	}
+}
+
+// buildClusterMap creates a mapping from cluster ID to cluster name
+func (nc *NetworkCollector) buildClusterMap(ctx context.Context) (map[int]string, error) {
+	clusters, err := nc.Client().Clusters.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list clusters: %w", err)
+	}
+
+	clusterMap := make(map[int]string)
+	for _, cluster := range clusters {
+		clusterMap[int(cluster.Key)] = cluster.Name
+	}
+
+	return clusterMap, nil
 }
