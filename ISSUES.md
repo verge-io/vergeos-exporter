@@ -425,110 +425,153 @@ States: `online`, `offline`, `repairing`, `initializing`, `verifying`, `noredund
 
 ---
 
-## Issue 5: System Branch and Latest Version
+## Issue 5: Add `UpdateSettings` and `UpdateSourcePackages` Services for Branch/Version
 
 **Priority**: LOW
 **Blocked Metrics**: 2
-**API Endpoint**: `/api/v4/system` (preferred) or `/api/v4/update_dashboard`
+**API Endpoints**: `/api/v4/update_settings`, `/api/v4/update_branches`, `/api/v4/update_source_packages`
 
 ### Problem
 
-The exporter needs the update branch (stable/preview) and latest available version. The SDK's `System.GetInfo()` uses `/version.json` which only provides current version, not branch or available updates.
+The exporter needs the update branch name (e.g., "stable-4.13") and the latest available version. The SDK currently has no services for the update-related tables. The Python SDK ([pyvergeos](https://github.com/verge-io/pyvergeos)) already implements this via `UpdateSettingsManager`, `UpdateBranchManager`, and `UpdateSourcePackageManager`.
 
-### API Options
+### API Details
 
-**Option A — `/api/v4/system`** (preferred, simpler):
+**Getting the branch name**
 
-The `system` table is a single-row table with computed fields:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `cloud_name` | `text` | System name (computed from settings) |
-| `yb_version` | `text` | Current VergeOS version (computed from nodes/1) |
-| `branch` | `text` | Update branch (computed from update_settings/1) |
+`update_settings` is a singleton (maxrows: 1). The `branch` field is an integer FK to `update_branches`:
 
 ```
-GET /api/v4/system?fields=cloud_name,yb_version,branch
+GET /api/v4/update_settings/1?fields=most,branch#name as branch_name
 ```
 
-**Option B — `/api/v4/update_dashboard`** (for latest available version):
-
-The `update_dashboard` is a composite view. The exporter needs:
-
+Response:
 ```json
 {
-  "packages": [{
-    "name": "ybos",
-    "version": "4.12.0",
-    "branch": "stable",
-    "source_packages": [{ "version": "4.12.1" }]
-  }]
+    "$key": 1,
+    "branch": 35,
+    "branch_name": "stable-4.13",
+    "source": 3,
+    "auto_refresh": true,
+    "auto_update": false
 }
+```
+
+**Getting the latest available version**
+
+`update_source_packages` contains packages available from the update source for a given branch. Filter by the current branch and source from `update_settings`:
+
+```
+GET /api/v4/update_source_packages?filter=name eq 'ybos' and branch eq {branch_key} and source eq {source_key}&fields=version,downloaded
+```
+
+Response:
+```json
+[{
+    "version": "4.13.1",
+    "downloaded": false
+}]
+```
+
+**FK Resolution Chain**:
+```
+update_settings (singleton, key=1)
+├── branch (int FK) → update_branches.$row → .name gives branch name
+└── source (int FK) → update_sources.$row
+
+update_source_packages
+├── branch (int FK) → update_branches
+├── source (int FK) → update_sources
+├── name (text) → filter by "ybos"
+└── version (text) → this is the latest available version
 ```
 
 ### Proposed SDK Changes
 
-**Option A** (add `GetSystem()` method):
+**New types**:
 
 ```go
-type SystemInfo struct {
-    CloudName string `json:"cloud_name,omitempty"`
-    YBVersion string `json:"yb_version,omitempty"`
-    Branch    string `json:"branch,omitempty"`
+type UpdateSettings struct {
+    Key                        FlexInt `json:"$key,omitempty"`
+    Source                     int     `json:"source,omitempty"`
+    Branch                     int     `json:"branch,omitempty"`
+    BranchName                 string  `json:"branch_name,omitempty"` // computed: branch#name
+    AutoRefresh                bool    `json:"auto_refresh,omitempty"`
+    AutoUpdate                 bool    `json:"auto_update,omitempty"`
+    RebootRequired             bool    `json:"reboot_required,omitempty"`
+    Installed                  bool    `json:"installed,omitempty"`
+    SnapshotCloudOnUpdate      bool    `json:"snapshot_cloud_on_update,omitempty"`
+    SnapshotCloudExpireSeconds uint32  `json:"snapshot_cloud_expire_seconds,omitempty"`
 }
 
-// GetSystem retrieves system info from /api/v4/system.
-func (s *SystemService) GetSystem(ctx context.Context) (*SystemInfo, error)
-```
+type UpdateBranch struct {
+    Key         FlexInt `json:"$key,omitempty"`
+    Name        string  `json:"name,omitempty"`
+    Description string  `json:"description,omitempty"`
+}
 
-**Option B** (add `GetUpdateDashboard()` method — for latest version):
-
-```go
 type UpdateSourcePackage struct {
-    Version     string `json:"version,omitempty"`
-    Description string `json:"description,omitempty"`
+    Key        FlexInt `json:"$key,omitempty"`
+    Name       string  `json:"name,omitempty"`
+    Branch     int     `json:"branch,omitempty"`
+    Source     int     `json:"source,omitempty"`
+    Version    string  `json:"version,omitempty"`
+    Downloaded bool    `json:"downloaded,omitempty"`
 }
-
-type UpdatePackage struct {
-    Name           string                `json:"name,omitempty"`
-    Version        string                `json:"version,omitempty"`
-    Branch         string                `json:"branch,omitempty"`
-    SourcePackages []UpdateSourcePackage `json:"source_packages,omitempty"`
-}
-
-type UpdateDashboard struct {
-    Packages []UpdatePackage `json:"packages,omitempty"`
-}
-
-// GetUpdateDashboard retrieves update availability information.
-func (s *SystemService) GetUpdateDashboard(ctx context.Context) (*UpdateDashboard, error)
 ```
 
-Both methods may be needed — Option A for `branch`, Option B for `latest_version`.
+**New services**:
+
+```go
+type UpdateSettingsService struct { ... }
+
+// Get retrieves update settings (singleton).
+// GET /api/v4/update_settings/1?fields=most,branch#name as branch_name
+func (s *UpdateSettingsService) Get(ctx context.Context) (*UpdateSettings, error)
+
+type UpdateBranchService struct { ... }
+
+// List returns all update branches.
+func (s *UpdateBranchService) List(ctx context.Context) ([]UpdateBranch, error)
+
+// Get retrieves a specific branch by key.
+func (s *UpdateBranchService) Get(ctx context.Context, key int) (*UpdateBranch, error)
+
+type UpdateSourcePackageService struct { ... }
+
+// List returns source packages, optionally filtered.
+func (s *UpdateSourcePackageService) List(ctx context.Context) ([]UpdateSourcePackage, error)
+
+// ListByBranchAndSource returns packages for a specific branch and source.
+func (s *UpdateSourcePackageService) ListByBranchAndSource(ctx context.Context, branch, source int) ([]UpdateSourcePackage, error)
+```
 
 ### How the Exporter Will Use This
 
 ```go
 // In SystemCollector.Collect():
-sysInfo, _ := client.System.GetSystem(ctx)
-// Emit: vergeos_system_branch (labels: system_name, branch=sysInfo.Branch)
 
-updateInfo, _ := client.System.GetUpdateDashboard(ctx)
-for _, pkg := range updateInfo.Packages {
-    if pkg.Name == "ybos" && len(pkg.SourcePackages) > 0 {
-        // Emit: vergeos_system_version_latest (labels: system_name, version=pkg.SourcePackages[0].Version)
+// Get branch name
+settings, _ := client.UpdateSettings.Get(ctx)
+branchName := settings.BranchName
+// Emit: vergeos_system_branch (labels: system_name, branch=branchName)
+
+// Get latest available version
+pkgs, _ := client.UpdateSourcePackages.ListByBranchAndSource(ctx, settings.Branch, settings.Source)
+for _, pkg := range pkgs {
+    if pkg.Name == "ybos" {
+        // Emit: vergeos_system_version_latest (labels: system_name, version=pkg.Version)
+        break
     }
 }
-
-// Update vergeos_system_info labels to include latest_version and branch
 ```
 
 ### Blocked Metrics
 
 | Metric | Labels | Source |
 |--------|--------|-------|
-| `vergeos_system_branch` | `system_name`, `branch` | `system.branch` or `update_dashboard.packages[ybos].branch` |
-| `vergeos_system_version_latest` | `system_name`, `version` | `update_dashboard.packages[ybos].source_packages[0].version` |
+| `vergeos_system_branch` | `system_name`, `branch` | `update_settings.branch` → `update_branches.name` |
+| `vergeos_system_version_latest` | `system_name`, `version` | `update_source_packages` filtered by branch+source, name="ybos" |
 
 ---
 
@@ -628,7 +671,7 @@ for _, tier := range clusterTiers {
 | 2 | `/api/v4/machine_nics` + `nic_stats` + `nic_status` | HIGH | 7 | New `MachineNICService` + types |
 | 3 | `/api/v4/machine_drive_stats` | MEDIUM | 6 | New `MachineDriveStatsService` + types |
 | 4 | `/api/v4/machine_drive_phys` (computed fields) | MEDIUM | 9 (+drive states) | Add `NodeDisplay`/`StatusList` to existing struct |
-| 5 | `/api/v4/system` or `update_dashboard` | LOW | 2 | New `GetSystem()` / `GetUpdateDashboard()` |
+| 5 | `/api/v4/update_settings` + `update_branches` + `update_source_packages` | LOW | 2 | New `UpdateSettingsService` / `UpdateBranchService` / `UpdateSourcePackageService` |
 | 6 | `/api/v4/cluster_tiers` (extra fields) | LOW | 2 | Add `NodesOnline`/`DrivesOnline` to existing struct |
 
 **Total**: ~36 blocked metrics
