@@ -11,8 +11,6 @@ import (
 )
 
 // StorageCollector collects metrics about VergeOS storage tiers.
-// Note: Per-drive metrics and drive state metrics have been removed due to SDK gaps.
-// See .claude/GAPS.md for details on MachineDrivePhys limitations.
 //
 // All metrics use MustNewConstMetric pattern to avoid stale label issues (Bug #28).
 // This ensures only current data is emitted each scrape - no stale labels persist.
@@ -41,8 +39,6 @@ type StorageCollector struct {
 }
 
 // NewStorageCollector creates a new StorageCollector.
-// Note: Per-drive metrics removed due to SDK gaps (no node mapping in MachineDrivePhys).
-// See .claude/GAPS.md for details.
 //
 // All metrics use prometheus.Desc with MustNewConstMetric pattern to fix Bug #28
 // (stale metrics when tier status changes).

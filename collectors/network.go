@@ -10,24 +10,9 @@ import (
 )
 
 // NetworkCollector collects metrics about physical node network interfaces.
-//
-// NOTE: All physical NIC metrics have been removed due to SDK gaps.
-// The SDK's Node struct does not capture the dashboard fields needed for NIC metrics:
-// - machine.nics[].name - NIC name
-// - machine.nics[].status - NIC status (up/down)
-// - machine.nics[].stats.tx_packets, rx_packets, tx_bytes, rx_bytes, tx_errors, rx_errors
-//
-// See .claude/GAPS.md for details. Once the SDK adds Node dashboard support,
-// NIC metrics can be restored.
-//
-// Metrics removed:
-// - vergeos_nic_tx_packets_total
-// - vergeos_nic_rx_packets_total
-// - vergeos_nic_tx_bytes_total
-// - vergeos_nic_rx_bytes_total
-// - vergeos_nic_tx_errors_total
-// - vergeos_nic_rx_errors_total
-// - vergeos_nic_status
+// Currently emits a placeholder info metric. NIC traffic metrics are pending
+// SDK support for machine_nics/machine_nic_stats/machine_nic_status tables.
+// See ISSUES.md Issue 2 for details.
 type NetworkCollector struct {
 	BaseCollector
 	mutex sync.Mutex
@@ -77,15 +62,4 @@ func (nc *NetworkCollector) Collect(ch chan<- prometheus.Metric) {
 		systemName,
 	)
 
-	// NOTE: Physical NIC metrics cannot be collected because the SDK's Node struct
-	// does not capture dashboard fields (machine.nics). See .claude/GAPS.md.
-	//
-	// When SDK adds Node.Machine.NICs support, restore metrics:
-	// - vergeos_nic_tx_packets_total
-	// - vergeos_nic_rx_packets_total
-	// - vergeos_nic_tx_bytes_total
-	// - vergeos_nic_rx_bytes_total
-	// - vergeos_nic_tx_errors_total
-	// - vergeos_nic_rx_errors_total
-	// - vergeos_nic_status
 }
