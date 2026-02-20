@@ -20,10 +20,18 @@ type NodeCollector struct {
 	nodeIPMIStatus *prometheus.Desc
 	nodeRAMTotal   *prometheus.Desc
 	nodeRAM        *prometheus.Desc
+
+	// MachineStats metrics (Issue 1)
+	nodeCPUCoreUsage *prometheus.Desc
+	nodeCoreTemp     *prometheus.Desc
+	nodeRAMUsed      *prometheus.Desc
+	nodeRAMPct       *prometheus.Desc
 }
 
 // NewNodeCollector creates a new NodeCollector
 func NewNodeCollector(client *vergeos.Client) *NodeCollector {
+	nodeLabels := []string{"system_name", "cluster", "node_name"}
+
 	nc := &NodeCollector{
 		BaseCollector: *NewBaseCollector(client),
 		nodesTotal: prometheus.NewDesc(
@@ -35,19 +43,43 @@ func NewNodeCollector(client *vergeos.Client) *NodeCollector {
 		nodeIPMIStatus: prometheus.NewDesc(
 			"vergeos_node_ipmi_status",
 			"IPMI status of the node (1=ok, 0=other)",
-			[]string{"system_name", "cluster", "node_name"},
+			nodeLabels,
 			nil,
 		),
 		nodeRAMTotal: prometheus.NewDesc(
 			"vergeos_node_ram_total",
 			"Total RAM in MB",
-			[]string{"system_name", "cluster", "node_name"},
+			nodeLabels,
 			nil,
 		),
 		nodeRAM: prometheus.NewDesc(
 			"vergeos_node_ram_allocated",
 			"VM RAM in MB (vm_ram field)",
-			[]string{"system_name", "cluster", "node_name"},
+			nodeLabels,
+			nil,
+		),
+		nodeCPUCoreUsage: prometheus.NewDesc(
+			"vergeos_node_cpu_core_usage",
+			"CPU usage percentage per core",
+			append(nodeLabels, "core_id"),
+			nil,
+		),
+		nodeCoreTemp: prometheus.NewDesc(
+			"vergeos_node_core_temp",
+			"Average CPU core temperature in Celsius",
+			nodeLabels,
+			nil,
+		),
+		nodeRAMUsed: prometheus.NewDesc(
+			"vergeos_node_ram_used",
+			"Physical RAM used in MB",
+			nodeLabels,
+			nil,
+		),
+		nodeRAMPct: prometheus.NewDesc(
+			"vergeos_node_ram_pct",
+			"Physical RAM used percentage",
+			nodeLabels,
 			nil,
 		),
 	}
@@ -61,6 +93,10 @@ func (nc *NodeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- nc.nodeIPMIStatus
 	ch <- nc.nodeRAMTotal
 	ch <- nc.nodeRAM
+	ch <- nc.nodeCPUCoreUsage
+	ch <- nc.nodeCoreTemp
+	ch <- nc.nodeRAMUsed
+	ch <- nc.nodeRAMPct
 }
 
 // Collect implements prometheus.Collector
@@ -131,6 +167,52 @@ func (nc *NodeCollector) Collect(ch chan<- prometheus.Metric) {
 			nc.nodeRAM,
 			prometheus.GaugeValue,
 			float64(node.VMRAM),
+			systemName, clusterName, node.Name,
+		)
+
+		// Fetch MachineStats for this node
+		stats, err := nc.Client().MachineStats.GetByMachine(ctx, node.Machine)
+		if err != nil {
+			log.Printf("Error fetching machine stats for node %s (machine %d): %v", node.Name, node.Machine, err)
+			continue
+		}
+
+		// Per-core CPU usage
+		coreUsages, err := stats.GetCoreUsages()
+		if err != nil {
+			log.Printf("Error parsing core usages for node %s: %v", node.Name, err)
+		} else {
+			for i, usage := range coreUsages {
+				ch <- prometheus.MustNewConstMetric(
+					nc.nodeCPUCoreUsage,
+					prometheus.GaugeValue,
+					usage,
+					systemName, clusterName, node.Name, fmt.Sprintf("%d", i),
+				)
+			}
+		}
+
+		// Core temperature
+		ch <- prometheus.MustNewConstMetric(
+			nc.nodeCoreTemp,
+			prometheus.GaugeValue,
+			float64(stats.CoreTemp),
+			systemName, clusterName, node.Name,
+		)
+
+		// RAM used (MB)
+		ch <- prometheus.MustNewConstMetric(
+			nc.nodeRAMUsed,
+			prometheus.GaugeValue,
+			float64(stats.RAMUsed),
+			systemName, clusterName, node.Name,
+		)
+
+		// RAM percentage
+		ch <- prometheus.MustNewConstMetric(
+			nc.nodeRAMPct,
+			prometheus.GaugeValue,
+			float64(stats.RAMPct),
 			systemName, clusterName, node.Name,
 		)
 	}
