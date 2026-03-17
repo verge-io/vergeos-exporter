@@ -194,7 +194,7 @@ func (nc *NodeCollector) Collect(ch chan<- prometheus.Metric) {
 	clusterNodeCounts := make(map[string]int)
 
 	// Keep the original metric with "all" for backward compatibility
-	ch <- prometheus.MustNewConstMetric(nc.nodesTotalDesc, prometheus.GaugeValue, float64(len(nodes)))
+	ch <- prometheus.MustNewConstMetric(nc.nodesTotalDesc, prometheus.GaugeValue, float64(len(nodes)), nc.systemName, "all")
 
 	// Process each node
 	for _, node := range nodes {
