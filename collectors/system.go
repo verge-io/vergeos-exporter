@@ -38,10 +38,10 @@ type SystemCollector struct {
 	systemName string
 
 	// Metrics
-	systemVersion       *prometheus.GaugeVec
-	systemVersionLatest *prometheus.GaugeVec
-	systemBranch        *prometheus.GaugeVec
-	systemInfo          *prometheus.GaugeVec
+	systemVersionDesc       *prometheus.Desc
+	systemVersionLatestDesc *prometheus.Desc
+	systemBranchDesc        *prometheus.Desc
+	systemInfoDesc          *prometheus.Desc
 }
 
 // NewSystemCollector creates a new SystemCollector
@@ -52,22 +52,30 @@ func NewSystemCollector(url string, client *http.Client, username, password stri
 			httpClient: client,
 		},
 		systemName: "unknown", // Will be updated in Collect
-		systemVersion: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "vergeos_system_version",
-			Help: "Current version of the VergeOS system (always 1, version in label)",
-		}, []string{"system_name", "version"}),
-		systemVersionLatest: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "vergeos_system_version_latest",
-			Help: "Latest available version of the VergeOS system (always 1, version in label)",
-		}, []string{"system_name", "version"}),
-		systemBranch: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "vergeos_system_branch",
-			Help: "Branch of the VergeOS system (always 1, branch in label)",
-		}, []string{"system_name", "branch"}),
-		systemInfo: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "vergeos_system_info",
-			Help: "Information about the VergeOS system",
-		}, []string{"system_name", "current_version", "latest_version", "branch"}),
+		systemVersionDesc: prometheus.NewDesc(
+			"vergeos_system_version",
+			"Current version of the VergeOS system (always 1, version in label)",
+			[]string{"system_name", "version"},
+			nil,
+		),
+		systemVersionLatestDesc: prometheus.NewDesc(
+			"vergeos_system_version_latest",
+			"Latest available version of the VergeOS system (always 1, version in label)",
+			[]string{"system_name", "version"},
+			nil,
+		),
+		systemBranchDesc: prometheus.NewDesc(
+			"vergeos_system_branch",
+			"Branch of the VergeOS system (always 1, branch in label)",
+			[]string{"system_name", "branch"},
+			nil,
+		),
+		systemInfoDesc: prometheus.NewDesc(
+			"vergeos_system_info",
+			"Information about the VergeOS system",
+			[]string{"system_name", "current_version", "latest_version", "branch"},
+			nil,
+		),
 	}
 
 	// Authenticate with the API
@@ -80,10 +88,10 @@ func NewSystemCollector(url string, client *http.Client, username, password stri
 
 // Describe implements prometheus.Collector
 func (sc *SystemCollector) Describe(ch chan<- *prometheus.Desc) {
-	sc.systemVersion.Describe(ch)
-	sc.systemVersionLatest.Describe(ch)
-	sc.systemBranch.Describe(ch)
-	sc.systemInfo.Describe(ch)
+	ch <- sc.systemVersionDesc
+	ch <- sc.systemVersionLatestDesc
+	ch <- sc.systemBranchDesc
+	ch <- sc.systemInfoDesc
 }
 
 // Collect implements prometheus.Collector
@@ -123,28 +131,25 @@ func (sc *SystemCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, pkg := range dashboard.Packages {
 		if pkg.Name == "ybos" {
 			// Set current version as a string label
-			sc.systemVersion.WithLabelValues(sc.systemName, pkg.Version).Set(1)
+			ch <- prometheus.MustNewConstMetric(sc.systemVersionDesc, prometheus.GaugeValue, 1, sc.systemName, pkg.Version)
 
 			// Set branch as a string label
-			sc.systemBranch.WithLabelValues(sc.systemName, pkg.Branch).Set(1)
+			ch <- prometheus.MustNewConstMetric(sc.systemBranchDesc, prometheus.GaugeValue, 1, sc.systemName, pkg.Branch)
 
 			// Get latest version from the first source package
 			latestVersion := ""
 			if len(pkg.SourcePackages) > 0 {
 				latestVersion = pkg.SourcePackages[0].Version
-				sc.systemVersionLatest.WithLabelValues(sc.systemName, latestVersion).Set(1)
+				ch <- prometheus.MustNewConstMetric(sc.systemVersionLatestDesc, prometheus.GaugeValue, 1, sc.systemName, latestVersion)
+
 			}
 
 			// Set system info metric with all information as labels
-			sc.systemInfo.WithLabelValues(sc.systemName, pkg.Version, latestVersion, pkg.Branch).Set(1)
+			ch <- prometheus.MustNewConstMetric(sc.systemInfoDesc, prometheus.GaugeValue, 1, sc.systemName, pkg.Version, latestVersion, pkg.Branch)
 
 			break
 		}
 	}
 
 	// Collect all metrics
-	sc.systemVersion.Collect(ch)
-	sc.systemVersionLatest.Collect(ch)
-	sc.systemBranch.Collect(ch)
-	sc.systemInfo.Collect(ch)
 }

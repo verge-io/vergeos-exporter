@@ -17,27 +17,27 @@ type ClusterResponse []ClusterInfo
 // ClusterCollector collects metrics about VergeOS clusters
 type ClusterCollector struct {
 	BaseCollector
-	mutex sync.Mutex
+	mutex      sync.Mutex
+	systemName string
 
 	// Metrics
-	clusterStatus        *prometheus.GaugeVec
-	clusterRAMTotal      *prometheus.GaugeVec
-	clusterRAMUsed       *prometheus.GaugeVec
-	clusterCoresTotal    *prometheus.GaugeVec
-	clusterCoresUsed     *prometheus.GaugeVec
-	clusterMachinesTotal *prometheus.GaugeVec
-	clusterHealth        *prometheus.GaugeVec
-	clustersTotal        *prometheus.GaugeVec
-	clusterEnabled       *prometheus.GaugeVec
-	clusterRamPerUnit    *prometheus.GaugeVec
-	clusterCoresPerUnit  *prometheus.GaugeVec
-	clusterTargetRamPct  *prometheus.GaugeVec
-	clusterTotalNodes    *prometheus.GaugeVec
-	clusterOnlineNodes   *prometheus.GaugeVec
-	clusterOnlineRam     *prometheus.GaugeVec
-	clusterOnlineCores   *prometheus.GaugeVec
-	clusterPhysRamUsed   *prometheus.GaugeVec
-	systemName           string
+	clusterStatusDesc        *prometheus.Desc
+	clusterRAMTotalDesc      *prometheus.Desc
+	clusterRAMUsedDesc       *prometheus.Desc
+	clusterCoresTotalDesc    *prometheus.Desc
+	clusterCoresUsedDesc     *prometheus.Desc
+	clusterMachinesTotalDesc *prometheus.Desc
+	clusterHealthDesc        *prometheus.Desc
+	clustersTotalDesc        *prometheus.Desc
+	clusterEnabledDesc       *prometheus.Desc
+	clusterRamPerUnitDesc    *prometheus.Desc
+	clusterCoresPerUnitDesc  *prometheus.Desc
+	clusterTargetRamPctDesc  *prometheus.Desc
+	clusterTotalNodesDesc    *prometheus.Desc
+	clusterOnlineNodesDesc   *prometheus.Desc
+	clusterOnlineRamDesc     *prometheus.Desc
+	clusterOnlineCoresDesc   *prometheus.Desc
+	clusterPhysRamUsedDesc   *prometheus.Desc
 }
 
 // NewClusterCollector creates a new ClusterCollector
@@ -48,124 +48,107 @@ func NewClusterCollector(url string, client *http.Client, username, password str
 			httpClient: client,
 		},
 		systemName: "unknown", // Will be updated in Collect
-		clusterStatus: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_status",
-				Help: "Cluster status (1=online, 0=offline)",
-			},
+		clusterStatusDesc: prometheus.NewDesc(
+			"vergeos_cluster_status",
+			"Cluster status (1=online, 0=offline)",
 			[]string{"system_name", "cluster"},
+			nil,
 		),
-		clusterRAMTotal: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_total_ram",
-				Help: "Total RAM in bytes",
-			},
+		clusterRAMTotalDesc: prometheus.NewDesc(
+			"vergeos_cluster_total_ram",
+			"Total RAM in bytes",
 			[]string{"system_name", "cluster"},
+			nil,
 		),
-		clusterRAMUsed: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_used_ram",
-				Help: "Used RAM in bytes",
-			},
+		clusterRAMUsedDesc: prometheus.NewDesc(
+			"vergeos_cluster_used_ram",
+			"Used RAM in bytes",
 			[]string{"system_name", "cluster"},
+			nil,
 		),
-		clusterCoresTotal: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_cores_total",
-				Help: "Total number of CPU cores",
-			},
+		clusterCoresTotalDesc: prometheus.NewDesc(
+			"vergeos_cluster_cores_total",
+			"Total number of CPU cores",
 			[]string{"system_name", "cluster"},
+			nil,
 		),
-		clusterCoresUsed: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_used_cores",
-				Help: "Number of CPU cores in use",
-			},
+		clusterCoresUsedDesc: prometheus.NewDesc(
+			"vergeos_cluster_used_cores",
+			"Number of CPU cores in use",
 			[]string{"system_name", "cluster"},
+			nil,
 		),
-		clusterMachinesTotal: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_running_machines",
-				Help: "Total number of running machines",
-			},
+		clusterMachinesTotalDesc: prometheus.NewDesc(
+			"vergeos_cluster_running_machines",
+			"Total number of running machines",
 			[]string{"system_name", "cluster"},
+			nil,
 		),
-		clusterHealth: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_health",
-				Help: "Cluster health status (1=healthy, 0=unhealthy)",
-			},
+		clusterHealthDesc: prometheus.NewDesc(
+			"vergeos_cluster_health",
+			"Cluster health status (1=healthy, 0=unhealthy)",
 			[]string{"system_name", "cluster"},
+			nil,
 		),
-		clustersTotal: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_clusters_total",
-				Help: "Total number of clusters",
-			},
+		clustersTotalDesc: prometheus.NewDesc(
+			"vergeos_clusters_total",
+			"Total number of clusters",
 			[]string{"system_name"},
+			nil,
 		),
-		clusterEnabled: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_enabled",
-				Help: "Cluster enabled status (1=enabled, 0=disabled)",
-			},
+		clusterEnabledDesc: prometheus.NewDesc(
+			"vergeos_cluster_enabled",
+			"Cluster enabled status (1=enabled, 0=disabled)",
 			[]string{"system_name", "cluster"},
+			nil,
 		),
-		clusterRamPerUnit: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_ram_per_unit",
-				Help: "RAM per unit in bytes",
-			},
+		clusterRamPerUnitDesc: prometheus.NewDesc(
+			"vergeos_cluster_ram_per_unit",
+			"RAM per unit in bytes",
 			[]string{"system_name", "cluster"},
+			nil,
 		),
-		clusterCoresPerUnit: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_cores_per_unit",
-				Help: "Cores per unit",
-			},
+		clusterCoresPerUnitDesc: prometheus.NewDesc(
+			"vergeos_cluster_cores_per_unit",
+			"Cores per unit",
 			[]string{"system_name", "cluster"},
+			nil,
 		),
-		clusterTargetRamPct: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_target_ram_pct",
-				Help: "Target RAM percentage",
-			},
+		clusterTargetRamPctDesc: prometheus.NewDesc(
+			"vergeos_cluster_target_ram_pct",
+			"Target RAM percentage",
 			[]string{"system_name", "cluster"},
+			nil,
 		),
-		clusterTotalNodes: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_total_nodes",
-				Help: "Total number of nodes",
-			},
+		clusterTotalNodesDesc: prometheus.NewDesc(
+			"vergeos_cluster_total_nodes",
+			"Total number of nodes",
 			[]string{"system_name", "cluster"},
+			nil,
 		),
-		clusterOnlineNodes: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_online_nodes",
-				Help: "Number of online nodes",
-			},
+		clusterOnlineNodesDesc: prometheus.NewDesc(
+			"vergeos_cluster_online_nodes",
+			"Number of online nodes",
 			[]string{"system_name", "cluster"},
+			nil,
 		),
-		clusterOnlineRam: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_online_ram",
-				Help: "Online RAM in bytes",
-			},
+		clusterOnlineRamDesc: prometheus.NewDesc(
+			"vergeos_cluster_online_ram",
+			"Online RAM in bytes",
 			[]string{"system_name", "cluster"},
+			nil,
 		),
-		clusterOnlineCores: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_online_cores",
-				Help: "Number of online cores",
-			},
+		clusterOnlineCoresDesc: prometheus.NewDesc(
+			"vergeos_cluster_online_cores",
+			"Number of online cores",
 			[]string{"system_name", "cluster"},
+			nil,
 		),
-		clusterPhysRamUsed: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_cluster_phys_ram_used",
-				Help: "Physical RAM used in bytes",
-			},
+		clusterPhysRamUsedDesc: prometheus.NewDesc(
+			"vergeos_cluster_phys_ram_used",
+			"Physical RAM used in bytes",
 			[]string{"system_name", "cluster"},
+			nil,
 		),
 	}
 
@@ -179,23 +162,23 @@ func NewClusterCollector(url string, client *http.Client, username, password str
 
 // Describe implements prometheus.Collector
 func (cc *ClusterCollector) Describe(ch chan<- *prometheus.Desc) {
-	cc.clusterStatus.Describe(ch)
-	cc.clusterRAMTotal.Describe(ch)
-	cc.clusterRAMUsed.Describe(ch)
-	cc.clusterCoresTotal.Describe(ch)
-	cc.clusterCoresUsed.Describe(ch)
-	cc.clusterMachinesTotal.Describe(ch)
-	cc.clusterHealth.Describe(ch)
-	cc.clustersTotal.Describe(ch)
-	cc.clusterEnabled.Describe(ch)
-	cc.clusterRamPerUnit.Describe(ch)
-	cc.clusterCoresPerUnit.Describe(ch)
-	cc.clusterTargetRamPct.Describe(ch)
-	cc.clusterTotalNodes.Describe(ch)
-	cc.clusterOnlineNodes.Describe(ch)
-	cc.clusterOnlineRam.Describe(ch)
-	cc.clusterOnlineCores.Describe(ch)
-	cc.clusterPhysRamUsed.Describe(ch)
+	ch <- cc.clusterStatusDesc
+	ch <- cc.clusterRAMTotalDesc
+	ch <- cc.clusterRAMUsedDesc
+	ch <- cc.clusterCoresTotalDesc
+	ch <- cc.clusterCoresUsedDesc
+	ch <- cc.clusterMachinesTotalDesc
+	ch <- cc.clusterHealthDesc
+	ch <- cc.clustersTotalDesc
+	ch <- cc.clusterEnabledDesc
+	ch <- cc.clusterRamPerUnitDesc
+	ch <- cc.clusterCoresPerUnitDesc
+	ch <- cc.clusterTargetRamPctDesc
+	ch <- cc.clusterTotalNodesDesc
+	ch <- cc.clusterOnlineNodesDesc
+	ch <- cc.clusterOnlineRamDesc
+	ch <- cc.clusterOnlineCoresDesc
+	ch <- cc.clusterPhysRamUsedDesc
 }
 
 // Collect implements prometheus.Collector
@@ -253,7 +236,7 @@ func (cc *ClusterCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	cc.clustersTotal.WithLabelValues(cc.systemName).Set(float64(len(response)))
+	ch <- prometheus.MustNewConstMetric(cc.clustersTotalDesc, prometheus.GaugeValue, float64(len(response)), cc.systemName)
 
 	// Get detailed information for each cluster
 	for _, cluster := range response {
@@ -284,7 +267,8 @@ func (cc *ClusterCollector) Collect(ch chan<- prometheus.Metric) {
 					if err := json.NewDecoder(bytes.NewReader(statsBytes)).Decode(&statsResp); err != nil {
 						fmt.Printf("Error decoding cluster stats response: %v\n", err)
 					} else {
-						cc.clusterPhysRamUsed.WithLabelValues(cc.systemName, cluster.Name).Set(float64(statsResp.PhysRamUsed))
+						ch <- prometheus.MustNewConstMetric(cc.clusterPhysRamUsedDesc, prometheus.GaugeValue, float64(statsResp.PhysRamUsed), cc.systemName, cluster.Name)
+						// cc.clusterPhysRamUsed.WithLabelValues(cc.systemName, cluster.Name).Set(float64(statsResp.PhysRamUsed))
 					}
 				}
 			}
@@ -317,44 +301,45 @@ func (cc *ClusterCollector) Collect(ch chan<- prometheus.Metric) {
 			enabledValue = 1.0
 		}
 
-		cc.clusterEnabled.WithLabelValues(cc.systemName, detail.Name).Set(enabledValue)
-		cc.clusterRamPerUnit.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.RamPerUnit))
-		cc.clusterCoresPerUnit.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.CoresPerUnit))
-		cc.clusterTargetRamPct.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.TargetRamPct))
-		cc.clusterTotalNodes.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.TotalNodes))
-		cc.clusterOnlineNodes.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.OnlineNodes))
-		cc.clusterOnlineRam.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.OnlineRam))
-		cc.clusterOnlineCores.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.OnlineCores))
+		ch <- prometheus.MustNewConstMetric(cc.clusterEnabledDesc, prometheus.GaugeValue, float64(enabledValue), cc.systemName, detail.Name)
+		ch <- prometheus.MustNewConstMetric(cc.clusterRamPerUnitDesc, prometheus.GaugeValue, float64(detail.RamPerUnit), cc.systemName, detail.Name)
+		ch <- prometheus.MustNewConstMetric(cc.clusterCoresPerUnitDesc, prometheus.GaugeValue, float64(detail.CoresPerUnit), cc.systemName, detail.Name)
+		ch <- prometheus.MustNewConstMetric(cc.clusterTargetRamPctDesc, prometheus.GaugeValue, float64(detail.TargetRamPct), cc.systemName, detail.Name)
+		ch <- prometheus.MustNewConstMetric(cc.clusterTotalNodesDesc, prometheus.GaugeValue, float64(detail.Status.TotalNodes), cc.systemName, detail.Name)
+		ch <- prometheus.MustNewConstMetric(cc.clusterOnlineNodesDesc, prometheus.GaugeValue, float64(detail.Status.OnlineNodes), cc.systemName, detail.Name)
+		ch <- prometheus.MustNewConstMetric(cc.clusterOnlineRamDesc, prometheus.GaugeValue, float64(detail.Status.OnlineRam), cc.systemName, detail.Name)
+		ch <- prometheus.MustNewConstMetric(cc.clusterOnlineCoresDesc, prometheus.GaugeValue, float64(detail.Status.OnlineCores), cc.systemName, detail.Name)
 
 		// Note: We're no longer trying to get PhysRamUsed from the detail API since it's not present in that endpoint
-		cc.clusterMachinesTotal.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.RunningMachines))
-		cc.clusterRAMTotal.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.TotalRam))
-		cc.clusterRAMUsed.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.UsedRam))
-		cc.clusterCoresUsed.WithLabelValues(cc.systemName, detail.Name).Set(float64(detail.Status.UsedCores))
+		ch <- prometheus.MustNewConstMetric(cc.clusterMachinesTotalDesc, prometheus.GaugeValue, float64(detail.Status.RunningMachines), cc.systemName, detail.Name)
+		ch <- prometheus.MustNewConstMetric(cc.clusterRAMTotalDesc, prometheus.GaugeValue, float64(detail.Status.TotalRam), cc.systemName, detail.Name)
+
+		ch <- prometheus.MustNewConstMetric(cc.clusterRAMUsedDesc, prometheus.GaugeValue, float64(detail.Status.UsedRam), cc.systemName, detail.Name)
+		ch <- prometheus.MustNewConstMetric(cc.clusterCoresUsedDesc, prometheus.GaugeValue, float64(detail.Status.UsedCores), cc.systemName, detail.Name)
 
 		// Set cluster status (1=online, 0=offline)
 		statusValue := 0.0
 		if detail.Status.OnlineNodes > 0 {
 			statusValue = 1.0
 		}
-		cc.clusterStatus.WithLabelValues(cc.systemName, detail.Name).Set(statusValue)
+		ch <- prometheus.MustNewConstMetric(cc.clusterStatusDesc, prometheus.GaugeValue, float64(statusValue), cc.systemName, detail.Name)
 	}
 
-	cc.clusterStatus.Collect(ch)
-	cc.clusterRAMTotal.Collect(ch)
-	cc.clusterRAMUsed.Collect(ch)
-	cc.clusterCoresTotal.Collect(ch)
-	cc.clusterCoresUsed.Collect(ch)
-	cc.clusterMachinesTotal.Collect(ch)
-	cc.clusterHealth.Collect(ch)
-	cc.clustersTotal.Collect(ch)
-	cc.clusterEnabled.Collect(ch)
-	cc.clusterRamPerUnit.Collect(ch)
-	cc.clusterCoresPerUnit.Collect(ch)
-	cc.clusterTargetRamPct.Collect(ch)
-	cc.clusterTotalNodes.Collect(ch)
-	cc.clusterOnlineNodes.Collect(ch)
-	cc.clusterOnlineRam.Collect(ch)
-	cc.clusterOnlineCores.Collect(ch)
-	cc.clusterPhysRamUsed.Collect(ch)
+	// cc.clusterStatus.Collect(ch)
+	// cc.clusterRAMTotal.Collect(ch)
+	// cc.clusterRAMUsed.Collect(ch)
+	// cc.clusterCoresTotal.Collect(ch)
+	// cc.clusterCoresUsed.Collect(ch)
+	// cc.clusterMachinesTotal.Collect(ch)
+	// cc.clusterHealth.Collect(ch)
+	// cc.clustersTotal.Collect(ch)
+	// cc.clusterEnabled.Collect(ch)
+	// cc.clusterRamPerUnit.Collect(ch)
+	// cc.clusterCoresPerUnit.Collect(ch)
+	// cc.clusterTargetRamPct.Collect(ch)
+	// cc.clusterTotalNodes.Collect(ch)
+	// cc.clusterOnlineNodes.Collect(ch)
+	// cc.clusterOnlineRam.Collect(ch)
+	// cc.clusterOnlineCores.Collect(ch)
+	// cc.clusterPhysRamUsed.Collect(ch)
 }

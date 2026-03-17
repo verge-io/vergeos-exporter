@@ -18,13 +18,13 @@ type NetworkCollector struct {
 	systemName string
 
 	// Metrics
-	nicTxPackets *prometheus.CounterVec
-	nicRxPackets *prometheus.CounterVec
-	nicTxBytes   *prometheus.CounterVec
-	nicRxBytes   *prometheus.CounterVec
-	nicTxErrors  *prometheus.CounterVec
-	nicRxErrors  *prometheus.CounterVec
-	nicStatus    *prometheus.GaugeVec
+	nicTxPacketsDesc *prometheus.Desc
+	nicRxPacketsDesc *prometheus.Desc
+	nicTxBytesDesc   *prometheus.Desc
+	nicRxBytesDesc   *prometheus.Desc
+	nicTxErrorsDesc  *prometheus.Desc
+	nicRxErrorsDesc  *prometheus.Desc
+	nicStatusDesc    *prometheus.Desc
 }
 
 // NetworkInterface represents a network interface
@@ -49,54 +49,47 @@ func NewNetworkCollector(url string, client *http.Client, username, password str
 			httpClient: client,
 		},
 		systemName: "unknown", // Will be updated in Collect
-		nicTxPackets: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "vergeos_nic_tx_packets_total",
-				Help: "Total number of packets transmitted",
-			},
+		nicTxPacketsDesc: prometheus.NewDesc(
+			"vergeos_nic_tx_packets_total",
+			"Total number of packets transmitted",
 			[]string{"system_name", "cluster", "node_name", "interface"},
+			nil,
 		),
-		nicRxPackets: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "vergeos_nic_rx_packets_total",
-				Help: "Total number of packets received",
-			},
+		nicRxPacketsDesc: prometheus.NewDesc(
+			"vergeos_nic_rx_packets_total",
+			"Total number of packets received",
 			[]string{"system_name", "cluster", "node_name", "interface"},
+			nil,
 		),
-		nicTxBytes: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "vergeos_nic_tx_bytes_total",
-				Help: "Total number of bytes transmitted",
-			},
+		nicTxBytesDesc: prometheus.NewDesc(
+			"vergeos_nic_tx_bytes_total",
+			"Total number of bytes transmitted",
 			[]string{"system_name", "cluster", "node_name", "interface"},
+			nil,
 		),
-		nicRxBytes: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "vergeos_nic_rx_bytes_total",
-				Help: "Total number of bytes received",
-			},
+		nicRxBytesDesc: prometheus.NewDesc(
+			"vergeos_nic_rx_bytes_total",
+			"Total number of bytes received",
 			[]string{"system_name", "cluster", "node_name", "interface"},
+			nil,
 		),
-		nicTxErrors: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "vergeos_nic_tx_errors_total",
-				Help: "Total number of transmit errors",
-			},
+		nicTxErrorsDesc: prometheus.NewDesc(
+			"vergeos_nic_tx_errors_total",
+			"Total number of transmit errors",
 			[]string{"system_name", "cluster", "node_name", "interface"},
+			nil,
 		),
-		nicRxErrors: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "vergeos_nic_rx_errors_total",
-				Help: "Total number of receive errors",
-			},
+		nicRxErrorsDesc: prometheus.NewDesc(
+			"vergeos_nic_rx_errors_total",
+			"Total number of receive errors",
 			[]string{"system_name", "cluster", "node_name", "interface"},
+			nil,
 		),
-		nicStatus: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_nic_status",
-				Help: "Network interface status (1=up, 0=down)",
-			},
+		nicStatusDesc: prometheus.NewDesc(
+			"vergeos_nic_status",
+			"Network interface status (1=up, 0=down)",
 			[]string{"system_name", "cluster", "node_name", "interface"},
+			nil,
 		),
 	}
 
@@ -110,13 +103,13 @@ func NewNetworkCollector(url string, client *http.Client, username, password str
 
 // Describe implements prometheus.Collector
 func (nc *NetworkCollector) Describe(ch chan<- *prometheus.Desc) {
-	nc.nicTxPackets.Describe(ch)
-	nc.nicRxPackets.Describe(ch)
-	nc.nicTxBytes.Describe(ch)
-	nc.nicRxBytes.Describe(ch)
-	nc.nicTxErrors.Describe(ch)
-	nc.nicRxErrors.Describe(ch)
-	nc.nicStatus.Describe(ch)
+	ch <- nc.nicTxPacketsDesc
+	ch <- nc.nicRxPacketsDesc
+	ch <- nc.nicTxBytesDesc
+	ch <- nc.nicRxBytesDesc
+	ch <- nc.nicTxErrorsDesc
+	ch <- nc.nicRxErrorsDesc
+	ch <- nc.nicStatusDesc
 }
 
 // Collect implements prometheus.Collector
@@ -218,23 +211,15 @@ func (nc *NetworkCollector) Collect(ch chan<- prometheus.Metric) {
 			if nic.Status == "up" {
 				statusValue = 1.0
 			}
-			nc.nicStatus.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name).Set(statusValue)
-
+			ch <- prometheus.MustNewConstMetric(nc.nicStatusDesc, prometheus.CounterValue, statusValue, nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name)
 			// Set network metrics
-			nc.nicTxPackets.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name).Add(float64(nic.Stats.TxPackets))
-			nc.nicRxPackets.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name).Add(float64(nic.Stats.RxPackets))
-			nc.nicTxBytes.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name).Add(float64(nic.Stats.TxBytes))
-			nc.nicRxBytes.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name).Add(float64(nic.Stats.RxBytes))
-			nc.nicTxErrors.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name).Add(float64(nic.Stats.TxErrors))
-			nc.nicRxErrors.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name).Add(float64(nic.Stats.RxErrors))
+			ch <- prometheus.MustNewConstMetric(nc.nicTxPacketsDesc, prometheus.CounterValue, float64(nic.Stats.TxPackets), nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name)
+			ch <- prometheus.MustNewConstMetric(nc.nicRxPacketsDesc, prometheus.CounterValue, float64(nic.Stats.RxPackets), nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name)
+			ch <- prometheus.MustNewConstMetric(nc.nicTxBytesDesc, prometheus.CounterValue, float64(nic.Stats.TxBytes), nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name)
+			ch <- prometheus.MustNewConstMetric(nc.nicRxBytesDesc, prometheus.CounterValue, float64(nic.Stats.RxBytes), nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name)
+			ch <- prometheus.MustNewConstMetric(nc.nicTxErrorsDesc, prometheus.CounterValue, float64(nic.Stats.TxErrors), nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name)
+			ch <- prometheus.MustNewConstMetric(nc.nicRxErrorsDesc, prometheus.CounterValue, float64(nic.Stats.RxErrors), nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name)
+
 		}
 	}
-
-	nc.nicTxPackets.Collect(ch)
-	nc.nicRxPackets.Collect(ch)
-	nc.nicTxBytes.Collect(ch)
-	nc.nicRxBytes.Collect(ch)
-	nc.nicTxErrors.Collect(ch)
-	nc.nicRxErrors.Collect(ch)
-	nc.nicStatus.Collect(ch)
 }
