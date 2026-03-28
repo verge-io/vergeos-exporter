@@ -123,6 +123,7 @@ type StorageTierMock struct {
 	Description string `json:"description"`
 	Capacity    uint64 `json:"capacity"`
 	Used        uint64 `json:"used"`
+	UsedPct     uint32 `json:"used_pct"`
 	Allocated   uint64 `json:"allocated"`
 	DedupeRatio uint32 `json:"dedupe_ratio"`
 }
