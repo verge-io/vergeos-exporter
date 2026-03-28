@@ -289,6 +289,88 @@ type MachineDriveStatsMock struct {
 	Physical    bool    `json:"physical"`
 }
 
+// TenantMock represents a mock tenant
+type TenantMock struct {
+	Key         int    `json:"$key"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	UUID        string `json:"uuid,omitempty"`
+	IsSnapshot  bool   `json:"is_snapshot"`
+	Isolate     bool   `json:"isolate"`
+}
+
+// TenantNodeMock represents a mock tenant node
+type TenantNodeMock struct {
+	Key        int    `json:"$key"`
+	Tenant     int    `json:"tenant"`
+	NodeID     int    `json:"nodeid"`
+	Name       string `json:"name"`
+	Enabled    bool   `json:"enabled"`
+	Machine    int    `json:"machine"`
+	IsSnapshot bool   `json:"is_snapshot"`
+	CPUCores   int    `json:"cpu_cores"`
+	RAM        int    `json:"ram"`
+}
+
+// TenantStatusMock represents a mock tenant status
+type TenantStatusMock struct {
+	Key       int    `json:"$key"`
+	Tenant    int    `json:"tenant"`
+	Running   bool   `json:"running"`
+	Starting  bool   `json:"starting"`
+	Stopping  bool   `json:"stopping"`
+	Migrating bool   `json:"migrating"`
+	Status    string `json:"status"`
+	State     string `json:"state"`
+}
+
+// TenantStatsHistoryShortMock represents a mock tenant stats history record
+type TenantStatsHistoryShortMock struct {
+	Key          int    `json:"$key"`
+	Tenant       int    `json:"tenant"`
+	Timestamp    uint32 `json:"timestamp"`
+	TotalCPU     uint32 `json:"total_cpu"`
+	CoreCount    uint32 `json:"core_count"`
+	RAMUsed      uint32 `json:"ram_used"`
+	RAMAllocated uint32 `json:"ram_allocated"`
+	RAMPct       uint32 `json:"ram_pct"`
+	IPCount      uint32 `json:"ip_count"`
+	VGPUsUsed    uint16 `json:"vgpus_used"`
+	VGPUsTotal   uint16 `json:"vgpus_total"`
+	GPUsUsed     uint16 `json:"gpus_used"`
+	GPUsTotal    uint16 `json:"gpus_total"`
+}
+
+// TenantStorageMock represents a mock tenant storage allocation
+type TenantStorageMock struct {
+	Key         int   `json:"$key"`
+	Tenant      int   `json:"tenant"`
+	Tier        int   `json:"tier"`
+	Provisioned int64 `json:"provisioned"`
+	Used        int64 `json:"used"`
+	Allocated   int64 `json:"allocated"`
+	UsedPct     int   `json:"used_pct"`
+}
+
+// TenantLayer2NetworkMock represents a mock tenant L2 network assignment
+type TenantLayer2NetworkMock struct {
+	Key     int  `json:"$key"`
+	Tenant  int  `json:"tenant"`
+	VNet    int  `json:"vnet"`
+	Enabled bool `json:"enabled"`
+}
+
+// MachineStatusMock represents a mock machine status
+type MachineStatusMock struct {
+	Key          int    `json:"$key"`
+	Machine      int    `json:"machine"`
+	Running      bool   `json:"running"`
+	Status       string `json:"status"`
+	State        string `json:"state"`
+	RunningCores int    `json:"running_cores"`
+	RunningRAM   int    `json:"running_ram"`
+}
+
 // UpdateSettingsMock represents mock update settings
 type UpdateSettingsMock struct {
 	Key        int    `json:"$key"`

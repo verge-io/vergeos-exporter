@@ -95,6 +95,91 @@ func TestIntegrationNodeCollector(t *testing.T) {
 	})
 }
 
+func TestIntegrationTenantCollector(t *testing.T) {
+	client := createIntegrationClient(t)
+	tc := collectors.NewTenantCollector(client)
+
+	metrics := collectMetrics(t, tc)
+
+	t.Run("tenants_total", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_tenants_total")
+		if len(found) == 0 {
+			t.Fatal("Expected at least one vergeos_tenants_total metric")
+		}
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name")
+		}
+	})
+
+	t.Run("tenant_running", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_tenant_running")
+		if len(found) == 0 {
+			t.Fatal("Expected at least one vergeos_tenant_running metric")
+		}
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name", "tenant_name")
+		}
+	})
+
+	t.Run("tenant_status", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_tenant_status")
+		if len(found) == 0 {
+			t.Fatal("Expected at least one vergeos_tenant_status metric")
+		}
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name", "tenant_name", "status")
+		}
+	})
+
+	t.Run("tenant_cpu_usage", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_tenant_cpu_usage_pct")
+		// May be 0 for offline tenants, but should exist for running ones
+		t.Logf("Found %d tenant CPU usage metrics", len(found))
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name", "tenant_name")
+		}
+	})
+
+	t.Run("tenant_nodes_total", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_tenant_nodes_total")
+		if len(found) == 0 {
+			t.Fatal("Expected at least one vergeos_tenant_nodes_total metric")
+		}
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name", "tenant_name")
+		}
+	})
+
+	t.Run("tenant_node_cpu_cores", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_tenant_node_cpu_cores")
+		if len(found) == 0 {
+			t.Fatal("Expected at least one vergeos_tenant_node_cpu_cores metric")
+		}
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name", "tenant_name", "node_name")
+		}
+	})
+
+	t.Run("tenant_node_ram_bytes", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_tenant_node_ram_bytes")
+		if len(found) == 0 {
+			t.Fatal("Expected at least one vergeos_tenant_node_ram_bytes metric")
+		}
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name", "tenant_name", "node_name")
+		}
+	})
+
+	t.Run("tenant_storage", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_tenant_storage_provisioned_bytes")
+		// Storage may or may not exist depending on tenant config
+		t.Logf("Found %d tenant storage provisioned metrics", len(found))
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name", "tenant_name", "tier")
+		}
+	})
+}
+
 // collectMetrics gathers all metrics from a collector as text lines.
 func collectMetrics(t *testing.T, c prometheus.Collector) []string {
 	t.Helper()
