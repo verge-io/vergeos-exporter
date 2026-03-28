@@ -23,6 +23,10 @@ A Prometheus exporter for VergeOS that collects metrics about VSAN tiers, cluste
   - Network throughput and latency
   - Process and service status
 
+## Metrics Format
+
+The exporter supports both standard Prometheus text format and [OpenMetrics](https://openmetrics.io/) format via content negotiation. Prometheus 2.5.0+ will automatically request OpenMetrics format. Older scrapers continue to receive standard Prometheus text format — no configuration required.
+
 ## Installation
 
 ### Prebuilt Binaries

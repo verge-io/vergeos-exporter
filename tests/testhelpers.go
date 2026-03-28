@@ -367,8 +367,36 @@ type MachineStatusMock struct {
 	Running      bool   `json:"running"`
 	Status       string `json:"status"`
 	State        string `json:"state"`
+	Node         int    `json:"node,omitempty"`
+	NodeName     string `json:"node_name,omitempty"`
 	RunningCores int    `json:"running_cores"`
 	RunningRAM   int    `json:"running_ram"`
+}
+
+// VMMock represents a mock VM
+type VMMock struct {
+	Key        int    `json:"$key"`
+	Name       string `json:"name"`
+	Machine    int    `json:"machine"`
+	Cluster    int    `json:"cluster"`
+	IsSnapshot bool   `json:"is_snapshot"`
+	PowerState bool   `json:"powerstate"`
+	Enabled    bool   `json:"enabled"`
+	CPUCores   int    `json:"cpu_cores"`
+	RAM        int    `json:"ram"`
+}
+
+// VMDriveMock represents a mock VM drive
+type VMDriveMock struct {
+	Key           int    `json:"$key"`
+	Machine       int    `json:"machine"`
+	Name          string `json:"name"`
+	Interface     string `json:"interface"`
+	Media         string `json:"media"`
+	SizeBytes     int64  `json:"disksize"`
+	UsedBytes     int64  `json:"used_bytes"`
+	PreferredTier string `json:"preferred_tier,omitempty"`
+	Enabled       bool   `json:"enabled"`
 }
 
 // UpdateSettingsMock represents mock update settings

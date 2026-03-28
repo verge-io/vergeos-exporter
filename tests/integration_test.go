@@ -180,6 +180,110 @@ func TestIntegrationTenantCollector(t *testing.T) {
 	})
 }
 
+func TestIntegrationVMCollector(t *testing.T) {
+	client := createIntegrationClient(t)
+	vc := collectors.NewVMCollector(client)
+
+	metrics := collectMetrics(t, vc)
+
+	t.Run("vm_cpu_total", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_vm_cpu_total")
+		if len(found) == 0 {
+			t.Fatal("Expected at least one vergeos_vm_cpu_total metric")
+		}
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name", "cluster", "node", "vm_name", "vm_id")
+		}
+		t.Logf("Found %d VM CPU total metrics", len(found))
+	})
+
+	t.Run("vm_cpu_user", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_vm_cpu_user")
+		if len(found) == 0 {
+			t.Fatal("Expected at least one vergeos_vm_cpu_user metric")
+		}
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name", "cluster", "node", "vm_name", "vm_id")
+		}
+	})
+
+	t.Run("vm_cpu_system", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_vm_cpu_system")
+		if len(found) == 0 {
+			t.Fatal("Expected at least one vergeos_vm_cpu_system metric")
+		}
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name", "cluster", "node", "vm_name", "vm_id")
+		}
+	})
+
+	t.Run("vm_cpu_iowait", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_vm_cpu_iowait")
+		if len(found) == 0 {
+			t.Fatal("Expected at least one vergeos_vm_cpu_iowait metric")
+		}
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name", "cluster", "node", "vm_name", "vm_id")
+		}
+	})
+
+	t.Run("vm_running", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_vm_running")
+		if len(found) == 0 {
+			t.Fatal("Expected at least one vergeos_vm_running metric")
+		}
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name", "cluster", "node", "vm_name", "vm_id")
+		}
+	})
+
+	t.Run("vm_enabled", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_vm_enabled")
+		if len(found) == 0 {
+			t.Fatal("Expected at least one vergeos_vm_enabled metric")
+		}
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name", "cluster", "node", "vm_name", "vm_id")
+		}
+	})
+
+	t.Run("vm_cpu_cores", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_vm_cpu_cores")
+		if len(found) == 0 {
+			t.Fatal("Expected at least one vergeos_vm_cpu_cores metric")
+		}
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name", "cluster", "node", "vm_name", "vm_id")
+		}
+	})
+
+	t.Run("vm_ram_bytes", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_vm_ram_bytes")
+		if len(found) == 0 {
+			t.Fatal("Expected at least one vergeos_vm_ram_bytes metric")
+		}
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name", "cluster", "node", "vm_name", "vm_id")
+		}
+	})
+
+	t.Run("vm_nic_tx_bytes", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_vm_nic_tx_bytes_total")
+		t.Logf("Found %d VM NIC TX bytes metrics", len(found))
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name", "cluster", "node", "vm_name", "vm_id", "nic_name")
+		}
+	})
+
+	t.Run("vm_nic_rx_bytes", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_vm_nic_rx_bytes_total")
+		t.Logf("Found %d VM NIC RX bytes metrics", len(found))
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name", "cluster", "node", "vm_name", "vm_id", "nic_name")
+		}
+	})
+}
+
 // collectMetrics gathers all metrics from a collector as text lines.
 func collectMetrics(t *testing.T, c prometheus.Collector) []string {
 	t.Helper()
