@@ -72,7 +72,10 @@ func main() {
 	prometheus.MustRegister(systemCollector)
 	prometheus.MustRegister(tenantCollector)
 
-	http.Handle(*metricsPath, promhttp.Handler())
+	http.Handle(*metricsPath, promhttp.HandlerFor(
+		prometheus.DefaultGatherer,
+		promhttp.HandlerOpts{EnableOpenMetrics: true},
+	))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
 			<head><title>VergeOS Exporter</title></head>
