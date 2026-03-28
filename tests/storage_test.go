@@ -29,6 +29,18 @@ func TestStorageTierMetrics(t *testing.T) {
 				LastWalkTimeMs: 1000, LastFullwalkTimeMs: 5000, Fullwalk: false,
 				Progress: 0, CurSpaceThrottleMs: 0,
 			},
+			NodesOnline: &ClusterTierNodesOnlineMock{
+				Nodes: []ClusterTierNodeStateMock{
+					{State: "online"},
+					{State: "online"},
+				},
+			},
+			DrivesOnline: []ClusterTierDriveStateMock{
+				{State: "online"},
+				{State: "online"},
+				{State: "online"},
+				{State: "online"},
+			},
 		},
 		{
 			Key: 2, Cluster: 1, Tier: 1,
@@ -37,6 +49,15 @@ func TestStorageTierMetrics(t *testing.T) {
 				Working: true, BadDrives: 1, Encrypted: false, Redundant: false,
 				LastWalkTimeMs: 1500, LastFullwalkTimeMs: 7500, Fullwalk: true,
 				Progress: 50, CurSpaceThrottleMs: 100,
+			},
+			NodesOnline: &ClusterTierNodesOnlineMock{
+				Nodes: []ClusterTierNodeStateMock{
+					{State: "online"},
+				},
+			},
+			DrivesOnline: []ClusterTierDriveStateMock{
+				{State: "online"},
+				{State: "online"},
 			},
 		},
 	}
@@ -140,6 +161,28 @@ vergeos_vsan_fullwalk_progress{status="repairing",system_name="testcloud",tier="
 `
 	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedProgress), "vergeos_vsan_fullwalk_progress"); err != nil {
 		t.Errorf("Fullwalk progress metrics do not match expected values: %v", err)
+	}
+
+	// Test nodes online (Issue 6)
+	expectedNodesOnline := `
+# HELP vergeos_vsan_nodes_online Count of online nodes for VSAN tier
+# TYPE vergeos_vsan_nodes_online gauge
+vergeos_vsan_nodes_online{status="online",system_name="testcloud",tier="0"} 2
+vergeos_vsan_nodes_online{status="repairing",system_name="testcloud",tier="1"} 1
+`
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedNodesOnline), "vergeos_vsan_nodes_online"); err != nil {
+		t.Errorf("Nodes online metrics do not match expected values: %v", err)
+	}
+
+	// Test drives online (Issue 6)
+	expectedDrivesOnline := `
+# HELP vergeos_vsan_drives_online Count of online drives for VSAN tier
+# TYPE vergeos_vsan_drives_online gauge
+vergeos_vsan_drives_online{status="online",system_name="testcloud",tier="0"} 4
+vergeos_vsan_drives_online{status="repairing",system_name="testcloud",tier="1"} 2
+`
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedDrivesOnline), "vergeos_vsan_drives_online"); err != nil {
+		t.Errorf("Drives online metrics do not match expected values: %v", err)
 	}
 }
 

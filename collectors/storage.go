@@ -57,6 +57,10 @@ type StorageCollector struct {
 
 	// Drive state counting (Issue 4)
 	vsanDriveStates *prometheus.Desc
+
+	// Online node/drive counts (Issue 6)
+	vsanNodesOnline  *prometheus.Desc
+	vsanDrivesOnline *prometheus.Desc
 }
 
 // NewStorageCollector creates a new StorageCollector.
@@ -227,6 +231,18 @@ func NewStorageCollector(client *vergeos.Client) *StorageCollector {
 			"Count of drives in each state per tier",
 			[]string{"system_name", "tier", "state"}, nil,
 		),
+
+		// Online node/drive counts (Issue 6)
+		vsanNodesOnline: prometheus.NewDesc(
+			"vergeos_vsan_nodes_online",
+			"Count of online nodes for VSAN tier",
+			tierStatusLabels, nil,
+		),
+		vsanDrivesOnline: prometheus.NewDesc(
+			"vergeos_vsan_drives_online",
+			"Count of online drives for VSAN tier",
+			tierStatusLabels, nil,
+		),
 	}
 
 	return sc
@@ -273,6 +289,10 @@ func (sc *StorageCollector) Describe(ch chan<- *prometheus.Desc) {
 
 	// Drive state counting
 	ch <- sc.vsanDriveStates
+
+	// Online node/drive counts
+	ch <- sc.vsanNodesOnline
+	ch <- sc.vsanDrivesOnline
 }
 
 // Collect implements prometheus.Collector
@@ -410,6 +430,18 @@ func (sc *StorageCollector) collectTierMetrics(ctx context.Context, ch chan<- pr
 		ch <- prometheus.MustNewConstMetric(
 			sc.vsanCurSpaceThrottle, prometheus.GaugeValue,
 			tier.Status.CurSpaceThrottleMs,
+			systemName, tierStr, status,
+		)
+
+		// Online node/drive counts (Issue 6)
+		ch <- prometheus.MustNewConstMetric(
+			sc.vsanNodesOnline, prometheus.GaugeValue,
+			float64(tier.CountOnlineNodes()),
+			systemName, tierStr, status,
+		)
+		ch <- prometheus.MustNewConstMetric(
+			sc.vsanDrivesOnline, prometheus.GaugeValue,
+			float64(tier.CountOnlineDrives()),
 			systemName, tierStr, status,
 		)
 	}

@@ -17,8 +17,8 @@ func TestNodeCollector(t *testing.T) {
 	config := DefaultMockConfig()
 
 	nodes := []NodeMock{
-		{ID: 1, Name: "node1", Physical: true, Cluster: 1, Machine: 101, IPMIStatus: "ok", RAM: 65536, VMRAM: 32768},
-		{ID: 2, Name: "node2", Physical: true, Cluster: 1, Machine: 102, IPMIStatus: "offline", RAM: 65536, VMRAM: 16384},
+		{ID: 1, Name: "node1", Physical: true, Cluster: 1, Machine: 101, IPMIStatus: "ok", RAM: 65536, VMRAM: 32768, VMStatsTotals: &NodeVMStatsTotalsMock{RunningCores: 24, RunningRAM: 49152}},
+		{ID: 2, Name: "node2", Physical: true, Cluster: 1, Machine: 102, IPMIStatus: "offline", RAM: 65536, VMRAM: 16384, VMStatsTotals: &NodeVMStatsTotalsMock{RunningCores: 8, RunningRAM: 16384}},
 	}
 
 	clusters := []ClusterMock{
@@ -201,6 +201,30 @@ func TestNodeCollector(t *testing.T) {
 			vergeos_node_cpu_core_usage{cluster="cluster1",core_id="1",node_name="node2",system_name="testcloud"} 15
 		`
 		if err := testutil.CollectAndCompare(collector, strings.NewReader(expected), "vergeos_node_cpu_core_usage"); err != nil {
+			t.Errorf("Unexpected metric values: %v", err)
+		}
+	})
+
+	t.Run("running_cores", func(t *testing.T) {
+		expected := `
+			# HELP vergeos_node_running_cores Total CPU cores allocated to running VMs
+			# TYPE vergeos_node_running_cores gauge
+			vergeos_node_running_cores{cluster="cluster1",node_name="node1",system_name="testcloud"} 24
+			vergeos_node_running_cores{cluster="cluster1",node_name="node2",system_name="testcloud"} 8
+		`
+		if err := testutil.CollectAndCompare(collector, strings.NewReader(expected), "vergeos_node_running_cores"); err != nil {
+			t.Errorf("Unexpected metric values: %v", err)
+		}
+	})
+
+	t.Run("running_ram", func(t *testing.T) {
+		expected := `
+			# HELP vergeos_node_running_ram Total RAM in MB allocated to running VMs
+			# TYPE vergeos_node_running_ram gauge
+			vergeos_node_running_ram{cluster="cluster1",node_name="node1",system_name="testcloud"} 49152
+			vergeos_node_running_ram{cluster="cluster1",node_name="node2",system_name="testcloud"} 16384
+		`
+		if err := testutil.CollectAndCompare(collector, strings.NewReader(expected), "vergeos_node_running_ram"); err != nil {
 			t.Errorf("Unexpected metric values: %v", err)
 		}
 	})

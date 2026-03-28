@@ -26,6 +26,10 @@ type NodeCollector struct {
 	nodeCoreTemp     *prometheus.Desc
 	nodeRAMUsed      *prometheus.Desc
 	nodeRAMPct       *prometheus.Desc
+
+	// VM aggregate metrics (Issue 7)
+	nodeRunningCores *prometheus.Desc
+	nodeRunningRAM   *prometheus.Desc
 }
 
 // NewNodeCollector creates a new NodeCollector
@@ -82,6 +86,18 @@ func NewNodeCollector(client *vergeos.Client) *NodeCollector {
 			nodeLabels,
 			nil,
 		),
+		nodeRunningCores: prometheus.NewDesc(
+			"vergeos_node_running_cores",
+			"Total CPU cores allocated to running VMs",
+			nodeLabels,
+			nil,
+		),
+		nodeRunningRAM: prometheus.NewDesc(
+			"vergeos_node_running_ram",
+			"Total RAM in MB allocated to running VMs",
+			nodeLabels,
+			nil,
+		),
 	}
 
 	return nc
@@ -97,6 +113,8 @@ func (nc *NodeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- nc.nodeCoreTemp
 	ch <- nc.nodeRAMUsed
 	ch <- nc.nodeRAMPct
+	ch <- nc.nodeRunningCores
+	ch <- nc.nodeRunningRAM
 }
 
 // Collect implements prometheus.Collector
@@ -169,6 +187,22 @@ func (nc *NodeCollector) Collect(ch chan<- prometheus.Metric) {
 			float64(node.VMRAM),
 			systemName, clusterName, node.Name,
 		)
+
+		// VM aggregate metrics (Issue 7)
+		if node.VMStatsTotals != nil {
+			ch <- prometheus.MustNewConstMetric(
+				nc.nodeRunningCores,
+				prometheus.GaugeValue,
+				float64(node.VMStatsTotals.RunningCores),
+				systemName, clusterName, node.Name,
+			)
+			ch <- prometheus.MustNewConstMetric(
+				nc.nodeRunningRAM,
+				prometheus.GaugeValue,
+				float64(node.VMStatsTotals.RunningRAM),
+				systemName, clusterName, node.Name,
+			)
+		}
 
 		// Fetch MachineStats for this node
 		stats, err := nc.Client().MachineStats.GetByMachine(ctx, node.Machine)
