@@ -2455,8 +2455,8 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 4,
+        "h": 6,
+        "w": 3,
         "x": 0,
         "y": 68
       },
@@ -2518,9 +2518,9 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 4,
+        "h": 6,
+        "w": 3,
+        "x": 3,
         "y": 68
       },
       "id": 55,
@@ -2590,10 +2590,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 72
+        "h": 6,
+        "w": 9,
+        "x": 6,
+        "y": 68
       },
       "id": 56,
       "options": {
@@ -2670,9 +2670,9 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 16,
-        "x": 8,
+        "h": 6,
+        "w": 9,
+        "x": 15,
         "y": 68
       },
       "id": 57,
@@ -2781,7 +2781,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 80
+        "y": 74
       },
       "id": 58,
       "options": {
@@ -2890,7 +2890,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 80
+        "y": 74
       },
       "id": 59,
       "options": {
@@ -3940,6 +3940,6 @@
   "timezone": "browser",
   "title": "VergeOS Dashboard",
   "uid": "vergeos-dashboard",
-  "version": 13,
+  "version": 14,
   "weekStart": ""
 }
