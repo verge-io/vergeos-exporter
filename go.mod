@@ -5,7 +5,7 @@ go 1.23.4
 require (
 	github.com/prometheus/client_golang v1.20.5
 	github.com/prometheus/client_model v0.6.1
-	github.com/verge-io/goVergeOS v0.1.9
+	github.com/verge-io/goVergeOS v0.2.0
 )
 
 require (
@@ -19,6 +19,3 @@ require (
 	golang.org/x/sys v0.22.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 )
-
-// Use local SDK for development - remove before release
-replace github.com/verge-io/goVergeOS => ../goVergeOS
