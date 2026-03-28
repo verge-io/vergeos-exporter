@@ -3080,7 +3080,7 @@
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
-          "refId": "A"
+          "refId": "Running"
         },
         {
           "datasource": {
@@ -3094,7 +3094,7 @@
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
-          "refId": "B"
+          "refId": "Enabled"
         },
         {
           "datasource": {
@@ -3108,7 +3108,7 @@
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
-          "refId": "C"
+          "refId": "Cores"
         },
         {
           "datasource": {
@@ -3122,7 +3122,7 @@
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
-          "refId": "D"
+          "refId": "RAM"
         },
         {
           "datasource": {
@@ -3136,51 +3136,46 @@
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
-          "refId": "E"
+          "refId": "CPU"
         }
       ],
       "title": "VM Status",
       "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "pattern": "cluster|node|vm_name|Value.*"
+            }
+          }
+        },
         {
           "id": "merge"
         },
         {
           "id": "organize",
           "options": {
-            "excludeByName": {
-              "Time": true,
-              "Time 1": true,
-              "Time 2": true,
-              "Time 3": true,
-              "Time 4": true,
-              "Time 5": true,
-              "instance": true,
-              "job": true,
-              "vm_id": true,
-              "__name__": true,
-              "system_name": true,
-              "vergeos_instance": true
-            },
+            "excludeByName": {},
             "includeByName": {},
             "indexByName": {
               "cluster": 0,
               "node": 1,
               "vm_name": 2,
-              "Value #A": 3,
-              "Value #B": 4,
-              "Value #C": 5,
-              "Value #D": 6,
-              "Value #E": 7
+              "Value #Running": 3,
+              "Value #Enabled": 4,
+              "Value #Cores": 5,
+              "Value #RAM": 6,
+              "Value #CPU": 7
             },
             "renameByName": {
               "vm_name": "VM",
               "cluster": "Cluster",
               "node": "Node",
-              "Value #A": "Running",
-              "Value #B": "Enabled",
-              "Value #C": "CPU Cores",
-              "Value #D": "RAM (bytes)",
-              "Value #E": "CPU %"
+              "Value #Running": "Running",
+              "Value #Enabled": "Enabled",
+              "Value #Cores": "CPU Cores",
+              "Value #RAM": "RAM (bytes)",
+              "Value #CPU": "CPU %"
             }
           }
         }
@@ -3945,6 +3940,6 @@
   "timezone": "browser",
   "title": "VergeOS Dashboard",
   "uid": "vergeos-dashboard",
-  "version": 12,
+  "version": 13,
   "weekStart": ""
 }
