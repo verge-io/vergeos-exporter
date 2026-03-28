@@ -386,6 +386,19 @@ type VMMock struct {
 	RAM        int    `json:"ram"`
 }
 
+// VMDriveMock represents a mock VM drive
+type VMDriveMock struct {
+	Key           int    `json:"$key"`
+	Machine       int    `json:"machine"`
+	Name          string `json:"name"`
+	Interface     string `json:"interface"`
+	Media         string `json:"media"`
+	SizeBytes     int64  `json:"disksize"`
+	UsedBytes     int64  `json:"used_bytes"`
+	PreferredTier string `json:"preferred_tier,omitempty"`
+	Enabled       bool   `json:"enabled"`
+}
+
 // UpdateSettingsMock represents mock update settings
 type UpdateSettingsMock struct {
 	Key        int    `json:"$key"`

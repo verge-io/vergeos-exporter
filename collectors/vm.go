@@ -40,12 +40,25 @@ type VMCollector struct {
 	vmNICRxBytes   *prometheus.Desc
 	vmNICTxPackets *prometheus.Desc
 	vmNICRxPackets *prometheus.Desc
+
+	// Disk config metrics
+	vmDiskSizeBytes *prometheus.Desc
+	vmDiskUsedBytes *prometheus.Desc
+
+	// Disk I/O metrics
+	vmDiskReadOps     *prometheus.Desc
+	vmDiskWriteOps    *prometheus.Desc
+	vmDiskReadBytes   *prometheus.Desc
+	vmDiskWriteBytes  *prometheus.Desc
+	vmDiskUtil        *prometheus.Desc
+	vmDiskServiceTime *prometheus.Desc
 }
 
 // NewVMCollector creates a new VMCollector
 func NewVMCollector(client *vergeos.Client) *VMCollector {
 	vmLabels := []string{"system_name", "cluster", "node", "vm_name", "vm_id"}
 	nicLabels := append(vmLabels, "nic_name")
+	diskLabels := append(vmLabels, "disk_name", "interface", "media")
 
 	return &VMCollector{
 		BaseCollector: *NewBaseCollector(client),
@@ -121,6 +134,54 @@ func NewVMCollector(client *vergeos.Client) *VMCollector {
 			nicLabels,
 			nil,
 		),
+		vmDiskSizeBytes: prometheus.NewDesc(
+			"vergeos_vm_disk_size_bytes",
+			"Configured disk size in bytes",
+			diskLabels,
+			nil,
+		),
+		vmDiskUsedBytes: prometheus.NewDesc(
+			"vergeos_vm_disk_used_bytes",
+			"Actual disk used space in bytes",
+			diskLabels,
+			nil,
+		),
+		vmDiskReadOps: prometheus.NewDesc(
+			"vergeos_vm_disk_read_ops_total",
+			"Total disk read operations",
+			diskLabels,
+			nil,
+		),
+		vmDiskWriteOps: prometheus.NewDesc(
+			"vergeos_vm_disk_write_ops_total",
+			"Total disk write operations",
+			diskLabels,
+			nil,
+		),
+		vmDiskReadBytes: prometheus.NewDesc(
+			"vergeos_vm_disk_read_bytes_total",
+			"Total disk bytes read",
+			diskLabels,
+			nil,
+		),
+		vmDiskWriteBytes: prometheus.NewDesc(
+			"vergeos_vm_disk_write_bytes_total",
+			"Total disk bytes written",
+			diskLabels,
+			nil,
+		),
+		vmDiskUtil: prometheus.NewDesc(
+			"vergeos_vm_disk_util",
+			"Disk I/O utilization percentage",
+			diskLabels,
+			nil,
+		),
+		vmDiskServiceTime: prometheus.NewDesc(
+			"vergeos_vm_disk_service_time",
+			"Disk average I/O service time in milliseconds",
+			diskLabels,
+			nil,
+		),
 	}
 }
 
@@ -138,6 +199,14 @@ func (vc *VMCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- vc.vmNICRxBytes
 	ch <- vc.vmNICTxPackets
 	ch <- vc.vmNICRxPackets
+	ch <- vc.vmDiskSizeBytes
+	ch <- vc.vmDiskUsedBytes
+	ch <- vc.vmDiskReadOps
+	ch <- vc.vmDiskWriteOps
+	ch <- vc.vmDiskReadBytes
+	ch <- vc.vmDiskWriteBytes
+	ch <- vc.vmDiskUtil
+	ch <- vc.vmDiskServiceTime
 }
 
 // Collect implements prometheus.Collector
@@ -174,7 +243,7 @@ func (vc *VMCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	// Batch fetch machine status with reduced fields (avoids agent_guest_info bug)
+	// Batch fetch machine status
 	statusMap, err := vc.buildStatusMap(ctx)
 	if err != nil {
 		log.Printf("Error fetching machine status: %v", err)
@@ -186,6 +255,19 @@ func (vc *VMCollector) Collect(ch chan<- prometheus.Metric) {
 	if err != nil {
 		log.Printf("Error fetching NIC stats: %v", err)
 		// Non-fatal: continue without NIC metrics
+	}
+
+	// Batch fetch all VM drives and virtual drive stats
+	diskMap, err := vc.buildDiskMap(ctx)
+	if err != nil {
+		log.Printf("Error fetching VM drives: %v", err)
+		// Non-fatal: continue without disk metrics
+	}
+
+	diskStatsMap, err := vc.buildDiskStatsMap(ctx)
+	if err != nil {
+		log.Printf("Error fetching VM disk stats: %v", err)
+		// Non-fatal: continue without disk I/O metrics
 	}
 
 	for _, vm := range vms {
@@ -238,6 +320,27 @@ func (vc *VMCollector) Collect(ch chan<- prometheus.Metric) {
 				ch <- prometheus.MustNewConstMetric(vc.vmNICRxPackets, prometheus.CounterValue, float64(nic.Stats.RxPckts), nicLabels...)
 			}
 		}
+
+		// Disk metrics (only for VMs with drives)
+		if disks, ok := diskMap[vm.Machine]; ok {
+			for _, disk := range disks {
+				diskLabels := append(labels, disk.Name, disk.Interface, disk.Media)
+
+				// Config: size and used
+				ch <- prometheus.MustNewConstMetric(vc.vmDiskSizeBytes, prometheus.GaugeValue, float64(disk.SizeBytes), diskLabels...)
+				ch <- prometheus.MustNewConstMetric(vc.vmDiskUsedBytes, prometheus.GaugeValue, float64(disk.UsedBytes), diskLabels...)
+
+				// I/O stats (if available)
+				if dStats, ok := diskStatsMap[int(disk.ID)]; ok {
+					ch <- prometheus.MustNewConstMetric(vc.vmDiskReadOps, prometheus.CounterValue, float64(dStats.Reads), diskLabels...)
+					ch <- prometheus.MustNewConstMetric(vc.vmDiskWriteOps, prometheus.CounterValue, float64(dStats.Writes), diskLabels...)
+					ch <- prometheus.MustNewConstMetric(vc.vmDiskReadBytes, prometheus.CounterValue, float64(dStats.ReadBytes), diskLabels...)
+					ch <- prometheus.MustNewConstMetric(vc.vmDiskWriteBytes, prometheus.CounterValue, float64(dStats.WriteBytes), diskLabels...)
+					ch <- prometheus.MustNewConstMetric(vc.vmDiskUtil, prometheus.GaugeValue, dStats.Util, diskLabels...)
+					ch <- prometheus.MustNewConstMetric(vc.vmDiskServiceTime, prometheus.GaugeValue, dStats.ServiceTime, diskLabels...)
+				}
+			}
+		}
 	}
 }
 
@@ -270,11 +373,8 @@ func (vc *VMCollector) buildStatsMap(ctx context.Context) (map[int]*vergeos.Mach
 }
 
 // buildStatusMap batch-fetches machine statuses and returns a map of machine ID → vmStatus.
-// Uses reduced fields to avoid the agent_guest_info deserialization bug in the SDK.
 func (vc *VMCollector) buildStatusMap(ctx context.Context) (map[int]vmStatus, error) {
-	statuses, err := vc.Client().MachineStatus.List(ctx,
-		vergeos.WithFields("machine,running,node,node#name as node_name"),
-	)
+	statuses, err := vc.Client().MachineStatus.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list machine status: %w", err)
 	}
@@ -301,4 +401,34 @@ func (vc *VMCollector) buildNICMap(ctx context.Context) (map[int][]vergeos.Machi
 		nicMap[nic.Machine] = append(nicMap[nic.Machine], nic)
 	}
 	return nicMap, nil
+}
+
+// buildDiskMap batch-fetches all VM drives and returns a map of machine ID → []VMDrive.
+func (vc *VMCollector) buildDiskMap(ctx context.Context) (map[int][]vergeos.VMDrive, error) {
+	allDrives, err := vc.Client().VMDrives.ListAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list VM drives: %w", err)
+	}
+
+	diskMap := make(map[int][]vergeos.VMDrive)
+	for _, drive := range allDrives {
+		diskMap[drive.Machine] = append(diskMap[drive.Machine], drive)
+	}
+	return diskMap, nil
+}
+
+// buildDiskStatsMap batch-fetches virtual drive stats and returns a map of parent drive ID → MachineDriveStats.
+func (vc *VMCollector) buildDiskStatsMap(ctx context.Context) (map[int]*vergeos.MachineDriveStats, error) {
+	allStats, err := vc.Client().MachineDriveStats.List(ctx,
+		vergeos.WithFilter("physical eq false"),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list VM disk stats: %w", err)
+	}
+
+	statsMap := make(map[int]*vergeos.MachineDriveStats)
+	for i := range allStats {
+		statsMap[allStats[i].ParentDrive] = &allStats[i]
+	}
+	return statsMap, nil
 }

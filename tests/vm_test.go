@@ -39,6 +39,18 @@ func TestVMCollector(t *testing.T) {
 		{Key: 2, Machine: 101, Name: "net1", Stats: &MachineNICStatsMock{Key: 2, TxPckts: 300, RxPckts: 400, TxBytes: 150000, RxBytes: 200000}},
 	}
 
+	allDrives := []VMDriveMock{
+		{Key: 10, Machine: 101, Name: "drive0", Interface: "virtio-scsi", Media: "disk", SizeBytes: 107374182400, UsedBytes: 53687091200, Enabled: true},
+		{Key: 11, Machine: 101, Name: "drive1", Interface: "virtio-scsi", Media: "disk", SizeBytes: 214748364800, UsedBytes: 10737418240, Enabled: true},
+		{Key: 12, Machine: 102, Name: "drive0", Interface: "virtio-scsi", Media: "disk", SizeBytes: 53687091200, UsedBytes: 21474836480, Enabled: true},
+	}
+
+	allDriveStats := []MachineDriveStatsMock{
+		{Key: 1, ParentDrive: 10, Reads: 100000, Writes: 50000, ReadBytes: 409600000, WriteBytes: 204800000, ServiceTime: 0.5, Util: 15.2, Physical: false},
+		{Key: 2, ParentDrive: 11, Reads: 5000, Writes: 2000, ReadBytes: 20480000, WriteBytes: 8192000, ServiceTime: 0.8, Util: 3.1, Physical: false},
+		{Key: 3, ParentDrive: 12, Reads: 200, Writes: 100, ReadBytes: 819200, WriteBytes: 409600, ServiceTime: 0.3, Util: 1.0, Physical: false},
+	}
+
 	mockServer := NewBaseMockServer(t, config, func(w http.ResponseWriter, r *http.Request) bool {
 		switch {
 		case strings.Contains(r.URL.Path, "/vms"):
@@ -54,6 +66,14 @@ func TestVMCollector(t *testing.T) {
 			} else {
 				WriteJSONResponse(w, vms)
 			}
+			return true
+
+		case strings.Contains(r.URL.Path, "/machine_drive_stats"):
+			WriteJSONResponse(w, allDriveStats)
+			return true
+
+		case strings.Contains(r.URL.Path, "/machine_drives"):
+			WriteJSONResponse(w, allDrives)
 			return true
 
 		case strings.Contains(r.URL.Path, "/machine_stats"):
@@ -89,18 +109,26 @@ func TestVMCollector(t *testing.T) {
 
 	// Verify all expected metrics exist
 	expectedMetrics := map[string]bool{
-		"vergeos_vm_cpu_total":            false,
-		"vergeos_vm_cpu_user":             false,
-		"vergeos_vm_cpu_system":           false,
-		"vergeos_vm_cpu_iowait":           false,
-		"vergeos_vm_running":              false,
-		"vergeos_vm_enabled":              false,
-		"vergeos_vm_cpu_cores":            false,
-		"vergeos_vm_ram_bytes":            false,
-		"vergeos_vm_nic_tx_bytes_total":   false,
-		"vergeos_vm_nic_rx_bytes_total":   false,
-		"vergeos_vm_nic_tx_packets_total": false,
-		"vergeos_vm_nic_rx_packets_total": false,
+		"vergeos_vm_cpu_total":              false,
+		"vergeos_vm_cpu_user":               false,
+		"vergeos_vm_cpu_system":             false,
+		"vergeos_vm_cpu_iowait":             false,
+		"vergeos_vm_running":                false,
+		"vergeos_vm_enabled":                false,
+		"vergeos_vm_cpu_cores":              false,
+		"vergeos_vm_ram_bytes":              false,
+		"vergeos_vm_nic_tx_bytes_total":     false,
+		"vergeos_vm_nic_rx_bytes_total":     false,
+		"vergeos_vm_nic_tx_packets_total":   false,
+		"vergeos_vm_nic_rx_packets_total":   false,
+		"vergeos_vm_disk_size_bytes":        false,
+		"vergeos_vm_disk_used_bytes":        false,
+		"vergeos_vm_disk_read_ops_total":    false,
+		"vergeos_vm_disk_write_ops_total":   false,
+		"vergeos_vm_disk_read_bytes_total":  false,
+		"vergeos_vm_disk_write_bytes_total": false,
+		"vergeos_vm_disk_util":              false,
+		"vergeos_vm_disk_service_time":      false,
 	}
 
 	for _, mf := range metrics {
@@ -210,6 +238,45 @@ func TestVMCollector(t *testing.T) {
 			t.Errorf("Unexpected metric values: %v", err)
 		}
 	})
+
+	t.Run("disk_size_bytes", func(t *testing.T) {
+		expected := `
+			# HELP vergeos_vm_disk_size_bytes Configured disk size in bytes
+			# TYPE vergeos_vm_disk_size_bytes gauge
+			vergeos_vm_disk_size_bytes{cluster="compute-cluster",disk_name="drive0",interface="virtio-scsi",media="disk",node="node1",system_name="testcloud",vm_id="1",vm_name="web-server"} 1.073741824e+11
+			vergeos_vm_disk_size_bytes{cluster="compute-cluster",disk_name="drive1",interface="virtio-scsi",media="disk",node="node1",system_name="testcloud",vm_id="1",vm_name="web-server"} 2.147483648e+11
+			vergeos_vm_disk_size_bytes{cluster="compute-cluster",disk_name="drive0",interface="virtio-scsi",media="disk",node="",system_name="testcloud",vm_id="2",vm_name="db-server"} 5.36870912e+10
+		`
+		if err := testutil.CollectAndCompare(collector, strings.NewReader(expected), "vergeos_vm_disk_size_bytes"); err != nil {
+			t.Errorf("Unexpected metric values: %v", err)
+		}
+	})
+
+	t.Run("disk_read_ops", func(t *testing.T) {
+		expected := `
+			# HELP vergeos_vm_disk_read_ops_total Total disk read operations
+			# TYPE vergeos_vm_disk_read_ops_total counter
+			vergeos_vm_disk_read_ops_total{cluster="compute-cluster",disk_name="drive0",interface="virtio-scsi",media="disk",node="node1",system_name="testcloud",vm_id="1",vm_name="web-server"} 100000
+			vergeos_vm_disk_read_ops_total{cluster="compute-cluster",disk_name="drive1",interface="virtio-scsi",media="disk",node="node1",system_name="testcloud",vm_id="1",vm_name="web-server"} 5000
+			vergeos_vm_disk_read_ops_total{cluster="compute-cluster",disk_name="drive0",interface="virtio-scsi",media="disk",node="",system_name="testcloud",vm_id="2",vm_name="db-server"} 200
+		`
+		if err := testutil.CollectAndCompare(collector, strings.NewReader(expected), "vergeos_vm_disk_read_ops_total"); err != nil {
+			t.Errorf("Unexpected metric values: %v", err)
+		}
+	})
+
+	t.Run("disk_util", func(t *testing.T) {
+		expected := `
+			# HELP vergeos_vm_disk_util Disk I/O utilization percentage
+			# TYPE vergeos_vm_disk_util gauge
+			vergeos_vm_disk_util{cluster="compute-cluster",disk_name="drive0",interface="virtio-scsi",media="disk",node="node1",system_name="testcloud",vm_id="1",vm_name="web-server"} 15.2
+			vergeos_vm_disk_util{cluster="compute-cluster",disk_name="drive1",interface="virtio-scsi",media="disk",node="node1",system_name="testcloud",vm_id="1",vm_name="web-server"} 3.1
+			vergeos_vm_disk_util{cluster="compute-cluster",disk_name="drive0",interface="virtio-scsi",media="disk",node="",system_name="testcloud",vm_id="2",vm_name="db-server"} 1
+		`
+		if err := testutil.CollectAndCompare(collector, strings.NewReader(expected), "vergeos_vm_disk_util"); err != nil {
+			t.Errorf("Unexpected metric values: %v", err)
+		}
+	})
 }
 
 func TestVMCollector_SnapshotFiltering(t *testing.T) {
@@ -239,6 +306,14 @@ func TestVMCollector_SnapshotFiltering(t *testing.T) {
 			} else {
 				WriteJSONResponse(w, vms)
 			}
+			return true
+
+		case strings.Contains(r.URL.Path, "/machine_drive_stats"):
+			WriteJSONResponse(w, []MachineDriveStatsMock{})
+			return true
+
+		case strings.Contains(r.URL.Path, "/machine_drives"):
+			WriteJSONResponse(w, []VMDriveMock{})
 			return true
 
 		case strings.Contains(r.URL.Path, "/machine_stats"):
@@ -299,6 +374,14 @@ func TestVMCollector_StaleMetrics(t *testing.T) {
 				})
 			}
 			WriteJSONResponse(w, vms)
+			return true
+
+		case strings.Contains(r.URL.Path, "/machine_drive_stats"):
+			WriteJSONResponse(w, []MachineDriveStatsMock{})
+			return true
+
+		case strings.Contains(r.URL.Path, "/machine_drives"):
+			WriteJSONResponse(w, []VMDriveMock{})
 			return true
 
 		case strings.Contains(r.URL.Path, "/machine_stats"):

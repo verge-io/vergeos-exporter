@@ -5,7 +5,7 @@ go 1.23.4
 require (
 	github.com/prometheus/client_golang v1.20.5
 	github.com/prometheus/client_model v0.6.1
-	github.com/verge-io/goVergeOS v0.0.0
+	github.com/verge-io/goVergeOS v0.1.9
 )
 
 require (
