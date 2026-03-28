@@ -1,7 +1,7 @@
 package main
 
 import (
-	"crypto/tls"
+	"context"
 	"flag"
 	"log"
 	"net/http"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	vergeos "github.com/verge-io/goVergeOS"
 
 	"vergeos-exporter/collectors"
 )
@@ -26,18 +27,42 @@ var (
 func main() {
 	flag.Parse()
 
-	httpClient := &http.Client{
-		Timeout: *scrapeTimeout,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: *insecure},
-		},
+	// Validate required flags
+	if *vergeUsername == "" || *vergePassword == "" {
+		log.Fatal("verge.username and verge.password are required")
 	}
 
-	nodeCollector := collectors.NewNodeCollector(*vergeURL, httpClient, *vergeUsername, *vergePassword)
-	storageCollector := collectors.NewStorageCollector(*vergeURL, httpClient, *vergeUsername, *vergePassword)
-	networkCollector := collectors.NewNetworkCollector(*vergeURL, httpClient, *vergeUsername, *vergePassword)
-	clusterCollector := collectors.NewClusterCollector(*vergeURL, httpClient, *vergeUsername, *vergePassword)
-	systemCollector := collectors.NewSystemCollector(*vergeURL, httpClient, *vergeUsername, *vergePassword)
+	// Create SDK client for API operations
+	client, err := vergeos.NewClient(
+		vergeos.WithBaseURL(*vergeURL),
+		vergeos.WithCredentials(*vergeUsername, *vergePassword),
+		vergeos.WithInsecureTLS(*insecure),
+		vergeos.WithTimeout(*scrapeTimeout),
+	)
+	if err != nil {
+		log.Fatalf("Failed to create VergeOS client: %v", err)
+	}
+
+	// Validate credentials at startup (Bug #34: fail fast with clear error message)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cloudName, err := client.Settings.GetCloudName(ctx)
+	if err != nil {
+		if vergeos.IsAuthError(err) {
+			log.Fatalf("Authentication failed: check username/password for %s", *vergeURL)
+		}
+		log.Fatalf("Failed to connect to VergeOS API at %s: %v", *vergeURL, err)
+	}
+	log.Printf("Successfully connected to VergeOS system: %s", cloudName)
+
+	// Initialize collectors with SDK client
+	// All collectors are now fully migrated to SDK
+	storageCollector := collectors.NewStorageCollector(client)
+	nodeCollector := collectors.NewNodeCollector(client)
+	clusterCollector := collectors.NewClusterCollector(client)
+	networkCollector := collectors.NewNetworkCollector(client)
+	systemCollector := collectors.NewSystemCollector(client)
 
 	prometheus.MustRegister(nodeCollector)
 	prometheus.MustRegister(storageCollector)
