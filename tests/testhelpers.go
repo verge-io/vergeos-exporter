@@ -145,24 +145,48 @@ type ClusterTierStatusMock struct {
 	CurSpaceThrottleMs float64 `json:"cur_space_throttle_ms"`
 }
 
+// ClusterTierNodesOnlineMock represents mock online nodes for a tier
+type ClusterTierNodesOnlineMock struct {
+	Nodes []ClusterTierNodeStateMock `json:"nodes"`
+}
+
+// ClusterTierNodeStateMock represents a mock node state
+type ClusterTierNodeStateMock struct {
+	State string `json:"state"`
+}
+
+// ClusterTierDriveStateMock represents a mock drive state
+type ClusterTierDriveStateMock struct {
+	State string `json:"state"`
+}
+
 // ClusterTierMock represents a mock cluster tier
 type ClusterTierMock struct {
-	Key     int                   `json:"$key"`
-	Cluster int                   `json:"cluster"`
-	Tier    int                   `json:"tier"`
-	Status  ClusterTierStatusMock `json:"status"`
+	Key          int                         `json:"$key"`
+	Cluster      int                         `json:"cluster"`
+	Tier         int                         `json:"tier"`
+	Status       ClusterTierStatusMock       `json:"status"`
+	NodesOnline  *ClusterTierNodesOnlineMock `json:"nodes_online,omitempty"`
+	DrivesOnline []ClusterTierDriveStateMock `json:"drives_online,omitempty"`
+}
+
+// NodeVMStatsTotalsMock represents mock VM aggregate stats for a node
+type NodeVMStatsTotalsMock struct {
+	RunningCores int `json:"running_cores"`
+	RunningRAM   int `json:"running_ram"`
 }
 
 // NodeMock represents a mock node
 type NodeMock struct {
-	ID         int    `json:"id"`
-	Name       string `json:"name"`
-	Physical   bool   `json:"physical"`
-	Cluster    int    `json:"cluster"`
-	Machine    int    `json:"machine"`
-	IPMIStatus string `json:"ipmi_status"`
-	RAM        int64  `json:"ram"`
-	VMRAM      int64  `json:"vm_ram"`
+	ID            int                    `json:"id"`
+	Name          string                 `json:"name"`
+	Physical      bool                   `json:"physical"`
+	Cluster       int                    `json:"cluster"`
+	Machine       int                    `json:"machine"`
+	IPMIStatus    string                 `json:"ipmi_status"`
+	RAM           int64                  `json:"ram"`
+	VMRAM         int64                  `json:"vm_ram"`
+	VMStatsTotals *NodeVMStatsTotalsMock `json:"vm_stats_totals,omitempty"`
 }
 
 // ClusterMock represents a mock cluster
