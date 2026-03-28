@@ -147,6 +147,34 @@ All drive metrics include the following labels:
 - **Layer 2 Networks Total**: `vergeos_tenant_layer2_networks_total` (Gauge, labeled by `system_name` and `tenant_name`)
 
 ---
+## VM Metrics
+
+All VM metrics include labels: `system_name`, `cluster`, `node`, `vm_name`, `vm_id`. Powered-off VMs have an empty `node` label. Snapshot VMs are excluded.
+
+### VM State Metrics
+- **VM Running**: `vergeos_vm_running` (Gauge, 1=running, 0=not running)
+- **VM Enabled**: `vergeos_vm_enabled` (Gauge, 1=enabled, 0=disabled)
+
+### VM Config Metrics
+- **CPU Cores**: `vergeos_vm_cpu_cores` (Gauge, configured CPU cores)
+- **RAM**: `vergeos_vm_ram_bytes` (Gauge, configured RAM in bytes)
+
+### VM CPU Metrics
+- **Total CPU Usage**: `vergeos_vm_cpu_total` (Gauge, percentage 0-100)
+- **User CPU Usage**: `vergeos_vm_cpu_user` (Gauge, percentage 0-100)
+- **System CPU Usage**: `vergeos_vm_cpu_system` (Gauge, percentage 0-100)
+- **IO Wait CPU Usage**: `vergeos_vm_cpu_iowait` (Gauge, percentage 0-100)
+
+Powered-off VMs report 0 for all CPU metrics.
+
+### VM NIC Metrics
+Additional label: `nic_name`. Only emitted for VMs with NIC stats available.
+- **NIC TX Bytes**: `vergeos_vm_nic_tx_bytes_total` (Counter, total transmitted bytes)
+- **NIC RX Bytes**: `vergeos_vm_nic_rx_bytes_total` (Counter, total received bytes)
+- **NIC TX Packets**: `vergeos_vm_nic_tx_packets_total` (Counter, total transmitted packets)
+- **NIC RX Packets**: `vergeos_vm_nic_rx_packets_total` (Counter, total received packets)
+
+---
 ## System Version Metrics
 - **System Version**: `vergeos_system_version` (Gauge, labeled by `system_name` and `version`, always 1)
 - **Latest Available System Version**: `vergeos_system_version_latest` (Gauge, labeled by `system_name` and `version`, always 1)
