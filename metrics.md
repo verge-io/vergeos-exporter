@@ -10,7 +10,7 @@
 ### CPU Metrics
 - **CPU Usage per Core**: `vergeos_node_cpu_core_usage` (Gauge, labeled by `system_name`, `cluster`, `node_name`, and `core_id`)
 - **CPU Temperature**: `vergeos_node_core_temp` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
-- **Running Cores**: `vergeos_node_running_cores` — *pending: API source TBD (not in machine_stats)*
+- **Running Cores**: `vergeos_node_running_cores` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
 
 ---
 ### Memory Metrics
@@ -18,7 +18,7 @@
 - **RAM Usage Percentage**: `vergeos_node_ram_pct` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
 - **VM RAM (MB)**: `vergeos_node_ram_allocated` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
 - **Total RAM (MB)**: `vergeos_node_ram_total` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
-- **Running RAM (MB)**: `vergeos_node_running_ram` — *pending: API source TBD (not in machine_stats)*
+- **Running RAM (MB)**: `vergeos_node_running_ram` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
 
 ---
 ### Storage Metrics
@@ -54,8 +54,6 @@ All drive metrics include the following labels:
 - **NIC Receive Packets**: `vergeos_nic_rx_packets_total` (Counter, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
 - **NIC Transmit Bytes**: `vergeos_nic_tx_bytes_total` (Counter, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
 - **NIC Receive Bytes**: `vergeos_nic_rx_bytes_total` (Counter, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
-- **NIC Transmit Errors**: `vergeos_nic_tx_errors_total` — *pending: not available in machine_nic_stats table*
-- **NIC Receive Errors**: `vergeos_nic_rx_errors_total` — *pending: not available in machine_nic_stats table*
 - **NIC Status**: `vergeos_nic_status` (Gauge, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
 ---
 ## VSAN Tiers Overview
@@ -80,8 +78,8 @@ All drive metrics include the following labels:
 - **VSAN Full Walk Status**: `vergeos_vsan_fullwalk_status` (Gauge, labeled by `system_name`, `tier`, and `status`, `1` for active, `0` for inactive)
 - **VSAN Full Walk Progress**: `vergeos_vsan_fullwalk_progress` (Gauge, labeled by `system_name`, `tier`, and `status`, percentage of full walk completion)
 - **VSAN Current Space Throttle (ms)**: `vergeos_vsan_cur_space_throttle_ms` (Gauge, labeled by `system_name`, `tier`, and `status`)
-- **VSAN Nodes Online**: `vergeos_vsan_nodes_online` — *pending: Issue 6 API limitation (fields=all causes FK expansion issues)*
-- **VSAN Drives Online**: `vergeos_vsan_drives_online` — *pending: Issue 6 API limitation (fields=all causes FK expansion issues)*
+- **VSAN Nodes Online**: `vergeos_vsan_nodes_online` (Gauge, labeled by `system_name`, `tier`, and `status`)
+- **VSAN Drives Online**: `vergeos_vsan_drives_online` (Gauge, labeled by `system_name`, `tier`, and `status`)
 - **VSAN Drive States**: `vergeos_vsan_drive_states` (Gauge, labeled by `system_name`, `tier`, and `state`, counts drives in each state: online, offline, repairing, initializing, verifying, noredundant, outofspace)
 
 ---
@@ -92,6 +90,7 @@ All drive metrics include the following labels:
 - **Cluster Cores Per Unit**: `vergeos_cluster_cores_per_unit` (Gauge, labeled by `system_name` and `cluster`)
 - **Cluster Target RAM Percentage**: `vergeos_cluster_target_ram_pct` (Gauge, labeled by `system_name` and `cluster`)
 - **Cluster Status**: `vergeos_cluster_status` (Gauge, labeled by `system_name` and `cluster`, `1` for online, `0` for offline)
+- **Cluster Health**: `vergeos_cluster_health` (Gauge, labeled by `system_name` and `cluster`, `1` for healthy, `0` for unhealthy)
 
 ---
 ## Cluster Stats
