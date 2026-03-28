@@ -1,6 +1,6 @@
 # Contributor License Agreement
 
-Thank you for your interest in contributing to the Verge CLI project ("Project"), owned and maintained by Verge.io ("Company"). This Contributor License Agreement ("Agreement") documents the rights granted by contributors to the Company.
+Thank you for your interest in contributing to the VergeOS Exporter project ("Project"), owned and maintained by Verge.io ("Company"). This Contributor License Agreement ("Agreement") documents the rights granted by contributors to the Company.
 
 By submitting a Contribution to this Project, you accept and agree to the following terms and conditions.
 
