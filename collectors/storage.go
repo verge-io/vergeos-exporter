@@ -21,6 +21,7 @@ type StorageCollector struct {
 	// VSAN tier capacity metrics (labels: system_name, tier, description)
 	vsanCapacity    *prometheus.Desc
 	vsanUsed        *prometheus.Desc
+	vsanUsedPct     *prometheus.Desc
 	vsanAllocated   *prometheus.Desc
 	vsanDedupeRatio *prometheus.Desc
 
@@ -81,6 +82,11 @@ func NewStorageCollector(client *vergeos.Client) *StorageCollector {
 		vsanUsed: prometheus.NewDesc(
 			"vergeos_vsan_tier_used",
 			"VSAN tier used space in bytes",
+			tierLabels, nil,
+		),
+		vsanUsedPct: prometheus.NewDesc(
+			"vergeos_vsan_tier_used_pct",
+			"VSAN tier used space percentage",
 			tierLabels, nil,
 		),
 		vsanAllocated: prometheus.NewDesc(
@@ -253,6 +259,7 @@ func (sc *StorageCollector) Describe(ch chan<- *prometheus.Desc) {
 	// VSAN tier capacity metrics
 	ch <- sc.vsanCapacity
 	ch <- sc.vsanUsed
+	ch <- sc.vsanUsedPct
 	ch <- sc.vsanAllocated
 	ch <- sc.vsanDedupeRatio
 
@@ -340,6 +347,11 @@ func (sc *StorageCollector) collectTierMetrics(ctx context.Context, ch chan<- pr
 		ch <- prometheus.MustNewConstMetric(
 			sc.vsanUsed, prometheus.GaugeValue,
 			float64(tier.Used),
+			systemName, tierStr, tier.Description,
+		)
+		ch <- prometheus.MustNewConstMetric(
+			sc.vsanUsedPct, prometheus.GaugeValue,
+			float64(tier.UsedPct),
 			systemName, tierStr, tier.Description,
 		)
 		ch <- prometheus.MustNewConstMetric(

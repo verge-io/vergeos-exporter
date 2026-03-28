@@ -16,8 +16,8 @@ func TestStorageTierMetrics(t *testing.T) {
 	config := DefaultMockConfig()
 
 	storageTiers := []StorageTierMock{
-		{Key: 0, Tier: 0, Description: "SSD Tier", Capacity: 1000000000000, Used: 100000000000, Allocated: 500000000000, DedupeRatio: 200},
-		{Key: 1, Tier: 1, Description: "HDD Tier", Capacity: 5000000000000, Used: 2000000000000, Allocated: 3000000000000, DedupeRatio: 150},
+		{Key: 0, Tier: 0, Description: "SSD Tier", Capacity: 1000000000000, Used: 100000000000, UsedPct: 10, Allocated: 500000000000, DedupeRatio: 200},
+		{Key: 1, Tier: 1, Description: "HDD Tier", Capacity: 5000000000000, Used: 2000000000000, UsedPct: 40, Allocated: 3000000000000, DedupeRatio: 150},
 	}
 
 	clusterTiers := []ClusterTierMock{
@@ -106,6 +106,17 @@ vergeos_vsan_tier_used{description="HDD Tier",system_name="testcloud",tier="1"} 
 `
 	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedUsed), "vergeos_vsan_tier_used"); err != nil {
 		t.Errorf("Used metrics do not match expected values: %v", err)
+	}
+
+	// Test tier used percentage
+	expectedUsedPct := `
+# HELP vergeos_vsan_tier_used_pct VSAN tier used space percentage
+# TYPE vergeos_vsan_tier_used_pct gauge
+vergeos_vsan_tier_used_pct{description="SSD Tier",system_name="testcloud",tier="0"} 10
+vergeos_vsan_tier_used_pct{description="HDD Tier",system_name="testcloud",tier="1"} 40
+`
+	if err := testutil.GatherAndCompare(registry, strings.NewReader(expectedUsedPct), "vergeos_vsan_tier_used_pct"); err != nil {
+		t.Errorf("Used percentage metrics do not match expected values: %v", err)
 	}
 
 	// Test dedupe ratio
