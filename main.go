@@ -64,6 +64,7 @@ func main() {
 	networkCollector := collectors.NewNetworkCollector(client)
 	systemCollector := collectors.NewSystemCollector(client)
 	tenantCollector := collectors.NewTenantCollector(client)
+	vmCollector := collectors.NewVMCollector(client)
 
 	prometheus.MustRegister(nodeCollector)
 	prometheus.MustRegister(storageCollector)
@@ -71,6 +72,7 @@ func main() {
 	prometheus.MustRegister(clusterCollector)
 	prometheus.MustRegister(systemCollector)
 	prometheus.MustRegister(tenantCollector)
+	prometheus.MustRegister(vmCollector)
 
 	http.Handle(*metricsPath, promhttp.HandlerFor(
 		prometheus.DefaultGatherer,
