@@ -63,12 +63,14 @@ func main() {
 	clusterCollector := collectors.NewClusterCollector(client)
 	networkCollector := collectors.NewNetworkCollector(client)
 	systemCollector := collectors.NewSystemCollector(client)
+	tenantCollector := collectors.NewTenantCollector(client)
 
 	prometheus.MustRegister(nodeCollector)
 	prometheus.MustRegister(storageCollector)
 	prometheus.MustRegister(networkCollector)
 	prometheus.MustRegister(clusterCollector)
 	prometheus.MustRegister(systemCollector)
+	prometheus.MustRegister(tenantCollector)
 
 	http.Handle(*metricsPath, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
