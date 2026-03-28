@@ -54,8 +54,6 @@ All drive metrics include the following labels:
 - **NIC Receive Packets**: `vergeos_nic_rx_packets_total` (Counter, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
 - **NIC Transmit Bytes**: `vergeos_nic_tx_bytes_total` (Counter, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
 - **NIC Receive Bytes**: `vergeos_nic_rx_bytes_total` (Counter, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
-- **NIC Transmit Errors**: `vergeos_nic_tx_errors_total` (Counter, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
-- **NIC Receive Errors**: `vergeos_nic_rx_errors_total` (Counter, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
 - **NIC Status**: `vergeos_nic_status` (Gauge, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
 ---
 ## VSAN Tiers Overview
@@ -92,6 +90,7 @@ All drive metrics include the following labels:
 - **Cluster Cores Per Unit**: `vergeos_cluster_cores_per_unit` (Gauge, labeled by `system_name` and `cluster`)
 - **Cluster Target RAM Percentage**: `vergeos_cluster_target_ram_pct` (Gauge, labeled by `system_name` and `cluster`)
 - **Cluster Status**: `vergeos_cluster_status` (Gauge, labeled by `system_name` and `cluster`, `1` for online, `0` for offline)
+- **Cluster Health**: `vergeos_cluster_health` (Gauge, labeled by `system_name` and `cluster`, `1` for healthy, `0` for unhealthy)
 
 ---
 ## Cluster Stats
@@ -111,4 +110,4 @@ All drive metrics include the following labels:
 - **System Version**: `vergeos_system_version` (Gauge, labeled by `system_name` and `version`, always 1)
 - **Latest Available System Version**: `vergeos_system_version_latest` (Gauge, labeled by `system_name` and `version`, always 1)
 - **System Branch**: `vergeos_system_branch` (Gauge, labeled by `system_name` and `branch`, always 1)
-- **System Info**: `vergeos_system_info` (Gauge, labeled by `system_name`, `current_version`, `latest_version`, and `branch`, always 1)
+- **System Info**: `vergeos_system_info` (Gauge, labeled by `system_name`, `current_version`, `latest_version`, `branch`, and `hash`, always 1)

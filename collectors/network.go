@@ -1,240 +1,162 @@
 package collectors
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"net/http"
+	"log"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
+	vergeos "github.com/verge-io/goVergeOS"
 )
 
-// NetworkCollector collects metrics about network interfaces
+// NetworkCollector collects metrics about physical node network interfaces
+// using the MachineNICService for per-NIC traffic counters and link status.
 type NetworkCollector struct {
 	BaseCollector
 	mutex sync.Mutex
 
-	// System info
-	systemName string
-
-	// Metrics
-	nicTxPackets *prometheus.CounterVec
-	nicRxPackets *prometheus.CounterVec
-	nicTxBytes   *prometheus.CounterVec
-	nicRxBytes   *prometheus.CounterVec
-	nicTxErrors  *prometheus.CounterVec
-	nicRxErrors  *prometheus.CounterVec
-	nicStatus    *prometheus.GaugeVec
+	// NIC traffic metrics
+	nicTxPackets *prometheus.Desc
+	nicRxPackets *prometheus.Desc
+	nicTxBytes   *prometheus.Desc
+	nicRxBytes   *prometheus.Desc
+	nicStatus    *prometheus.Desc
 }
 
-// NetworkInterface represents a network interface
-type NetworkInterface struct {
-	Name   string `json:"name"`
-	Status string `json:"status"`
-	Stats  struct {
-		TxPackets uint64 `json:"tx_packets"`
-		RxPackets uint64 `json:"rx_packets"`
-		TxBytes   uint64 `json:"tx_bytes"`
-		RxBytes   uint64 `json:"rx_bytes"`
-		TxErrors  uint64 `json:"tx_errors"`
-		RxErrors  uint64 `json:"rx_errors"`
-	} `json:"stats"`
-}
+// NewNetworkCollector creates a new NetworkCollector.
+func NewNetworkCollector(client *vergeos.Client) *NetworkCollector {
+	nicLabels := []string{"system_name", "cluster", "node_name", "interface"}
 
-// NewNetworkCollector creates a new NetworkCollector
-func NewNetworkCollector(url string, client *http.Client, username, password string) *NetworkCollector {
-	nc := &NetworkCollector{
-		BaseCollector: BaseCollector{
-			url:        url,
-			httpClient: client,
-		},
-		systemName: "unknown", // Will be updated in Collect
-		nicTxPackets: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "vergeos_nic_tx_packets_total",
-				Help: "Total number of packets transmitted",
-			},
-			[]string{"system_name", "cluster", "node_name", "interface"},
+	return &NetworkCollector{
+		BaseCollector: *NewBaseCollector(client),
+		nicTxPackets: prometheus.NewDesc(
+			"vergeos_nic_tx_packets_total",
+			"Total transmitted packets",
+			nicLabels, nil,
 		),
-		nicRxPackets: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "vergeos_nic_rx_packets_total",
-				Help: "Total number of packets received",
-			},
-			[]string{"system_name", "cluster", "node_name", "interface"},
+		nicRxPackets: prometheus.NewDesc(
+			"vergeos_nic_rx_packets_total",
+			"Total received packets",
+			nicLabels, nil,
 		),
-		nicTxBytes: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "vergeos_nic_tx_bytes_total",
-				Help: "Total number of bytes transmitted",
-			},
-			[]string{"system_name", "cluster", "node_name", "interface"},
+		nicTxBytes: prometheus.NewDesc(
+			"vergeos_nic_tx_bytes_total",
+			"Total transmitted bytes",
+			nicLabels, nil,
 		),
-		nicRxBytes: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "vergeos_nic_rx_bytes_total",
-				Help: "Total number of bytes received",
-			},
-			[]string{"system_name", "cluster", "node_name", "interface"},
+		nicRxBytes: prometheus.NewDesc(
+			"vergeos_nic_rx_bytes_total",
+			"Total received bytes",
+			nicLabels, nil,
 		),
-		nicTxErrors: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "vergeos_nic_tx_errors_total",
-				Help: "Total number of transmit errors",
-			},
-			[]string{"system_name", "cluster", "node_name", "interface"},
-		),
-		nicRxErrors: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "vergeos_nic_rx_errors_total",
-				Help: "Total number of receive errors",
-			},
-			[]string{"system_name", "cluster", "node_name", "interface"},
-		),
-		nicStatus: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "vergeos_nic_status",
-				Help: "Network interface status (1=up, 0=down)",
-			},
-			[]string{"system_name", "cluster", "node_name", "interface"},
+		nicStatus: prometheus.NewDesc(
+			"vergeos_nic_status",
+			"NIC link status (1=up, 0=other)",
+			nicLabels, nil,
 		),
 	}
-
-	// Authenticate with the API
-	if err := nc.authenticate(username, password); err != nil {
-		fmt.Printf("Error authenticating with VergeOS API: %v\n", err)
-	}
-
-	return nc
 }
 
-// Describe implements prometheus.Collector
+// Describe implements prometheus.Collector.
 func (nc *NetworkCollector) Describe(ch chan<- *prometheus.Desc) {
-	nc.nicTxPackets.Describe(ch)
-	nc.nicRxPackets.Describe(ch)
-	nc.nicTxBytes.Describe(ch)
-	nc.nicRxBytes.Describe(ch)
-	nc.nicTxErrors.Describe(ch)
-	nc.nicRxErrors.Describe(ch)
-	nc.nicStatus.Describe(ch)
+	ch <- nc.nicTxPackets
+	ch <- nc.nicRxPackets
+	ch <- nc.nicTxBytes
+	ch <- nc.nicRxBytes
+	ch <- nc.nicStatus
 }
 
-// Collect implements prometheus.Collector
+// Collect implements prometheus.Collector.
 func (nc *NetworkCollector) Collect(ch chan<- prometheus.Metric) {
 	nc.mutex.Lock()
 	defer nc.mutex.Unlock()
 
-	// Get system name
-	req, err := nc.makeRequest("GET", "/api/v4/settings?fields=most&filter=key%20eq%20%22cloud_name%22")
+	ctx := context.Background()
+
+	// Get system name for labeling
+	systemName, err := nc.GetSystemName(ctx)
 	if err != nil {
-		fmt.Printf("Error creating request: %v\n", err)
+		log.Printf("NetworkCollector: Error getting system name: %v", err)
 		return
 	}
 
-	resp, err := nc.httpClient.Do(req)
+	// Build cluster ID -> name mapping
+	clusterMap, err := nc.buildClusterMap(ctx)
 	if err != nil {
-		fmt.Printf("Error executing request: %v\n", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	var settings []struct {
-		Key   string `json:"key"`
-		Value string `json:"value"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&settings); err != nil {
-		fmt.Printf("Error decoding settings response: %v\n", err)
+		log.Printf("NetworkCollector: Error building cluster map: %v", err)
 		return
 	}
 
-	for _, setting := range settings {
-		if setting.Key == "cloud_name" {
-			nc.systemName = setting.Value
-			break
-		}
-	}
-
-	// Get list of physical nodes
-	req, err = nc.makeRequest("GET", "/api/v4/nodes?filter=physical%20eq%20true")
+	// Get physical nodes
+	nodes, err := nc.Client().Nodes.ListPhysical(ctx)
 	if err != nil {
-		fmt.Printf("Error creating request: %v\n", err)
+		log.Printf("NetworkCollector: Error fetching physical nodes: %v", err)
 		return
 	}
 
-	resp, err = nc.httpClient.Do(req)
-	if err != nil {
-		fmt.Printf("Error executing request: %v\n", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	var nodes []Node
-	if err := json.NewDecoder(resp.Body).Decode(&nodes); err != nil {
-		fmt.Printf("Error decoding response: %v\n", err)
-		return
-	}
-
+	// Fetch NICs for each physical node
 	for _, node := range nodes {
-		req, err = nc.makeRequest("GET", fmt.Sprintf("/api/v4/nodes/%d?fields=dashboard", node.ID))
+		clusterName := clusterMap[node.Cluster]
+		if clusterName == "" {
+			clusterName = fmt.Sprintf("cluster_%d", node.Cluster)
+		}
+
+		nics, err := nc.Client().MachineNICs.ListByMachine(ctx, node.Machine)
 		if err != nil {
-			fmt.Printf("Error creating request for node %s: %v\n", node.Name, err)
+			log.Printf("NetworkCollector: Error fetching NICs for node %s: %v", node.Name, err)
 			continue
 		}
 
-		resp, err = nc.httpClient.Do(req)
-		if err != nil {
-			fmt.Printf("Error executing request for node %s: %v\n", node.Name, err)
-			continue
-		}
+		for _, nic := range nics {
+			labels := []string{systemName, clusterName, node.Name, nic.Name}
 
-		var nodeData struct {
-			Machine struct {
-				NICs []struct {
-					Name   string `json:"name"`
-					Status string `json:"status"`
-					Stats  struct {
-						TxPackets uint64 `json:"tx_packets"`
-						RxPackets uint64 `json:"rx_packets"`
-						TxBytes   uint64 `json:"tx_bytes"`
-						RxBytes   uint64 `json:"rx_bytes"`
-						TxErrors  uint64 `json:"tx_errors"`
-						RxErrors  uint64 `json:"rx_errors"`
-					} `json:"stats"`
-				} `json:"nics"`
-			} `json:"machine"`
-			ClusterDisplay string `json:"cluster_display"`
-		}
-
-		if err := json.NewDecoder(resp.Body).Decode(&nodeData); err != nil {
-			fmt.Printf("Error decoding node data for %s: %v\n", node.Name, err)
-			resp.Body.Close()
-			continue
-		}
-		resp.Body.Close()
-
-		for _, nic := range nodeData.Machine.NICs {
-			// Set interface status
-			statusValue := 0.0
-			if nic.Status == "up" {
-				statusValue = 1.0
+			// Traffic counters
+			if nic.Stats != nil {
+				ch <- prometheus.MustNewConstMetric(
+					nc.nicTxPackets, prometheus.CounterValue,
+					float64(nic.Stats.TxPckts), labels...,
+				)
+				ch <- prometheus.MustNewConstMetric(
+					nc.nicRxPackets, prometheus.CounterValue,
+					float64(nic.Stats.RxPckts), labels...,
+				)
+				ch <- prometheus.MustNewConstMetric(
+					nc.nicTxBytes, prometheus.CounterValue,
+					float64(nic.Stats.TxBytes), labels...,
+				)
+				ch <- prometheus.MustNewConstMetric(
+					nc.nicRxBytes, prometheus.CounterValue,
+					float64(nic.Stats.RxBytes), labels...,
+				)
 			}
-			nc.nicStatus.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name).Set(statusValue)
 
-			// Set network metrics
-			nc.nicTxPackets.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name).Add(float64(nic.Stats.TxPackets))
-			nc.nicRxPackets.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name).Add(float64(nic.Stats.RxPackets))
-			nc.nicTxBytes.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name).Add(float64(nic.Stats.TxBytes))
-			nc.nicRxBytes.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name).Add(float64(nic.Stats.RxBytes))
-			nc.nicTxErrors.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name).Add(float64(nic.Stats.TxErrors))
-			nc.nicRxErrors.WithLabelValues(nc.systemName, nodeData.ClusterDisplay, node.Name, nic.Name).Add(float64(nic.Stats.RxErrors))
+			// Link status
+			if nic.Status != nil {
+				statusValue := 0.0
+				if nic.Status.Status == "up" {
+					statusValue = 1.0
+				}
+				ch <- prometheus.MustNewConstMetric(
+					nc.nicStatus, prometheus.GaugeValue,
+					statusValue, labels...,
+				)
+			}
 		}
 	}
+}
 
-	nc.nicTxPackets.Collect(ch)
-	nc.nicRxPackets.Collect(ch)
-	nc.nicTxBytes.Collect(ch)
-	nc.nicRxBytes.Collect(ch)
-	nc.nicTxErrors.Collect(ch)
-	nc.nicRxErrors.Collect(ch)
-	nc.nicStatus.Collect(ch)
+// buildClusterMap creates a mapping from cluster ID to cluster name
+func (nc *NetworkCollector) buildClusterMap(ctx context.Context) (map[int]string, error) {
+	clusters, err := nc.Client().Clusters.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list clusters: %w", err)
+	}
+
+	clusterMap := make(map[int]string)
+	for _, cluster := range clusters {
+		clusterMap[int(cluster.Key)] = cluster.Name
+	}
+
+	return clusterMap, nil
 }
