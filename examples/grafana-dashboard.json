@@ -1993,7 +1993,10 @@
               "Time": true,
               "instance": true,
               "job": true,
-              "system_name": true
+              "system_name": true,
+              "vergeos_instance": true,
+              "serial": true,
+              "tier": true
             },
             "includeByName": {},
             "indexByName": {},
@@ -2290,7 +2293,8 @@
               "instance": true,
               "job": true,
               "system_name": true,
-              "__name__": true
+              "__name__": true,
+              "vergeos_instance": true
             },
             "includeByName": {},
             "indexByName": {},
@@ -2667,9 +2671,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 72
+        "w": 16,
+        "x": 8,
+        "y": 68
       },
       "id": 57,
       "options": {
@@ -3145,14 +3149,29 @@
           "options": {
             "excludeByName": {
               "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "Time 3": true,
+              "Time 4": true,
+              "Time 5": true,
               "instance": true,
               "job": true,
               "vm_id": true,
               "__name__": true,
-              "system_name": true
+              "system_name": true,
+              "vergeos_instance": true
             },
             "includeByName": {},
-            "indexByName": {},
+            "indexByName": {
+              "cluster": 0,
+              "node": 1,
+              "vm_name": 2,
+              "Value #A": 3,
+              "Value #B": 4,
+              "Value #C": 5,
+              "Value #D": 6,
+              "Value #E": 7
+            },
             "renameByName": {
               "vm_name": "VM",
               "cluster": "Cluster",
@@ -3926,6 +3945,6 @@
   "timezone": "browser",
   "title": "VergeOS Dashboard",
   "uid": "vergeos-dashboard",
-  "version": 11,
+  "version": 12,
   "weekStart": ""
 }
