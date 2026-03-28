@@ -1,33 +1,10 @@
-# VergeOS Exporter
+# CLAUDE.md
 
-A Prometheus exporter for VergeOS that collects metrics about VSAN tiers, clusters, nodes, storage, and network.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Tech Stack
+## What This Is
 
-- **Language**: Go 1.23.4
-- **Framework**: Prometheus client library (`github.com/prometheus/client_golang`)
-- **Build Tool**: GoReleaser (cross-platform builds)
-- **CI/CD**: GitHub Actions (release automation on tags)
-
-## Project Structure
-
-```
-vergeos-exporter/
-├── main.go              # Entry point, CLI flags, HTTP server setup
-├── collectors/          # Prometheus collectors for different VergeOS resources
-│   ├── base.go          # BaseCollector with shared HTTP/auth logic
-│   ├── collector.go     # Collector interface definition
-│   ├── types.go         # API response types and JSON unmarshaling
-│   ├── storage.go       # VSAN tier and drive metrics
-│   ├── node.go          # Physical node metrics (CPU, RAM, IPMI)
-│   ├── cluster.go       # Cluster-level metrics
-│   ├── network.go       # NIC metrics
-│   └── system.go        # System version info
-├── tests/               # Additional test files
-├── examples/            # Docker Compose example, Grafana dashboard
-├── metrics.md           # Complete metrics reference
-└── .goreleaser.yml      # Cross-platform release configuration
-```
+A Prometheus exporter for VergeOS that collects metrics about VSAN tiers, drives, clusters, nodes, network, and system info. Written in Go, uses the `goVergeOS` SDK for all API calls.
 
 ## Commands
 
@@ -35,96 +12,76 @@ vergeos-exporter/
 # Build
 go build
 
-# Run tests
+# Run all tests
 go test ./...
 
-# Run locally
+# Run a single test
+go test ./tests -run TestStorageTierMetrics -v
+
+# Run locally (requires a VergeOS instance)
 ./vergeos-exporter -verge.url="https://VERGEURL" -verge.username="admin" -verge.password="password"
 
-# Create release (triggers CI)
-git tag -a v1.0.0 -m "Release v1.0.0"
-git push origin v1.0.0
+# Verify metrics endpoint
+curl -s http://localhost:9888/metrics
 ```
 
 ## Architecture
 
-### Collector Pattern
+### SDK-Based Collectors
 
-Each collector implements `prometheus.Collector` interface:
+All collectors use the `goVergeOS` SDK client (`vergeos.Client`) — no direct HTTP calls. The SDK is a local dependency via `replace` directive in `go.mod` (points to `../goVergeOS`).
 
-```go
-type Collector interface {
-    Describe(ch chan<- *prometheus.Desc)
-    Collect(ch chan<- prometheus.Metric)
-}
-```
+**Data flow:** `main.go` creates one `vergeos.Client` → passes it to each collector constructor → collectors call SDK service methods (e.g., `client.StorageTiers.List(ctx)`) in their `Collect()` method.
 
-Collectors embed `BaseCollector` for shared functionality:
-- HTTP client with configurable timeout
-- Basic authentication to VergeOS API
-- TLS configuration (defaults to insecure for self-signed certs)
-- System name retrieval from settings API
+### Collector Structure
 
-### API Integration
+Every collector embeds `BaseCollector` (which holds the SDK client and caches `systemName`). The pattern:
 
-- All collectors fetch `cloud_name` from `/api/v4/settings` for metric labeling
-- Uses VergeOS API v4 endpoints with JSON responses
-- Types in `collectors/types.go` map directly to API response structures
+1. Constructor (`NewXxxCollector`) defines `prometheus.Desc` descriptors with label sets
+2. `Describe()` sends all descriptors to the channel
+3. `Collect()` fetches data via SDK, emits metrics with `prometheus.MustNewConstMetric`
 
-### Adding a New Collector
+The `MustNewConstMetric` pattern (vs persistent metric objects) is intentional — it prevents stale label values from persisting across scrapes (Bug #28).
 
-1. Create `collectors/<resource>.go`
-2. Embed `BaseCollector` in your struct
-3. Define prometheus metrics in constructor with appropriate labels
-4. Implement `Describe()` and `Collect()` methods
-5. Register in `main.go` with `prometheus.MustRegister()`
+### Collectors
 
-## Conventions
+| Collector | File | SDK Services Used |
+|-----------|------|-------------------|
+| Storage | `collectors/storage.go` | `StorageTiers`, `ClusterTiers`, `MachineDrivePhys`, `MachineDriveStats` |
+| Node | `collectors/node.go` | `Nodes`, `MachineStats` |
+| Cluster | `collectors/cluster.go` | `Clusters`, `ClusterStatus` |
+| Network | `collectors/network.go` | `MachineNICs` |
+| System | `collectors/system.go` | `Settings`, `UpdateSettings`, `UpdateSourcePackages` |
+
+### Test Pattern
+
+Tests live in `tests/` (separate package). They use `httptest.Server` to mock the VergeOS API, with shared helpers in `tests/testhelpers.go`:
+
+- `NewBaseMockServer()` — creates a mock that handles version check + settings + auth, with a callback for resource-specific routes
+- `CreateTestSDKClient()` — creates an SDK client pointed at the mock server
+- Tests verify metrics using `prometheus/testutil` (count metrics, check values)
+
+Mock types in `testhelpers.go` mirror the API JSON shapes — update them when the API changes.
+
+## Key Conventions
 
 ### Metric Naming
 
 - Prefix: `vergeos_`
 - Format: `vergeos_<resource>_<measurement>`
-- Examples: `vergeos_drive_read_ops`, `vergeos_vsan_tier_capacity`
+- All metrics include `system_name` label (the VergeOS cloud name)
+- Booleans become gauges: `1.0` = true, `0.0` = false (use `boolToFloat64()`)
 
-### Label Naming
+### Known Bug Patterns
 
-- `system_name`: VergeOS cloud name (from settings)
-- `cluster`: Cluster display name
-- `node_name`: Physical node name
-- `tier`: VSAN tier number (0, 1, etc.)
+- **Bug #27**: Phantom tiers — `cluster_tiers` can return tiers not in `storage_tiers`. Filter using a `validTiers` set.
+- **Bug #28**: Stale labels — always use `MustNewConstMetric`, never persistent metric objects.
+- **Bug #34**: Fail-fast auth — credentials are validated at startup before registering collectors.
 
-### Counter vs Gauge
+### Release
 
-- **Counter**: cumulative values that only increase (ops, bytes, errors)
-- **Gauge**: values that can go up or down (utilization, temperature, counts)
+Uses GoReleaser (`.goreleaser.yml`) with GitHub Actions for cross-platform builds. Tag with `v*` to trigger.
 
-### Test Pattern
+## Port
 
-Tests use `httptest.Server` to mock VergeOS API responses:
-
-```go
-mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    // Route handling based on r.URL.Path
-}))
-defer mockServer.Close()
-collector := NewCollector(mockServer.URL, mockServer.Client(), "user", "pass")
-```
-
-## VergeOS API Reference
-
-Key endpoints used:
-- `/api/v4/settings` - System settings including `cloud_name`
-- `/api/v4/nodes?filter=physical eq true` - Physical node list
-- `/api/v4/nodes/{id}?fields=dashboard` - Node details with stats
-- `/api/v4/storage_tiers?fields=most` - VSAN tier overview
-- `/api/v4/cluster_tiers?fields=all` - Detailed tier status
-- `/api/v4/machine_drives` - Drive state information
-- `/api/v4/clusters` - Cluster list and details
-
-## Default Port
-
-The exporter listens on `:9888` by default. Verify with:
-```bash
-curl -s http://localhost:9888/metrics
-```
+Default listen address: `:9888`
