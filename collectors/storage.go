@@ -513,7 +513,7 @@ func (sc *StorageCollector) collectDriveMetrics(ctx context.Context, ch chan<- p
 			float64(drive.Temp), driveLabels...,
 		)
 		ch <- prometheus.MustNewConstMetric(
-			sc.driveWearLevel, prometheus.CounterValue,
+			sc.driveWearLevel, prometheus.GaugeValue,
 			float64(drive.WearLevel), driveLabels...,
 		)
 		ch <- prometheus.MustNewConstMetric(
@@ -533,7 +533,7 @@ func (sc *StorageCollector) collectDriveMetrics(ctx context.Context, ch chan<- p
 			float64(drive.VSANWriteErrors), driveLabels...,
 		)
 		ch <- prometheus.MustNewConstMetric(
-			sc.driveRepairs, prometheus.CounterValue,
+			sc.driveRepairs, prometheus.GaugeValue,
 			float64(drive.VSANRepairing), driveLabels...,
 		)
 		ch <- prometheus.MustNewConstMetric(

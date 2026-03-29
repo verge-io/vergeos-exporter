@@ -449,7 +449,7 @@ vergeos_drive_temperature{drive_name="/dev/sdb",node_name="node1",serial="WD-002
 	t.Run("drive_wear_level", func(t *testing.T) {
 		expected := `
 # HELP vergeos_drive_wear_level Drive wear level percentage
-# TYPE vergeos_drive_wear_level counter
+# TYPE vergeos_drive_wear_level gauge
 vergeos_drive_wear_level{drive_name="/dev/sda",node_name="node1",serial="WD-001",system_name="testcloud",tier="0"} 5
 vergeos_drive_wear_level{drive_name="/dev/sdb",node_name="node1",serial="WD-002",system_name="testcloud",tier="0"} 10
 `
@@ -521,7 +521,7 @@ vergeos_drive_read_errors{drive_name="/dev/sdb",node_name="node1",serial="WD-002
 	t.Run("drive_repairs", func(t *testing.T) {
 		expected := `
 # HELP vergeos_drive_repairs VSAN drive blocks being repaired
-# TYPE vergeos_drive_repairs counter
+# TYPE vergeos_drive_repairs gauge
 vergeos_drive_repairs{drive_name="/dev/sda",node_name="node1",serial="WD-001",system_name="testcloud",tier="0"} 0
 vergeos_drive_repairs{drive_name="/dev/sdb",node_name="node1",serial="WD-002",system_name="testcloud",tier="0"} 100
 `
