@@ -3,6 +3,7 @@ package tests
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -51,7 +52,7 @@ func TestNodeCollector(t *testing.T) {
 			}
 			// Per-machine request (legacy or filtered)
 			for mid, s := range machineStats {
-				if strings.Contains(filter, intToStr(mid)) {
+				if strings.Contains(filter, strconv.Itoa(mid)) {
 					WriteJSONResponse(w, []MachineStatsMock{s})
 					return true
 				}
@@ -360,17 +361,4 @@ func TestNodeCollector_MultipleClusters(t *testing.T) {
 			t.Errorf("Unexpected metric values: %v", err)
 		}
 	})
-}
-
-// intToStr converts an int to its string representation
-func intToStr(n int) string {
-	s := ""
-	if n == 0 {
-		return "0"
-	}
-	for n > 0 {
-		s = string(rune('0'+n%10)) + s
-		n /= 10
-	}
-	return s
 }

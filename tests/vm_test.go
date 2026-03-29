@@ -2,6 +2,7 @@ package tests
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -369,7 +370,7 @@ func TestVMCollector_StaleMetrics(t *testing.T) {
 			var vms []VMMock
 			for i := 1; i <= vmCount; i++ {
 				vms = append(vms, VMMock{
-					Key: i, Name: "vm-" + intToStr(i), Machine: 100 + i, Cluster: 1,
+					Key: i, Name: "vm-" + strconv.Itoa(i), Machine: 100 + i, Cluster: 1,
 					PowerState: true, Enabled: true, CPUCores: 2, RAM: 4096,
 				})
 			}

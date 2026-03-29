@@ -2,6 +2,7 @@ package tests
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -70,7 +71,7 @@ func TestTenantCollector(t *testing.T) {
 		case strings.Contains(r.URL.Path, "/tenant_stats_history_short"):
 			filter := r.URL.Query().Get("filter")
 			for tid, stats := range tenantStatsHistory {
-				if strings.Contains(filter, intToStr(tid)) {
+				if strings.Contains(filter, strconv.Itoa(tid)) {
 					WriteJSONResponse(w, stats)
 					return true
 				}
@@ -389,7 +390,7 @@ func TestTenantCollector_StaleMetrics(t *testing.T) {
 		case strings.Contains(r.URL.Path, "/tenant_stats_history_short"):
 			filter := r.URL.Query().Get("filter")
 			for i := 1; i <= tenantCount; i++ {
-				if strings.Contains(filter, intToStr(i)) {
+				if strings.Contains(filter, strconv.Itoa(i)) {
 					WriteJSONResponse(w, []TenantStatsHistoryShortMock{
 						{Key: i, Tenant: i, Timestamp: 1000, TotalCPU: 50, CoreCount: 4, RAMUsed: 4096, RAMAllocated: 8192, RAMPct: 50, IPCount: 1},
 					})
@@ -411,7 +412,7 @@ func TestTenantCollector_StaleMetrics(t *testing.T) {
 			tenants := []TenantMock{}
 			for i := 1; i <= tenantCount; i++ {
 				tenants = append(tenants, TenantMock{
-					Key: i, Name: "tenant-" + intToStr(i),
+					Key: i, Name: "tenant-" + strconv.Itoa(i),
 				})
 			}
 			WriteJSONResponse(w, tenants)
