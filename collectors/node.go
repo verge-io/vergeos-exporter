@@ -146,6 +146,17 @@ func (nc *NodeCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
+	// Batch-fetch machine stats (avoids N+1 per-node API calls)
+	allStats, err := nc.Client().MachineStats.List(ctx)
+	if err != nil {
+		log.Printf("Error batch-fetching machine stats: %v", err)
+		// Continue without stats — node metadata can still be emitted
+	}
+	statsMap := make(map[int]*vergeos.MachineStats)
+	for i := range allStats {
+		statsMap[allStats[i].Machine] = &allStats[i]
+	}
+
 	// Count nodes per cluster
 	clusterNodeCounts := make(map[string]int)
 
@@ -205,10 +216,9 @@ func (nc *NodeCollector) Collect(ch chan<- prometheus.Metric) {
 			)
 		}
 
-		// Fetch MachineStats for this node
-		stats, err := nc.Client().MachineStats.GetByMachine(ctx, node.Machine)
-		if err != nil {
-			log.Printf("Error fetching machine stats for node %s (machine %d): %v", node.Name, node.Machine, err)
+		// Look up pre-fetched machine stats
+		stats, ok := statsMap[node.Machine]
+		if !ok {
 			continue
 		}
 

@@ -39,22 +39,17 @@ func TestNodeCollector(t *testing.T) {
 			WriteJSONResponse(w, nodes)
 			return true
 		case strings.Contains(r.URL.Path, "/machine_stats"):
-			// Parse machine filter from query
 			filter := r.URL.Query().Get("filter")
-			for machineID, stats := range machineStats {
-				if strings.Contains(filter, string(rune('0'+machineID))) || strings.Contains(filter, "101") || strings.Contains(filter, "102") {
-					// Match by checking if the filter contains the machine ID
-					for mid, s := range machineStats {
-						if strings.Contains(filter, intToStr(mid)) {
-							WriteJSONResponse(w, []MachineStatsMock{s})
-							return true
-						}
-						_ = s
-					}
+			// Batch request (no filter or no machine-specific filter) — return all
+			if filter == "" {
+				var all []MachineStatsMock
+				for _, s := range machineStats {
+					all = append(all, s)
 				}
-				_ = stats
+				WriteJSONResponse(w, all)
+				return true
 			}
-			// Fallback: try to match by extracting machine ID from filter
+			// Per-machine request (legacy or filtered)
 			for mid, s := range machineStats {
 				if strings.Contains(filter, intToStr(mid)) {
 					WriteJSONResponse(w, []MachineStatsMock{s})
@@ -246,17 +241,13 @@ func TestNodeCollector_StaleMetrics(t *testing.T) {
 			WriteJSONResponse(w, clusters)
 			return true
 		case strings.Contains(r.URL.Path, "/machine_stats"):
-			// Return stats for any machine
-			filter := r.URL.Query().Get("filter")
+			var all []MachineStatsMock
 			for i := 1; i <= nodeCount; i++ {
-				if strings.Contains(filter, intToStr(100+i)) {
-					WriteJSONResponse(w, []MachineStatsMock{
-						{Key: i, Machine: 100 + i, TotalCPU: 50, RAMUsed: 32000, RAMPct: 50, CoreUsageList: json.RawMessage(`[50.0]`), CoreTemp: 50},
-					})
-					return true
-				}
+				all = append(all, MachineStatsMock{
+					Key: i, Machine: 100 + i, TotalCPU: 50, RAMUsed: 32000, RAMPct: 50, CoreUsageList: json.RawMessage(`[50.0]`), CoreTemp: 50,
+				})
 			}
-			WriteJSONResponse(w, []MachineStatsMock{})
+			WriteJSONResponse(w, all)
 			return true
 		case strings.Contains(r.URL.Path, "/nodes"):
 			nodes := []NodeMock{}
@@ -338,16 +329,13 @@ func TestNodeCollector_MultipleClusters(t *testing.T) {
 			WriteJSONResponse(w, clusters)
 			return true
 		case strings.Contains(r.URL.Path, "/machine_stats"):
-			filter := r.URL.Query().Get("filter")
+			var all []MachineStatsMock
 			for _, mid := range []int{101, 102, 103} {
-				if strings.Contains(filter, intToStr(mid)) {
-					WriteJSONResponse(w, []MachineStatsMock{
-						{Key: mid, Machine: mid, TotalCPU: 50, RAMUsed: 32000, RAMPct: 50, CoreUsageList: json.RawMessage(`[50.0]`), CoreTemp: 50},
-					})
-					return true
-				}
+				all = append(all, MachineStatsMock{
+					Key: mid, Machine: mid, TotalCPU: 50, RAMUsed: 32000, RAMPct: 50, CoreUsageList: json.RawMessage(`[50.0]`), CoreTemp: 50,
+				})
 			}
-			WriteJSONResponse(w, []MachineStatsMock{})
+			WriteJSONResponse(w, all)
 			return true
 		case strings.Contains(r.URL.Path, "/nodes"):
 			WriteJSONResponse(w, nodes)
