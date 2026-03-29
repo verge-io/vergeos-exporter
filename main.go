@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
+	"html"
 	"log"
 	"net/http"
 	"time"
@@ -12,6 +14,12 @@ import (
 	vergeos "github.com/verge-io/goVergeOS"
 
 	"vergeos-exporter/collectors"
+)
+
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
 )
 
 var (
@@ -26,6 +34,8 @@ var (
 
 func main() {
 	flag.Parse()
+
+	log.Printf("vergeos-exporter version=%s commit=%s date=%s", version, commit, date)
 
 	// Validate required flags
 	if *vergeUsername == "" || *vergePassword == "" {
@@ -57,7 +67,6 @@ func main() {
 	log.Printf("Successfully connected to VergeOS system: %s", cloudName)
 
 	// Initialize collectors with SDK client
-	// All collectors are now fully migrated to SDK
 	storageCollector := collectors.NewStorageCollector(client)
 	nodeCollector := collectors.NewNodeCollector(client)
 	clusterCollector := collectors.NewClusterCollector(client)
@@ -79,15 +88,22 @@ func main() {
 		promhttp.HandlerOpts{EnableOpenMetrics: true},
 	))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`<html>
+		fmt.Fprintf(w, `<html>
 			<head><title>VergeOS Exporter</title></head>
 			<body>
 			<h1>VergeOS Exporter</h1>
-			<p><a href="` + *metricsPath + `">Metrics</a></p>
+			<p><a href="%s">Metrics</a></p>
 			</body>
-			</html>`))
+			</html>`, html.EscapeString(*metricsPath))
 	})
 
+	srv := &http.Server{
+		Addr:         *listenAddress,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: *scrapeTimeout + 5*time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
 	log.Printf("Starting VergeOS exporter on %s", *listenAddress)
-	log.Fatal(http.ListenAndServe(*listenAddress, nil))
+	log.Fatal(srv.ListenAndServe())
 }
