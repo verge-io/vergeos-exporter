@@ -225,7 +225,7 @@ func (vc *VMCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	// Build cluster ID → name mapping
-	clusterMap, err := vc.buildClusterMap(ctx)
+	clusterMap, err := vc.BuildClusterMap(ctx)
 	if err != nil {
 		log.Printf("Error building cluster map: %v", err)
 		return
@@ -344,20 +344,6 @@ func (vc *VMCollector) Collect(ch chan<- prometheus.Metric) {
 			}
 		}
 	}
-}
-
-// buildClusterMap creates a mapping from cluster ID to cluster name
-func (vc *VMCollector) buildClusterMap(ctx context.Context) (map[int]string, error) {
-	clusters, err := vc.Client().Clusters.List(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list clusters: %w", err)
-	}
-
-	clusterMap := make(map[int]string)
-	for _, cluster := range clusters {
-		clusterMap[int(cluster.Key)] = cluster.Name
-	}
-	return clusterMap, nil
 }
 
 // buildStatsMap batch-fetches all machine stats and returns a map keyed by machine ID

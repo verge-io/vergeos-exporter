@@ -1,7 +1,6 @@
 package collectors
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"sync"
@@ -84,7 +83,7 @@ func (nc *NetworkCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	// Build cluster ID -> name mapping
-	clusterMap, err := nc.buildClusterMap(ctx)
+	clusterMap, err := nc.BuildClusterMap(ctx)
 	if err != nil {
 		log.Printf("NetworkCollector: Error building cluster map: %v", err)
 		return
@@ -146,19 +145,4 @@ func (nc *NetworkCollector) Collect(ch chan<- prometheus.Metric) {
 			}
 		}
 	}
-}
-
-// buildClusterMap creates a mapping from cluster ID to cluster name
-func (nc *NetworkCollector) buildClusterMap(ctx context.Context) (map[int]string, error) {
-	clusters, err := nc.Client().Clusters.List(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list clusters: %w", err)
-	}
-
-	clusterMap := make(map[int]string)
-	for _, cluster := range clusters {
-		clusterMap[int(cluster.Key)] = cluster.Name
-	}
-
-	return clusterMap, nil
 }

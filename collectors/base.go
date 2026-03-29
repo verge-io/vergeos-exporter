@@ -65,3 +65,18 @@ func (bc *BaseCollector) GetSystemName(ctx context.Context) (string, error) {
 	bc.systemName = name
 	return name, nil
 }
+
+// BuildClusterMap creates a mapping from cluster ID to cluster name.
+func (bc *BaseCollector) BuildClusterMap(ctx context.Context) (map[int]string, error) {
+	clusters, err := bc.client.Clusters.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list clusters: %w", err)
+	}
+
+	clusterMap := make(map[int]string)
+	for _, cluster := range clusters {
+		clusterMap[int(cluster.Key)] = cluster.Name
+	}
+
+	return clusterMap, nil
+}
