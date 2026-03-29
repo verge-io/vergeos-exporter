@@ -10,6 +10,8 @@ import (
 	vergeos "github.com/verge-io/goVergeOS"
 )
 
+var _ prometheus.Collector = (*NetworkCollector)(nil)
+
 // NetworkCollector collects metrics about physical node network interfaces
 // using the MachineNICService for per-NIC traffic counters and link status.
 type NetworkCollector struct {

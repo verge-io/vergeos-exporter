@@ -9,6 +9,8 @@ import (
 	vergeos "github.com/verge-io/goVergeOS"
 )
 
+var _ prometheus.Collector = (*SystemCollector)(nil)
+
 // SystemCollector collects metrics about VergeOS system versions
 type SystemCollector struct {
 	BaseCollector

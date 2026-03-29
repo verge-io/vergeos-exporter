@@ -11,6 +11,8 @@ import (
 	vergeos "github.com/verge-io/goVergeOS"
 )
 
+var _ prometheus.Collector = (*VMCollector)(nil)
+
 // vmStatus holds resolved status info for a VM's machine
 type vmStatus struct {
 	NodeName string

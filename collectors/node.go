@@ -10,6 +10,8 @@ import (
 	vergeos "github.com/verge-io/goVergeOS"
 )
 
+var _ prometheus.Collector = (*NodeCollector)(nil)
+
 // NodeCollector collects metrics about VergeOS physical nodes
 type NodeCollector struct {
 	BaseCollector

@@ -11,6 +11,8 @@ import (
 	vergeos "github.com/verge-io/goVergeOS"
 )
 
+var _ prometheus.Collector = (*StorageCollector)(nil)
+
 // StorageCollector collects metrics about VergeOS storage tiers.
 //
 // All metrics use MustNewConstMetric pattern to avoid stale label issues (Bug #28).

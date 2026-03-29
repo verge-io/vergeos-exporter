@@ -9,6 +9,8 @@ import (
 	vergeos "github.com/verge-io/goVergeOS"
 )
 
+var _ prometheus.Collector = (*ClusterCollector)(nil)
+
 // ClusterCollector collects metrics about VergeOS clusters
 type ClusterCollector struct {
 	BaseCollector

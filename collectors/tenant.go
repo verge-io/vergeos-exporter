@@ -11,6 +11,8 @@ import (
 	vergeos "github.com/verge-io/goVergeOS"
 )
 
+var _ prometheus.Collector = (*TenantCollector)(nil)
+
 // TenantCollector collects metrics about VergeOS tenants, tenant nodes,
 // tenant storage, and tenant networks.
 //
