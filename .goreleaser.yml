@@ -1,3 +1,5 @@
+version: 2
+
 before:
   hooks:
     - go mod tidy
@@ -30,6 +32,28 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
+
+dockers_v2:
+  - id: vergeos-exporter
+    ids:
+      - default
+    dockerfile: Dockerfile
+    images:
+      - ghcr.io/verge-io/vergeos-exporter
+    tags:
+      - "{{ .Version }}"
+      - "{{ if not .IsNightly }}latest{{ end }}"
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    sbom: true
+    labels:
+      org.opencontainers.image.title: "{{ .ProjectName }}"
+      org.opencontainers.image.source: "{{ .GitURL }}"
+      org.opencontainers.image.description: "VergeOS exporter for Prometheus"
+      org.opencontainers.image.version: "{{ .Version }}"
+      org.opencontainers.image.created: "{{ .Date }}"
+      org.opencontainers.image.revision: "{{ .FullCommit }}"
 
 checksum:
   name_template: 'checksums.txt'
