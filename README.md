@@ -65,10 +65,12 @@ go build -o vergeos-exporter
 
 - `-web.listen-address`: Address to listen on for web interface and telemetry (default: ":9888")
 - `-web.telemetry-path`: Path under which to expose metrics
-- `-verge.url`: VergeOS API URL (default: "https://localhost")
-- `-verge.username`: VergeOS API username (required)
-- `-verge.password`: VergeOS API password (required)
+- `-verge.url`: VergeOS API URL (default: "https://localhost"). Also: `VERGE_URL` env var
+- `-verge.username`: VergeOS API username (required). Also: `VERGE_USERNAME` env var
+- `-verge.password`: VergeOS API password (required). Also: `VERGE_PASSWORD` env var
 - `-scrape.timeout`: Timeout for scraping VergeOS API (default: 30s)
+
+Environment variables are recommended over CLI flags in production to avoid exposing credentials in the process list.
 
 ### Example
 
@@ -221,8 +223,19 @@ This self-contained environment automatically retrieves the tagged binary releas
 
 ### Prerequisites
 
-- Go 1.21 or higher
+- Go 1.23 or higher
 - Access to a VergeOS instance
+- The [goVergeOS](https://github.com/verge-io/goVergeOS) SDK cloned alongside this repo (at `../goVergeOS`)
+
+### Local Setup
+
+The exporter depends on the goVergeOS SDK. For local development, add a `replace` directive to `go.mod`:
+
+```
+replace github.com/verge-io/goVergeOS v0.2.0 => ../goVergeOS
+```
+
+This is not committed — remove it before pushing.
 
 ### Building
 
@@ -232,8 +245,24 @@ go build
 
 ### Testing
 
+Unit tests use mock servers and don't require a live VergeOS instance:
+
 ```bash
 go test ./...
+```
+
+Integration tests require credentials. Set them via environment variables or a `.env` file in the repo root (gitignored):
+
+```bash
+VERGE_URL=https://your-instance.example.com
+VERGE_USERNAME=your-user
+VERGE_PASSWORD=your-pass
+```
+
+Then run with the `integration` build tag:
+
+```bash
+go test -tags integration ./tests -v
 ```
 
 ### Creating a Release
