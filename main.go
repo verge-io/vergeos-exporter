@@ -7,6 +7,9 @@ import (
 	"html"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -37,9 +40,25 @@ func main() {
 
 	log.Printf("vergeos-exporter version=%s commit=%s date=%s", version, commit, date)
 
-	// Validate required flags
+	// Environment variable fallback for credentials (avoids exposing secrets in /proc/cmdline)
+	if *vergeURL == "http://localhost" {
+		if v := os.Getenv("VERGE_URL"); v != "" {
+			*vergeURL = v
+		}
+	}
+	if *vergeUsername == "" {
+		*vergeUsername = os.Getenv("VERGE_USERNAME")
+	}
+	if *vergePassword == "" {
+		*vergePassword = os.Getenv("VERGE_PASSWORD")
+	}
+
 	if *vergeUsername == "" || *vergePassword == "" {
-		log.Fatal("verge.username and verge.password are required")
+		log.Fatal("verge.username and verge.password are required (flags or VERGE_USERNAME/VERGE_PASSWORD env vars)")
+	}
+
+	if *insecure {
+		log.Printf("WARNING: TLS certificate verification is disabled (--insecure flag)")
 	}
 
 	// Create SDK client for API operations
@@ -104,6 +123,21 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
+	// Graceful shutdown on SIGINT/SIGTERM
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-quit
+		log.Println("Shutting down...")
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownCancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			log.Printf("Server shutdown error: %v", err)
+		}
+	}()
+
 	log.Printf("Starting VergeOS exporter on %s", *listenAddress)
-	log.Fatal(srv.ListenAndServe())
+	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+		log.Fatalf("Server error: %v", err)
+	}
 }
