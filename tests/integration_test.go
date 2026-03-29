@@ -9,26 +9,31 @@ import (
 
 	"vergeos-exporter/collectors"
 
+	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	vergeos "github.com/verge-io/goVergeOS"
 )
 
-// getEnvOrDefault returns the environment variable value or a default.
-func getEnvOrDefault(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
+// loadTestEnv loads credentials from .env (if present) or environment variables.
+// Skips the test if required variables are missing.
+func loadTestEnv(t *testing.T) (url, user, pass string) {
+	t.Helper()
+	_ = godotenv.Load("../.env") // optional — no error if missing
+	url = os.Getenv("VERGE_URL")
+	user = os.Getenv("VERGE_USERNAME")
+	pass = os.Getenv("VERGE_PASSWORD")
+	if url == "" || user == "" || pass == "" {
+		t.Skip("Integration test requires VERGE_URL, VERGE_USERNAME, VERGE_PASSWORD (set in env or .env)")
 	}
-	return fallback
+	return
 }
 
 // createIntegrationClient creates an SDK client for integration testing.
 func createIntegrationClient(t *testing.T) *vergeos.Client {
 	t.Helper()
 
-	url := getEnvOrDefault("VERGE_URL", "https://vergeos.example.com")
-	user := getEnvOrDefault("VERGE_USERNAME", "")
-	pass := getEnvOrDefault("VERGE_PASSWORD", "REDACTED")
+	url, user, pass := loadTestEnv(t)
 
 	client, err := vergeos.NewClient(
 		vergeos.WithBaseURL(url),
