@@ -60,8 +60,8 @@ type VMCollector struct {
 // NewVMCollector creates a new VMCollector
 func NewVMCollector(client *vergeos.Client, scrapeTimeout time.Duration) *VMCollector {
 	vmLabels := []string{"system_name", "cluster", "node", "vm_name", "vm_id"}
-	nicLabels := append(vmLabels, "nic_name")
-	diskLabels := append(vmLabels, "disk_name", "interface", "media")
+	nicLabels := []string{"system_name", "cluster", "node", "vm_name", "vm_id", "nic_name"}
+	diskLabels := []string{"system_name", "cluster", "node", "vm_name", "vm_id", "disk_name", "interface", "media"}
 
 	return &VMCollector{
 		BaseCollector: *NewBaseCollector(client, scrapeTimeout),
