@@ -95,25 +95,19 @@ func TestTenantCollector(t *testing.T) {
 			return true
 
 		case strings.Contains(r.URL.Path, "/machine_status"):
-			filter := r.URL.Query().Get("filter")
-			for mid, s := range machineStatuses {
-				if strings.Contains(filter, intToStr(mid)) {
-					WriteJSONResponse(w, []MachineStatusMock{s})
-					return true
-				}
+			var all []MachineStatusMock
+			for _, s := range machineStatuses {
+				all = append(all, s)
 			}
-			WriteJSONResponse(w, []MachineStatusMock{})
+			WriteJSONResponse(w, all)
 			return true
 
 		case strings.Contains(r.URL.Path, "/machine_stats"):
-			filter := r.URL.Query().Get("filter")
-			for mid, s := range machineStats {
-				if strings.Contains(filter, intToStr(mid)) {
-					WriteJSONResponse(w, []MachineStatsMock{s})
-					return true
-				}
+			var all []MachineStatsMock
+			for _, s := range machineStats {
+				all = append(all, s)
 			}
-			WriteJSONResponse(w, []MachineStatsMock{})
+			WriteJSONResponse(w, all)
 			return true
 		}
 		return false
@@ -335,24 +329,14 @@ func TestTenantCollector_SnapshotFiltering(t *testing.T) {
 			WriteJSONResponse(w, tenants)
 			return true
 		case strings.Contains(r.URL.Path, "/machine_status"):
-			filter := r.URL.Query().Get("filter")
-			if strings.Contains(filter, "301") {
-				WriteJSONResponse(w, []MachineStatusMock{
-					{Key: 1, Machine: 301, Running: true, Status: "running", State: "online"},
-				})
-				return true
-			}
-			WriteJSONResponse(w, []MachineStatusMock{})
+			WriteJSONResponse(w, []MachineStatusMock{
+				{Key: 1, Machine: 301, Running: true, Status: "running", State: "online"},
+			})
 			return true
 		case strings.Contains(r.URL.Path, "/machine_stats"):
-			filter := r.URL.Query().Get("filter")
-			if strings.Contains(filter, "301") {
-				WriteJSONResponse(w, []MachineStatsMock{
-					{Key: 1, Machine: 301, TotalCPU: 50, RAMUsed: 4000, RAMPct: 50},
-				})
-				return true
-			}
-			WriteJSONResponse(w, []MachineStatsMock{})
+			WriteJSONResponse(w, []MachineStatsMock{
+				{Key: 1, Machine: 301, TotalCPU: 50, RAMUsed: 4000, RAMPct: 50},
+			})
 			return true
 		}
 		return false

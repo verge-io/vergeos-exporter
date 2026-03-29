@@ -45,13 +45,7 @@ func TestNetworkCollector_NICMetrics(t *testing.T) {
 			WriteJSONResponse(w, nodes)
 			return true
 		case strings.Contains(r.URL.Path, "/machine_nics"):
-			// Filter by machine
-			filter := r.URL.Query().Get("filter")
-			if strings.Contains(filter, "101") {
-				WriteJSONResponse(w, nics)
-			} else {
-				WriteJSONResponse(w, []MachineNICMock{})
-			}
+			WriteJSONResponse(w, nics)
 			return true
 		}
 		return false
@@ -167,22 +161,14 @@ func TestNetworkCollector_MultipleNodes(t *testing.T) {
 			WriteJSONResponse(w, nodes)
 			return true
 		case strings.Contains(r.URL.Path, "/machine_nics"):
-			filter := r.URL.Query().Get("filter")
-			if strings.Contains(filter, "101") {
-				WriteJSONResponse(w, []MachineNICMock{
-					{Key: 1, Machine: 101, Name: "eno1",
-						Stats:  &MachineNICStatsMock{Key: 1, TxPckts: 100, RxPckts: 200, TxBytes: 1000, RxBytes: 2000},
-						Status: &MachineNICStatusMock{Key: 1, Status: "up", Speed: 10000}},
-				})
-			} else if strings.Contains(filter, "102") {
-				WriteJSONResponse(w, []MachineNICMock{
-					{Key: 2, Machine: 102, Name: "eno1",
-						Stats:  &MachineNICStatsMock{Key: 2, TxPckts: 300, RxPckts: 400, TxBytes: 3000, RxBytes: 4000},
-						Status: &MachineNICStatusMock{Key: 2, Status: "up", Speed: 10000}},
-				})
-			} else {
-				WriteJSONResponse(w, []MachineNICMock{})
-			}
+			WriteJSONResponse(w, []MachineNICMock{
+				{Key: 1, Machine: 101, Name: "eno1",
+					Stats:  &MachineNICStatsMock{Key: 1, TxPckts: 100, RxPckts: 200, TxBytes: 1000, RxBytes: 2000},
+					Status: &MachineNICStatusMock{Key: 1, Status: "up", Speed: 10000}},
+				{Key: 2, Machine: 102, Name: "eno1",
+					Stats:  &MachineNICStatsMock{Key: 2, TxPckts: 300, RxPckts: 400, TxBytes: 3000, RxBytes: 4000},
+					Status: &MachineNICStatusMock{Key: 2, Status: "up", Speed: 10000}},
+			})
 			return true
 		}
 		return false

@@ -96,20 +96,24 @@ func (nc *NetworkCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	// Fetch NICs for each physical node
+	// Batch-fetch all NICs (avoids N+1 per-node API calls)
+	allNICs, err := nc.Client().MachineNICs.List(ctx)
+	if err != nil {
+		log.Printf("NetworkCollector: Error fetching NICs: %v", err)
+		return
+	}
+	nicMap := make(map[int][]vergeos.MachineNIC)
+	for _, nic := range allNICs {
+		nicMap[nic.Machine] = append(nicMap[nic.Machine], nic)
+	}
+
 	for _, node := range nodes {
 		clusterName := clusterMap[node.Cluster]
 		if clusterName == "" {
 			clusterName = fmt.Sprintf("cluster_%d", node.Cluster)
 		}
 
-		nics, err := nc.Client().MachineNICs.ListByMachine(ctx, node.Machine)
-		if err != nil {
-			log.Printf("NetworkCollector: Error fetching NICs for node %s: %v", node.Name, err)
-			continue
-		}
-
-		for _, nic := range nics {
+		for _, nic := range nicMap[node.Machine] {
 			labels := []string{systemName, clusterName, node.Name, nic.Name}
 
 			// Traffic counters

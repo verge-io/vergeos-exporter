@@ -424,6 +424,25 @@ func (tc *TenantCollector) collectTenantNodeMetrics(ctx context.Context, ch chan
 		return
 	}
 
+	// Batch-fetch machine statuses and stats (avoids N+1 per-node API calls)
+	allStatuses, err := tc.Client().MachineStatus.List(ctx)
+	if err != nil {
+		log.Printf("TenantCollector: Error batch-fetching machine statuses: %v", err)
+	}
+	statusMap := make(map[int]*vergeos.MachineStatus)
+	for i := range allStatuses {
+		statusMap[allStatuses[i].Machine] = &allStatuses[i]
+	}
+
+	allStats, err := tc.Client().MachineStats.List(ctx)
+	if err != nil {
+		log.Printf("TenantCollector: Error batch-fetching machine stats: %v", err)
+	}
+	statsMap := make(map[int]*vergeos.MachineStats)
+	for i := range allStats {
+		statsMap[allStats[i].Machine] = &allStats[i]
+	}
+
 	// Count nodes per tenant
 	nodeCounts := make(map[int]int)
 
@@ -458,15 +477,10 @@ func (tc *TenantCollector) collectTenantNodeMetrics(ctx context.Context, ch chan
 			systemName, tName, node.Name,
 		)
 
-		// Runtime metrics from MachineStatus
+		// Runtime metrics from pre-fetched machine status/stats
 		machineID := int(node.Machine)
 		if machineID > 0 {
-			status, err := tc.Client().MachineStatus.Get(ctx, machineID)
-			if err != nil {
-				if !vergeos.IsNotFoundError(err) {
-					log.Printf("TenantCollector: Error fetching machine status for node %s: %v", node.Name, err)
-				}
-			} else {
+			if status, ok := statusMap[machineID]; ok {
 				ch <- prometheus.MustNewConstMetric(
 					tc.tenantNodeRunning, prometheus.GaugeValue,
 					boolToFloat64(status.Running),
@@ -474,13 +488,7 @@ func (tc *TenantCollector) collectTenantNodeMetrics(ctx context.Context, ch chan
 				)
 			}
 
-			// CPU/RAM usage from MachineStats
-			stats, err := tc.Client().MachineStats.GetByMachine(ctx, machineID)
-			if err != nil {
-				if !vergeos.IsNotFoundError(err) {
-					log.Printf("TenantCollector: Error fetching machine stats for node %s: %v", node.Name, err)
-				}
-			} else {
+			if stats, ok := statsMap[machineID]; ok {
 				ch <- prometheus.MustNewConstMetric(
 					tc.tenantNodeCPUUsagePct, prometheus.GaugeValue,
 					float64(stats.TotalCPU),
