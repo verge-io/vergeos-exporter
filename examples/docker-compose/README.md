@@ -51,7 +51,6 @@ This stack deploys three interconnected services:
 
    This script will:
    - Pull the latest images
-   - Build the VergeOS exporter
    - Start all services
    - Display access URLs for all services (both localhost and network IP)
 
@@ -59,21 +58,10 @@ This stack deploys three interconnected services:
 
 1. **Configure your environment** (same as above)
 
-2. **Pull the latest images**
+2. **Pull images and start the stack**
 
    ```bash
    docker compose pull
-   ```
-
-3. **Build the VergeOS exporter**
-
-   ```bash
-   docker compose build --no-cache --pull vergeos-exporter
-   ```
-
-4. **Start the stack**
-
-   ```bash
    docker compose up -d
    ```
 
@@ -100,15 +88,8 @@ Once running, you can access:
 | `VERGE_URL` | VergeOS instance URL | Required |
 | `VERGE_USERNAME` | VergeOS username | Required |
 | `VERGE_PASSWORD` | VergeOS password | Required |
-| `EXPORTER_VERSION` | Exporter version to use | `1.1.9` |
-| `EXPORTER_ARCH` | Architecture (`x86_64` or `arm64`) | `arm64` |
+| `EXPORTER_VERSION` | Exporter image tag | `latest` |
 | `GRAFANA_ADMIN_PASSWORD` | Grafana admin password | `admin` |
-
-### Architecture Selection
-
-The `EXPORTER_ARCH` variable should match your host system:
-- `x86_64` - For Intel/AMD processors
-- `arm64` - For Apple Silicon (M1/M2/M3) or AWS Graviton
 
 ### Data Retention
 
@@ -131,7 +112,7 @@ Modify these in `docker-compose.yml` under the `prometheus` service commands if 
 │       ├── datasources/        # Pre-configured Prometheus datasource
 │       └── dashboards/         # Dashboard definitions
 └── vergeos-exporter/
-    └── Dockerfile              # Exporter container build
+    └── Dockerfile              # Offline/manual exporter build (optional)
 ```
 
 ## Managing the Stack
@@ -168,10 +149,11 @@ docker compose down -v
 docker compose restart vergeos-exporter
 ```
 
-### Rebuild after changes
+### Pull latest images
 
 ```bash
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 ## Troubleshooting
@@ -200,11 +182,11 @@ Ensure the VergeOS user has sufficient permissions to query system metrics.
 
 To upgrade to a new version:
 
-1. Update `EXPORTER_VERSION` in `.env`
-2. Rebuild and restart:
+1. Update `EXPORTER_VERSION` in `.env` (or leave as `latest`)
+2. Pull and restart:
 
    ```bash
-   docker compose build --no-cache vergeos-exporter
+   docker compose pull vergeos-exporter
    docker compose up -d vergeos-exporter
    ```
 
