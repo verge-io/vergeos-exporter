@@ -69,7 +69,7 @@ func TestNodeCollector(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewNodeCollector(client)
+	collector := collectors.NewNodeCollector(client, TestScrapeTimeout)
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
@@ -280,7 +280,7 @@ func TestNodeCollector_StaleMetrics(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewNodeCollector(client)
+	collector := collectors.NewNodeCollector(client, TestScrapeTimeout)
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
@@ -358,7 +358,7 @@ func TestNodeCollector_MultipleClusters(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewNodeCollector(client)
+	collector := collectors.NewNodeCollector(client, TestScrapeTimeout)
 
 	t.Run("nodes_total_per_cluster", func(t *testing.T) {
 		expected := `

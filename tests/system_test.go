@@ -36,7 +36,7 @@ func TestSystemCollector(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewSystemCollector(client)
+	collector := collectors.NewSystemCollector(client, TestScrapeTimeout)
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
@@ -142,7 +142,7 @@ func TestSystemCollector_StaleMetrics(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewSystemCollector(client)
+	collector := collectors.NewSystemCollector(client, TestScrapeTimeout)
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
@@ -213,7 +213,7 @@ func TestSystemCollector_DifferentVersion(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewSystemCollector(client)
+	collector := collectors.NewSystemCollector(client, TestScrapeTimeout)
 
 	t.Run("different_system_name", func(t *testing.T) {
 		expected := `

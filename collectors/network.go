@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	vergeos "github.com/verge-io/goVergeOS"
@@ -25,11 +26,11 @@ type NetworkCollector struct {
 }
 
 // NewNetworkCollector creates a new NetworkCollector.
-func NewNetworkCollector(client *vergeos.Client) *NetworkCollector {
+func NewNetworkCollector(client *vergeos.Client, scrapeTimeout time.Duration) *NetworkCollector {
 	nicLabels := []string{"system_name", "cluster", "node_name", "interface"}
 
 	return &NetworkCollector{
-		BaseCollector: *NewBaseCollector(client),
+		BaseCollector: *NewBaseCollector(client, scrapeTimeout),
 		nicTxPackets: prometheus.NewDesc(
 			"vergeos_nic_tx_packets_total",
 			"Total transmitted packets",
@@ -72,7 +73,8 @@ func (nc *NetworkCollector) Collect(ch chan<- prometheus.Metric) {
 	nc.mutex.Lock()
 	defer nc.mutex.Unlock()
 
-	ctx := context.Background()
+	ctx, cancel := nc.ScrapeContext()
+	defer cancel()
 
 	// Get system name for labeling
 	systemName, err := nc.GetSystemName(ctx)

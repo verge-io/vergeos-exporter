@@ -1,9 +1,9 @@
 package collectors
 
 import (
-	"context"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	vergeos "github.com/verge-io/goVergeOS"
@@ -35,9 +35,9 @@ type ClusterCollector struct {
 }
 
 // NewClusterCollector creates a new ClusterCollector
-func NewClusterCollector(client *vergeos.Client) *ClusterCollector {
+func NewClusterCollector(client *vergeos.Client, scrapeTimeout time.Duration) *ClusterCollector {
 	return &ClusterCollector{
-		BaseCollector: *NewBaseCollector(client),
+		BaseCollector: *NewBaseCollector(client, scrapeTimeout),
 		clusterStatus: prometheus.NewDesc(
 			"vergeos_cluster_status",
 			"Cluster status (1=online, 0=offline)",
@@ -169,7 +169,8 @@ func (cc *ClusterCollector) Collect(ch chan<- prometheus.Metric) {
 	cc.mutex.Lock()
 	defer cc.mutex.Unlock()
 
-	ctx := context.Background()
+	ctx, cancel := cc.ScrapeContext()
+	defer cancel()
 
 	// Get system name using SDK
 	systemName, err := cc.GetSystemName(ctx)

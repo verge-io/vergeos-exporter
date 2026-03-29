@@ -97,7 +97,7 @@ func TestVMCollector(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewVMCollector(client)
+	collector := collectors.NewVMCollector(client, TestScrapeTimeout)
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
@@ -341,7 +341,7 @@ func TestVMCollector_SnapshotFiltering(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewVMCollector(client)
+	collector := collectors.NewVMCollector(client, TestScrapeTimeout)
 
 	t.Run("excludes_snapshots", func(t *testing.T) {
 		expected := `
@@ -417,7 +417,7 @@ func TestVMCollector_StaleMetrics(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewVMCollector(client)
+	collector := collectors.NewVMCollector(client, TestScrapeTimeout)
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)

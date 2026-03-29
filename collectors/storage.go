@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	vergeos "github.com/verge-io/goVergeOS"
@@ -65,13 +66,13 @@ type StorageCollector struct {
 }
 
 // NewStorageCollector creates a new StorageCollector.
-func NewStorageCollector(client *vergeos.Client) *StorageCollector {
+func NewStorageCollector(client *vergeos.Client, scrapeTimeout time.Duration) *StorageCollector {
 	tierLabels := []string{"system_name", "tier", "description"}
 	tierStatusLabels := []string{"system_name", "tier", "status"}
 	driveLabels := []string{"system_name", "node_name", "drive_name", "tier", "serial"}
 
 	sc := &StorageCollector{
-		BaseCollector: *NewBaseCollector(client),
+		BaseCollector: *NewBaseCollector(client, scrapeTimeout),
 
 		// VSAN tier capacity metrics
 		vsanCapacity: prometheus.NewDesc(
@@ -307,7 +308,8 @@ func (sc *StorageCollector) Collect(ch chan<- prometheus.Metric) {
 	sc.mutex.Lock()
 	defer sc.mutex.Unlock()
 
-	ctx := context.Background()
+	ctx, cancel := sc.ScrapeContext()
+	defer cancel()
 
 	// Get system name using SDK (via BaseCollector)
 	systemName, err := sc.GetSystemName(ctx)

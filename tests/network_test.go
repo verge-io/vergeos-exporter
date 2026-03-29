@@ -59,7 +59,7 @@ func TestNetworkCollector_NICMetrics(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewNetworkCollector(client)
+	collector := collectors.NewNetworkCollector(client, TestScrapeTimeout)
 
 	t.Run("tx_packets", func(t *testing.T) {
 		expected := `
@@ -129,7 +129,7 @@ func TestNetworkCollector_Describe(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewNetworkCollector(client)
+	collector := collectors.NewNetworkCollector(client, TestScrapeTimeout)
 
 	// Verify Describe sends exactly 5 descriptors
 	ch := make(chan *prometheus.Desc, 10)
@@ -190,7 +190,7 @@ func TestNetworkCollector_MultipleNodes(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewNetworkCollector(client)
+	collector := collectors.NewNetworkCollector(client, TestScrapeTimeout)
 
 	expected := `
 		# HELP vergeos_nic_tx_packets_total Total transmitted packets

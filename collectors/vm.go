@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	vergeos "github.com/verge-io/goVergeOS"
@@ -55,13 +56,13 @@ type VMCollector struct {
 }
 
 // NewVMCollector creates a new VMCollector
-func NewVMCollector(client *vergeos.Client) *VMCollector {
+func NewVMCollector(client *vergeos.Client, scrapeTimeout time.Duration) *VMCollector {
 	vmLabels := []string{"system_name", "cluster", "node", "vm_name", "vm_id"}
 	nicLabels := append(vmLabels, "nic_name")
 	diskLabels := append(vmLabels, "disk_name", "interface", "media")
 
 	return &VMCollector{
-		BaseCollector: *NewBaseCollector(client),
+		BaseCollector: *NewBaseCollector(client, scrapeTimeout),
 		vmCPUTotal: prometheus.NewDesc(
 			"vergeos_vm_cpu_total",
 			"Total CPU usage percentage",
@@ -214,7 +215,8 @@ func (vc *VMCollector) Collect(ch chan<- prometheus.Metric) {
 	vc.mutex.Lock()
 	defer vc.mutex.Unlock()
 
-	ctx := context.Background()
+	ctx, cancel := vc.ScrapeContext()
+	defer cancel()
 
 	systemName, err := vc.GetSystemName(ctx)
 	if err != nil {

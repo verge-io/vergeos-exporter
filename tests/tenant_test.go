@@ -121,7 +121,7 @@ func TestTenantCollector(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewTenantCollector(client)
+	collector := collectors.NewTenantCollector(client, TestScrapeTimeout)
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
@@ -360,7 +360,7 @@ func TestTenantCollector_SnapshotFiltering(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewTenantCollector(client)
+	collector := collectors.NewTenantCollector(client, TestScrapeTimeout)
 
 	// Verify only 1 tenant counted (snapshot excluded)
 	t.Run("total_excludes_snapshots", func(t *testing.T) {
@@ -438,7 +438,7 @@ func TestTenantCollector_StaleMetrics(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewTenantCollector(client)
+	collector := collectors.NewTenantCollector(client, TestScrapeTimeout)
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)

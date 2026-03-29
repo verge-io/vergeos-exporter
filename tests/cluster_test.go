@@ -41,7 +41,7 @@ func TestClusterCollector(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewClusterCollector(client)
+	collector := collectors.NewClusterCollector(client, TestScrapeTimeout)
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
@@ -226,7 +226,7 @@ func TestClusterCollector_MultipleClusters(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewClusterCollector(client)
+	collector := collectors.NewClusterCollector(client, TestScrapeTimeout)
 
 	// Verify clusters_total shows 2
 	t.Run("clusters_total", func(t *testing.T) {
@@ -320,7 +320,7 @@ func TestClusterCollector_StaleMetrics(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewClusterCollector(client)
+	collector := collectors.NewClusterCollector(client, TestScrapeTimeout)
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
@@ -393,7 +393,7 @@ func TestClusterCollector_OfflineCluster(t *testing.T) {
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
-	collector := collectors.NewClusterCollector(client)
+	collector := collectors.NewClusterCollector(client, TestScrapeTimeout)
 
 	t.Run("offline_cluster_status", func(t *testing.T) {
 		expected := `

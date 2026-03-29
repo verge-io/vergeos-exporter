@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	vergeos "github.com/verge-io/goVergeOS"
@@ -33,11 +34,11 @@ type NodeCollector struct {
 }
 
 // NewNodeCollector creates a new NodeCollector
-func NewNodeCollector(client *vergeos.Client) *NodeCollector {
+func NewNodeCollector(client *vergeos.Client, scrapeTimeout time.Duration) *NodeCollector {
 	nodeLabels := []string{"system_name", "cluster", "node_name"}
 
 	nc := &NodeCollector{
-		BaseCollector: *NewBaseCollector(client),
+		BaseCollector: *NewBaseCollector(client, scrapeTimeout),
 		nodesTotal: prometheus.NewDesc(
 			"vergeos_nodes_total",
 			"Total number of physical nodes",
@@ -122,7 +123,8 @@ func (nc *NodeCollector) Collect(ch chan<- prometheus.Metric) {
 	nc.mutex.Lock()
 	defer nc.mutex.Unlock()
 
-	ctx := context.Background()
+	ctx, cancel := nc.ScrapeContext()
+	defer cancel()
 
 	// Get system name using SDK
 	systemName, err := nc.GetSystemName(ctx)

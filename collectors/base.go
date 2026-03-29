@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	vergeos "github.com/verge-io/goVergeOS"
 )
@@ -13,17 +14,26 @@ type BaseCollector struct {
 	// SDK client for API operations
 	client *vergeos.Client
 
+	// Timeout for scrape operations
+	scrapeTimeout time.Duration
+
 	// Cached system name
 	systemName string
 
 	mutex sync.Mutex
 }
 
-// NewBaseCollector creates a new BaseCollector with SDK client
-func NewBaseCollector(client *vergeos.Client) *BaseCollector {
+// NewBaseCollector creates a new BaseCollector with SDK client and scrape timeout
+func NewBaseCollector(client *vergeos.Client, scrapeTimeout time.Duration) *BaseCollector {
 	return &BaseCollector{
-		client: client,
+		client:        client,
+		scrapeTimeout: scrapeTimeout,
 	}
+}
+
+// ScrapeContext returns a context with the configured scrape timeout.
+func (bc *BaseCollector) ScrapeContext() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), bc.scrapeTimeout)
 }
 
 // Client returns the SDK client for direct access by collectors

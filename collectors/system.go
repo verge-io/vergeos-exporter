@@ -1,9 +1,9 @@
 package collectors
 
 import (
-	"context"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	vergeos "github.com/verge-io/goVergeOS"
@@ -22,9 +22,9 @@ type SystemCollector struct {
 }
 
 // NewSystemCollector creates a new SystemCollector
-func NewSystemCollector(client *vergeos.Client) *SystemCollector {
+func NewSystemCollector(client *vergeos.Client, scrapeTimeout time.Duration) *SystemCollector {
 	return &SystemCollector{
-		BaseCollector: *NewBaseCollector(client),
+		BaseCollector: *NewBaseCollector(client, scrapeTimeout),
 		systemVersion: prometheus.NewDesc(
 			"vergeos_system_version",
 			"Current version of the VergeOS system (always 1, version in label)",
@@ -65,7 +65,8 @@ func (sc *SystemCollector) Collect(ch chan<- prometheus.Metric) {
 	sc.mutex.Lock()
 	defer sc.mutex.Unlock()
 
-	ctx := context.Background()
+	ctx, cancel := sc.ScrapeContext()
+	defer cancel()
 
 	// Get system name using BaseCollector (SDK)
 	systemName, err := sc.GetSystemName(ctx)

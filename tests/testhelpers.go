@@ -6,9 +6,13 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	vergeos "github.com/verge-io/goVergeOS"
 )
+
+// TestScrapeTimeout is the default scrape timeout used in tests
+const TestScrapeTimeout = 30 * time.Second
 
 // MockServerConfig holds configuration for the mock server
 type MockServerConfig struct {

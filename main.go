@@ -66,14 +66,14 @@ func main() {
 	}
 	log.Printf("Successfully connected to VergeOS system: %s", cloudName)
 
-	// Initialize collectors with SDK client
-	storageCollector := collectors.NewStorageCollector(client)
-	nodeCollector := collectors.NewNodeCollector(client)
-	clusterCollector := collectors.NewClusterCollector(client)
-	networkCollector := collectors.NewNetworkCollector(client)
-	systemCollector := collectors.NewSystemCollector(client)
-	tenantCollector := collectors.NewTenantCollector(client)
-	vmCollector := collectors.NewVMCollector(client)
+	// Initialize collectors with SDK client and scrape timeout
+	storageCollector := collectors.NewStorageCollector(client, *scrapeTimeout)
+	nodeCollector := collectors.NewNodeCollector(client, *scrapeTimeout)
+	clusterCollector := collectors.NewClusterCollector(client, *scrapeTimeout)
+	networkCollector := collectors.NewNetworkCollector(client, *scrapeTimeout)
+	systemCollector := collectors.NewSystemCollector(client, *scrapeTimeout)
+	tenantCollector := collectors.NewTenantCollector(client, *scrapeTimeout)
+	vmCollector := collectors.NewVMCollector(client, *scrapeTimeout)
 
 	prometheus.MustRegister(nodeCollector)
 	prometheus.MustRegister(storageCollector)

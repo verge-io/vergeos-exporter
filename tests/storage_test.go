@@ -83,7 +83,7 @@ func TestStorageTierMetrics(t *testing.T) {
 
 	registry := prometheus.NewRegistry()
 	sdkClient := CreateTestSDKClient(t, mockServer.URL)
-	sc := collectors.NewStorageCollector(sdkClient)
+	sc := collectors.NewStorageCollector(sdkClient, TestScrapeTimeout)
 	registry.MustRegister(sc)
 
 	// Test tier capacity metrics
@@ -233,7 +233,7 @@ func TestPhantomTierFiltering(t *testing.T) {
 
 	registry := prometheus.NewRegistry()
 	sdkClient := CreateTestSDKClient(t, mockServer.URL)
-	sc := collectors.NewStorageCollector(sdkClient)
+	sc := collectors.NewStorageCollector(sdkClient, TestScrapeTimeout)
 	registry.MustRegister(sc)
 
 	expectedCapacity := `
@@ -305,7 +305,7 @@ func TestStaleMetricsFix(t *testing.T) {
 
 	registry := prometheus.NewRegistry()
 	sdkClient := CreateTestSDKClient(t, mockServer.URL)
-	sc := collectors.NewStorageCollector(sdkClient)
+	sc := collectors.NewStorageCollector(sdkClient, TestScrapeTimeout)
 	registry.MustRegister(sc)
 
 	expectedOnline := `
@@ -372,7 +372,7 @@ func TestNoTiersConfigured(t *testing.T) {
 
 	registry := prometheus.NewRegistry()
 	sdkClient := CreateTestSDKClient(t, mockServer.URL)
-	sc := collectors.NewStorageCollector(sdkClient)
+	sc := collectors.NewStorageCollector(sdkClient, TestScrapeTimeout)
 	registry.MustRegister(sc)
 
 	metrics, err := registry.Gather()
@@ -431,7 +431,7 @@ func TestDriveMetrics(t *testing.T) {
 
 	registry := prometheus.NewRegistry()
 	sdkClient := CreateTestSDKClient(t, mockServer.URL)
-	sc := collectors.NewStorageCollector(sdkClient)
+	sc := collectors.NewStorageCollector(sdkClient, TestScrapeTimeout)
 	registry.MustRegister(sc)
 
 	t.Run("drive_temperature", func(t *testing.T) {

@@ -48,7 +48,7 @@ func createIntegrationClient(t *testing.T) *vergeos.Client {
 
 func TestIntegrationStorageCollector(t *testing.T) {
 	client := createIntegrationClient(t)
-	sc := collectors.NewStorageCollector(client)
+	sc := collectors.NewStorageCollector(client, TestScrapeTimeout)
 
 	metrics := collectMetrics(t, sc)
 
@@ -75,7 +75,7 @@ func TestIntegrationStorageCollector(t *testing.T) {
 
 func TestIntegrationNodeCollector(t *testing.T) {
 	client := createIntegrationClient(t)
-	nc := collectors.NewNodeCollector(client)
+	nc := collectors.NewNodeCollector(client, TestScrapeTimeout)
 
 	metrics := collectMetrics(t, nc)
 
@@ -102,7 +102,7 @@ func TestIntegrationNodeCollector(t *testing.T) {
 
 func TestIntegrationTenantCollector(t *testing.T) {
 	client := createIntegrationClient(t)
-	tc := collectors.NewTenantCollector(client)
+	tc := collectors.NewTenantCollector(client, TestScrapeTimeout)
 
 	metrics := collectMetrics(t, tc)
 
@@ -187,7 +187,7 @@ func TestIntegrationTenantCollector(t *testing.T) {
 
 func TestIntegrationVMCollector(t *testing.T) {
 	client := createIntegrationClient(t)
-	vc := collectors.NewVMCollector(client)
+	vc := collectors.NewVMCollector(client, TestScrapeTimeout)
 
 	metrics := collectMetrics(t, vc)
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	vergeos "github.com/verge-io/goVergeOS"
@@ -54,14 +55,14 @@ type TenantCollector struct {
 }
 
 // NewTenantCollector creates a new TenantCollector.
-func NewTenantCollector(client *vergeos.Client) *TenantCollector {
+func NewTenantCollector(client *vergeos.Client, scrapeTimeout time.Duration) *TenantCollector {
 	tenantLabels := []string{"system_name", "tenant_name"}
 	tenantNodeLabels := []string{"system_name", "tenant_name", "node_name"}
 	tenantStorageLabels := []string{"system_name", "tenant_name", "tier"}
 	tenantStatusLabels := []string{"system_name", "tenant_name", "status"}
 
 	return &TenantCollector{
-		BaseCollector: *NewBaseCollector(client),
+		BaseCollector: *NewBaseCollector(client, scrapeTimeout),
 
 		// Tenant-level metrics
 		tenantsTotal: prometheus.NewDesc(
@@ -245,7 +246,8 @@ func (tc *TenantCollector) Collect(ch chan<- prometheus.Metric) {
 	tc.mutex.Lock()
 	defer tc.mutex.Unlock()
 
-	ctx := context.Background()
+	ctx, cancel := tc.ScrapeContext()
+	defer cancel()
 
 	systemName, err := tc.GetSystemName(ctx)
 	if err != nil {
