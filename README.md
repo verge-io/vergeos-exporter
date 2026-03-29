@@ -45,6 +45,28 @@ Note that the version number is included in the filename (e.g., vergeos-exporter
    ```
 3. Move the binary to your preferred location
 
+### Docker
+
+Multi-arch container images (amd64/arm64) are published to GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/verge-io/vergeos-exporter:latest
+```
+
+```bash
+docker run --rm -p 9888:9888 \
+  ghcr.io/verge-io/vergeos-exporter:latest \
+  -verge.url=https://your-vergeos-host \
+  -verge.username=your-user \
+  -verge.password=your-pass
+```
+
+Available tags:
+- `ghcr.io/verge-io/vergeos-exporter:latest` — most recent release
+- `ghcr.io/verge-io/vergeos-exporter:1.2.0` — specific version (no `v` prefix)
+
+See `examples/docker-compose/` for a complete monitoring stack with Prometheus and Grafana.
+
 ### Building from Source
 
 If you prefer to build from source:
@@ -277,3 +299,4 @@ git push origin v1.0.0
    - Build binaries for all supported platforms
    - Create a new GitHub release
    - Upload the binaries and checksums
+   - Build and push multi-arch Docker images to GHCR
