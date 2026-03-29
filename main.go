@@ -32,7 +32,7 @@ var (
 	vergeUsername = flag.String("verge.username", "", "Username for VergeOS API authentication")
 	vergePassword = flag.String("verge.password", "", "Password for VergeOS API authentication")
 	scrapeTimeout = flag.Duration("scrape.timeout", 30*time.Second, "Timeout for scraping VergeOS API")
-	insecure      = flag.Bool("insecure", true, "Skip TLS certificate verification (default: true since VergeOS typically uses self-signed certificates)")
+	insecure      = flag.Bool("insecure", false, "Skip TLS certificate verification (use for self-signed certificates)")
 )
 
 func main() {
