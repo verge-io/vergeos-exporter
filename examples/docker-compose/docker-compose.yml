@@ -47,16 +47,11 @@ services:
         ARCH: ${EXPORTER_ARCH:-x86_64}    # x86_64 or arm64
     container_name: vergeos-exporter
     restart: unless-stopped
-    environment:
-      VERGE_URL: ${VERGE_URL}
-      VERGE_USERNAME: ${VERGE_USERNAME}
-      VERGE_PASSWORD: ${VERGE_PASSWORD}
-      WEB_LISTEN: ":9888"
     command:
       - "-verge.url=${VERGE_URL}"
       - "-verge.username=${VERGE_USERNAME}"
       - "-verge.password=${VERGE_PASSWORD}"
-      - "-web.listen-address=${WEB_LISTEN}"
+      - "-web.listen-address=:9888"
     ports:
       - "9888:9888"
     networks:

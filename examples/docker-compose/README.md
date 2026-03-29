@@ -103,7 +103,6 @@ Once running, you can access:
 | `EXPORTER_VERSION` | Exporter version to use | `1.1.9` |
 | `EXPORTER_ARCH` | Architecture (`x86_64` or `arm64`) | `arm64` |
 | `GRAFANA_ADMIN_PASSWORD` | Grafana admin password | `admin` |
-| `WEB_LISTEN` | Exporter listen address | `:9888` |
 
 ### Architecture Selection
 
