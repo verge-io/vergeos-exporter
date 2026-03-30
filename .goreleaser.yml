@@ -37,8 +37,6 @@ archives:
 
 dockers_v2:
   - id: vergeos-exporter
-    ids:
-      - default
     dockerfile: Dockerfile
     images:
       - ghcr.io/verge-io/vergeos-exporter
