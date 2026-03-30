@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	vergeos "github.com/verge-io/goVergeOS"
+	vergeos "github.com/verge-io/govergeos"
 )
 
 var _ prometheus.Collector = (*SystemCollector)(nil)

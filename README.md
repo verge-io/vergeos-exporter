@@ -247,17 +247,6 @@ This self-contained environment automatically retrieves the tagged binary releas
 
 - Go 1.23 or higher
 - Access to a VergeOS instance
-- The [goVergeOS](https://github.com/verge-io/goVergeOS) SDK cloned alongside this repo (at `../goVergeOS`)
-
-### Local Setup
-
-The exporter depends on the goVergeOS SDK. For local development, add a `replace` directive to `go.mod`:
-
-```
-replace github.com/verge-io/goVergeOS v0.2.0 => ../goVergeOS
-```
-
-This is not committed — remove it before pushing.
 
 ### Building
 

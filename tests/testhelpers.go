@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	vergeos "github.com/verge-io/goVergeOS"
+	vergeos "github.com/verge-io/govergeos"
 )
 
 // TestScrapeTimeout is the default scrape timeout used in tests

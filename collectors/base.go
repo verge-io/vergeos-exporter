@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	vergeos "github.com/verge-io/goVergeOS"
+	vergeos "github.com/verge-io/govergeos"
 )
 
 // BaseCollector provides common functionality for all collectors

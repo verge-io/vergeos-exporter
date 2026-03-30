@@ -14,7 +14,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	vergeos "github.com/verge-io/goVergeOS"
+	vergeos "github.com/verge-io/govergeos"
 
 	"vergeos-exporter/collectors"
 )

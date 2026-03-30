@@ -12,7 +12,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
-	vergeos "github.com/verge-io/goVergeOS"
+	vergeos "github.com/verge-io/govergeos"
 )
 
 // loadTestEnv loads credentials from .env (if present) or environment variables.
