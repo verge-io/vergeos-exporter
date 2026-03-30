@@ -1,87 +1,82 @@
 package collectors
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"sync"
+	"time"
+
+	vergeos "github.com/verge-io/govergeos"
 )
 
 // BaseCollector provides common functionality for all collectors
 type BaseCollector struct {
-	url        string
-	httpClient *http.Client
-	username   string
-	password   string
-	mutex      sync.Mutex
+	// SDK client for API operations
+	client *vergeos.Client
+
+	// Timeout for scrape operations
+	scrapeTimeout time.Duration
+
+	// Cached system name
+	systemName string
+
+	mutex sync.Mutex
 }
 
-// AuthResponse represents the API response for authentication
-type AuthResponse struct {
-	Location string `json:"location"`
-	DBPath   string `json:"dbpath"`
-	Row      int    `json:"$row"`
-	Key      string `json:"$key"`
+// NewBaseCollector creates a new BaseCollector with SDK client and scrape timeout
+func NewBaseCollector(client *vergeos.Client, scrapeTimeout time.Duration) *BaseCollector {
+	return &BaseCollector{
+		client:        client,
+		scrapeTimeout: scrapeTimeout,
+	}
 }
 
-// makeRequest creates an HTTP request with proper authentication
-func (bc *BaseCollector) makeRequest(method, path string) (*http.Request, error) {
+// ScrapeContext returns a context with the configured scrape timeout.
+func (bc *BaseCollector) ScrapeContext() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), bc.scrapeTimeout)
+}
+
+// Client returns the SDK client for direct access by collectors
+func (bc *BaseCollector) Client() *vergeos.Client {
+	return bc.client
+}
+
+// GetSystemName retrieves the system name using the SDK with caching
+// This method provides typed error handling for auth/permission issues (Bug #34)
+func (bc *BaseCollector) GetSystemName(ctx context.Context) (string, error) {
 	bc.mutex.Lock()
 	defer bc.mutex.Unlock()
 
-	req, err := http.NewRequest(method, bc.url+path, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %v", err)
+	// Return cached value if available
+	if bc.systemName != "" {
+		return bc.systemName, nil
 	}
 
-	// Use basic auth for all requests
-	req.SetBasicAuth(bc.username, bc.password)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-JSON-Non-Compact", "1")
+	// Fetch using SDK
+	name, err := bc.client.Settings.GetCloudName(ctx)
+	if err != nil {
+		// Provide typed error handling for better debugging
+		if vergeos.IsAuthError(err) {
+			return "", fmt.Errorf("authentication failed (check credentials): %w", err)
+		}
+		return "", fmt.Errorf("failed to get system name: %w", err)
+	}
 
-	return req, nil
+	bc.systemName = name
+	return name, nil
 }
 
-// authenticate is no longer needed since we use basic auth
-func (bc *BaseCollector) authenticate(username, password string) error {
-	bc.username = username
-	bc.password = password
-	return nil
-}
-
-// getSystemName retrieves the system name from the settings API
-func (bc *BaseCollector) getSystemName() (string, error) {
-	// Get system name
-	req, err := bc.makeRequest("GET", "/api/v4/settings?fields=most&filter=key%20eq%20%22cloud_name%22")
+// BuildClusterMap creates a mapping from cluster ID to cluster name.
+func (bc *BaseCollector) BuildClusterMap(ctx context.Context) (map[int]string, error) {
+	clusters, err := bc.client.Clusters.List(ctx)
 	if err != nil {
-		return "", fmt.Errorf("error creating system name request: %v", err)
+		return nil, fmt.Errorf("failed to list clusters: %w", err)
 	}
 
-	resp, err := bc.httpClient.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("error getting system name: %v", err)
-	}
-	defer resp.Body.Close()
-
-	// Read the response body
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("error reading response body: %v", err)
+	clusterMap := make(map[int]string)
+	for _, cluster := range clusters {
+		clusterMap[int(cluster.Key)] = cluster.Name
 	}
 
-	// Create a new reader with the same bytes for JSON decoding
-	var systemNameResp []struct {
-		Value string `json:"value"`
-	}
-	if err := json.NewDecoder(bytes.NewReader(bodyBytes)).Decode(&systemNameResp); err != nil {
-		return "", fmt.Errorf("error decoding system name response: %v", err)
-	}
-
-	if len(systemNameResp) == 0 {
-		return "", fmt.Errorf("no system name found in response")
-	}
-
-	return systemNameResp[0].Value, nil
+	return clusterMap, nil
 }

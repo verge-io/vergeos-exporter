@@ -32,9 +32,9 @@
 ### Drive Health Metrics
 - **Drive Read Errors**: `vergeos_drive_read_errors` (Counter, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
 - **Drive Write Errors**: `vergeos_drive_write_errors` (Counter, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
-- **Drive Repairs**: `vergeos_drive_repairs` (Counter, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
+- **Drive Repairs**: `vergeos_drive_repairs` (Gauge, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
 - **Drive Throttle**: `vergeos_drive_throttle` (Gauge, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
-- **Drive Wear Level**: `vergeos_drive_wear_level` (Counter, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
+- **Drive Wear Level**: `vergeos_drive_wear_level` (Gauge, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
 - **Drive Power On Hours**: `vergeos_drive_power_on_hours` (Counter, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
 - **Drive Reallocated Sectors**: `vergeos_drive_reallocated_sectors` (Counter, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
 - **Drive Temperature**: `vergeos_drive_temperature` (Gauge, labeled by `system_name`, `node_name`, `drive_name`, `tier`, and `serial`)
@@ -54,8 +54,6 @@ All drive metrics include the following labels:
 - **NIC Receive Packets**: `vergeos_nic_rx_packets_total` (Counter, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
 - **NIC Transmit Bytes**: `vergeos_nic_tx_bytes_total` (Counter, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
 - **NIC Receive Bytes**: `vergeos_nic_rx_bytes_total` (Counter, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
-- **NIC Transmit Errors**: `vergeos_nic_tx_errors_total` (Counter, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
-- **NIC Receive Errors**: `vergeos_nic_rx_errors_total` (Counter, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
 - **NIC Status**: `vergeos_nic_status` (Gauge, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
 ---
 ## VSAN Tiers Overview
@@ -92,6 +90,7 @@ All drive metrics include the following labels:
 - **Cluster Cores Per Unit**: `vergeos_cluster_cores_per_unit` (Gauge, labeled by `system_name` and `cluster`)
 - **Cluster Target RAM Percentage**: `vergeos_cluster_target_ram_pct` (Gauge, labeled by `system_name` and `cluster`)
 - **Cluster Status**: `vergeos_cluster_status` (Gauge, labeled by `system_name` and `cluster`, `1` for online, `0` for offline)
+- **Cluster Health**: `vergeos_cluster_health` (Gauge, labeled by `system_name` and `cluster`, `1` for healthy, `0` for unhealthy)
 
 ---
 ## Cluster Stats
@@ -107,8 +106,91 @@ All drive metrics include the following labels:
 - **Physical RAM Used (MB)**: `vergeos_cluster_phys_ram_used` (Gauge, labeled by `system_name` and `cluster`)
 
 ---
+## Tenant Metrics
+
+### Tenant Overview
+- **Total Tenants**: `vergeos_tenants_total` (Gauge, labeled by `system_name`)
+- **Tenant Running**: `vergeos_tenant_running` (Gauge, labeled by `system_name` and `tenant_name`, 1=running, 0=not running)
+- **Tenant Status**: `vergeos_tenant_status` (Gauge, labeled by `system_name`, `tenant_name`, and `status`, always 1 — info-style metric)
+- **Tenant Nodes Total**: `vergeos_tenant_nodes_total` (Gauge, labeled by `system_name` and `tenant_name`)
+
+### Tenant Resource Usage (from TenantStatsHistoryShort)
+- **CPU Usage Percentage**: `vergeos_tenant_cpu_usage_pct` (Gauge, labeled by `system_name` and `tenant_name`)
+- **CPU Cores**: `vergeos_tenant_cpu_cores` (Gauge, labeled by `system_name` and `tenant_name`)
+- **RAM Used (bytes)**: `vergeos_tenant_ram_used_bytes` (Gauge, labeled by `system_name` and `tenant_name`)
+- **RAM Allocated (bytes)**: `vergeos_tenant_ram_allocated_bytes` (Gauge, labeled by `system_name` and `tenant_name`)
+- **RAM Usage Percentage**: `vergeos_tenant_ram_usage_pct` (Gauge, labeled by `system_name` and `tenant_name`)
+- **IP Count**: `vergeos_tenant_ip_count` (Gauge, labeled by `system_name` and `tenant_name`)
+
+### Tenant GPU Metrics (only emitted when GPU resources exist)
+- **vGPUs Used**: `vergeos_tenant_vgpus_used` (Gauge, labeled by `system_name` and `tenant_name`)
+- **vGPUs Total**: `vergeos_tenant_vgpus_total` (Gauge, labeled by `system_name` and `tenant_name`)
+- **GPUs Used**: `vergeos_tenant_gpus_used` (Gauge, labeled by `system_name` and `tenant_name`)
+- **GPUs Total**: `vergeos_tenant_gpus_total` (Gauge, labeled by `system_name` and `tenant_name`)
+
+### Tenant Node Metrics
+- **Node CPU Cores**: `vergeos_tenant_node_cpu_cores` (Gauge, labeled by `system_name`, `tenant_name`, and `node_name`)
+- **Node RAM (bytes)**: `vergeos_tenant_node_ram_bytes` (Gauge, labeled by `system_name`, `tenant_name`, and `node_name`)
+- **Node Enabled**: `vergeos_tenant_node_enabled` (Gauge, labeled by `system_name`, `tenant_name`, and `node_name`, 1=enabled, 0=disabled)
+- **Node Running**: `vergeos_tenant_node_running` (Gauge, labeled by `system_name`, `tenant_name`, and `node_name`, 1=running, 0=not running)
+- **Node CPU Usage Percentage**: `vergeos_tenant_node_cpu_usage_pct` (Gauge, labeled by `system_name`, `tenant_name`, and `node_name`)
+- **Node RAM Used (bytes)**: `vergeos_tenant_node_ram_used_bytes` (Gauge, labeled by `system_name`, `tenant_name`, and `node_name`)
+- **Node RAM Usage Percentage**: `vergeos_tenant_node_ram_usage_pct` (Gauge, labeled by `system_name`, `tenant_name`, and `node_name`)
+
+### Tenant Storage Metrics
+- **Storage Provisioned (bytes)**: `vergeos_tenant_storage_provisioned_bytes` (Gauge, labeled by `system_name`, `tenant_name`, and `tier`)
+- **Storage Used (bytes)**: `vergeos_tenant_storage_used_bytes` (Gauge, labeled by `system_name`, `tenant_name`, and `tier`)
+- **Storage Allocated (bytes)**: `vergeos_tenant_storage_allocated_bytes` (Gauge, labeled by `system_name`, `tenant_name`, and `tier`)
+- **Storage Usage Percentage**: `vergeos_tenant_storage_used_pct` (Gauge, labeled by `system_name`, `tenant_name`, and `tier`)
+
+### Tenant Network Metrics
+- **Layer 2 Networks Total**: `vergeos_tenant_layer2_networks_total` (Gauge, labeled by `system_name` and `tenant_name`)
+
+---
+## VM Metrics
+
+All VM metrics include labels: `system_name`, `cluster`, `node`, `vm_name`, `vm_id`. Powered-off VMs have an empty `node` label. Snapshot VMs are excluded.
+
+### VM State Metrics
+- **VM Running**: `vergeos_vm_running` (Gauge, 1=running, 0=not running)
+- **VM Enabled**: `vergeos_vm_enabled` (Gauge, 1=enabled, 0=disabled)
+
+### VM Config Metrics
+- **CPU Cores**: `vergeos_vm_cpu_cores` (Gauge, configured CPU cores)
+- **RAM**: `vergeos_vm_ram_bytes` (Gauge, configured RAM in bytes)
+
+### VM CPU Metrics
+- **Total CPU Usage**: `vergeos_vm_cpu_total` (Gauge, percentage 0-100)
+- **User CPU Usage**: `vergeos_vm_cpu_user` (Gauge, percentage 0-100)
+- **System CPU Usage**: `vergeos_vm_cpu_system` (Gauge, percentage 0-100)
+- **IO Wait CPU Usage**: `vergeos_vm_cpu_iowait` (Gauge, percentage 0-100)
+
+Powered-off VMs report 0 for all CPU metrics.
+
+### VM NIC Metrics
+Additional label: `nic_name`. Only emitted for VMs with NIC stats available.
+- **NIC TX Bytes**: `vergeos_vm_nic_tx_bytes_total` (Counter, total transmitted bytes)
+- **NIC RX Bytes**: `vergeos_vm_nic_rx_bytes_total` (Counter, total received bytes)
+- **NIC TX Packets**: `vergeos_vm_nic_tx_packets_total` (Counter, total transmitted packets)
+- **NIC RX Packets**: `vergeos_vm_nic_rx_packets_total` (Counter, total received packets)
+
+### VM Disk Config Metrics
+Additional labels: `disk_name`, `interface`, `media`. Emitted for all VM drives.
+- **Disk Size**: `vergeos_vm_disk_size_bytes` (Gauge, configured disk size in bytes)
+- **Disk Used**: `vergeos_vm_disk_used_bytes` (Gauge, actual used space in bytes)
+
+### VM Disk I/O Metrics
+Same labels as disk config. Only emitted when drive stats are available (running VMs).
+- **Disk Read Ops**: `vergeos_vm_disk_read_ops_total` (Counter, total read operations)
+- **Disk Write Ops**: `vergeos_vm_disk_write_ops_total` (Counter, total write operations)
+- **Disk Read Bytes**: `vergeos_vm_disk_read_bytes_total` (Counter, total bytes read)
+- **Disk Write Bytes**: `vergeos_vm_disk_write_bytes_total` (Counter, total bytes written)
+- **Disk Utilization**: `vergeos_vm_disk_util` (Gauge, I/O utilization percentage)
+- **Disk Service Time**: `vergeos_vm_disk_service_time` (Gauge, average I/O service time in milliseconds)
+
+---
 ## System Version Metrics
 - **System Version**: `vergeos_system_version` (Gauge, labeled by `system_name` and `version`, always 1)
 - **Latest Available System Version**: `vergeos_system_version_latest` (Gauge, labeled by `system_name` and `version`, always 1)
 - **System Branch**: `vergeos_system_branch` (Gauge, labeled by `system_name` and `branch`, always 1)
-- **System Info**: `vergeos_system_info` (Gauge, labeled by `system_name`, `current_version`, `latest_version`, and `branch`, always 1)
+- **System Info**: `vergeos_system_info` (Gauge, labeled by `system_name`, `current_version`, `latest_version`, `branch`, and `hash`, always 1)

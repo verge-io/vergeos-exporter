@@ -23,6 +23,10 @@ A Prometheus exporter for VergeOS that collects metrics about VSAN tiers, cluste
   - Network throughput and latency
   - Process and service status
 
+## Metrics Format
+
+The exporter supports both standard Prometheus text format and [OpenMetrics](https://openmetrics.io/) format via content negotiation. Prometheus 2.5.0+ will automatically request OpenMetrics format. Older scrapers continue to receive standard Prometheus text format — no configuration required.
+
 ## Installation
 
 ### Prebuilt Binaries
@@ -40,6 +44,28 @@ Note that the version number is included in the filename (e.g., vergeos-exporter
    # Extract the .zip file using Windows Explorer
    ```
 3. Move the binary to your preferred location
+
+### Docker
+
+Multi-arch container images (amd64/arm64) are published to GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/verge-io/vergeos-exporter:latest
+```
+
+```bash
+docker run --rm -p 9888:9888 \
+  ghcr.io/verge-io/vergeos-exporter:latest \
+  -verge.url=https://your-vergeos-host \
+  -verge.username=your-user \
+  -verge.password=your-pass
+```
+
+Available tags:
+- `ghcr.io/verge-io/vergeos-exporter:latest` — most recent release
+- `ghcr.io/verge-io/vergeos-exporter:1.2.0` — specific version (no `v` prefix)
+
+See `examples/docker-compose/` for a complete monitoring stack with Prometheus and Grafana.
 
 ### Building from Source
 
@@ -61,10 +87,12 @@ go build -o vergeos-exporter
 
 - `-web.listen-address`: Address to listen on for web interface and telemetry (default: ":9888")
 - `-web.telemetry-path`: Path under which to expose metrics
-- `-verge.url`: VergeOS API URL (default: "https://localhost")
-- `-verge.username`: VergeOS API username (required)
-- `-verge.password`: VergeOS API password (required)
+- `-verge.url`: VergeOS API URL (default: "https://localhost"). Also: `VERGE_URL` env var
+- `-verge.username`: VergeOS API username (required). Also: `VERGE_USERNAME` env var
+- `-verge.password`: VergeOS API password (required). Also: `VERGE_PASSWORD` env var
 - `-scrape.timeout`: Timeout for scraping VergeOS API (default: 30s)
+
+Environment variables are recommended over CLI flags in production to avoid exposing credentials in the process list.
 
 ### Example
 
@@ -217,7 +245,7 @@ This self-contained environment automatically retrieves the tagged binary releas
 
 ### Prerequisites
 
-- Go 1.21 or higher
+- Go 1.23 or higher
 - Access to a VergeOS instance
 
 ### Building
@@ -228,8 +256,24 @@ go build
 
 ### Testing
 
+Unit tests use mock servers and don't require a live VergeOS instance:
+
 ```bash
 go test ./...
+```
+
+Integration tests require credentials. Set them via environment variables or a `.env` file in the repo root (gitignored):
+
+```bash
+VERGE_URL=https://your-instance.example.com
+VERGE_USERNAME=your-user
+VERGE_PASSWORD=your-pass
+```
+
+Then run with the `integration` build tag:
+
+```bash
+go test -tags integration ./tests -v
 ```
 
 ### Creating a Release
@@ -244,3 +288,4 @@ git push origin v1.0.0
    - Build binaries for all supported platforms
    - Create a new GitHub release
    - Upload the binaries and checksums
+   - Build and push multi-arch Docker images to GHCR
