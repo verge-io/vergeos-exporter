@@ -1,4 +1,4 @@
-# VergeOS Exporter
+# VergeOS Exporter (ioMetrics)
 
 A Prometheus exporter for VergeOS that collects metrics about VSAN tiers, clusters, nodes, and storage.
 
