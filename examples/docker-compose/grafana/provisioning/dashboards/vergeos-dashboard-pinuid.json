@@ -2094,8 +2094,10 @@
     "list": [
       {
         "current": {
-          "text": "fms-1",
-          "value": "fms-1"
+          "text": "All",
+          "value": [
+            "$__all"
+          ]
         },
         "definition": "label_values(vergeos_cluster_total_nodes,system_name)",
         "label": "System",
@@ -2108,7 +2110,8 @@
         },
         "refresh": 1,
         "regex": "",
-        "type": "query"
+        "type": "query",
+        "includeAll": true
       },
       {
         "current": {
@@ -2155,7 +2158,7 @@
     ]
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},
