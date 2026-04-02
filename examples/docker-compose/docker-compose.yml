@@ -26,6 +26,7 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/vergeos-dashboard-pinuid.json
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
@@ -46,6 +47,7 @@ services:
       - "-verge.username=${VERGE_USERNAME}"
       - "-verge.password=${VERGE_PASSWORD}"
       - "-web.listen-address=:9888"
+      - "-insecure=${INSECURE:-false}"
     ports:
       - "9888:9888"
     networks:

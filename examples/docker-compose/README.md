@@ -32,6 +32,7 @@ This stack deploys three interconnected services:
    VERGE_URL=https://your-vergeos-host
    VERGE_USERNAME=your-username
    VERGE_PASSWORD=your-password
+   #INSECURE=true
    GRAFANA_ADMIN_PASSWORD=secure-password
    ```
 
@@ -88,6 +89,7 @@ Once running, you can access:
 | `VERGE_URL` | VergeOS instance URL | Required |
 | `VERGE_USERNAME` | VergeOS username | Required |
 | `VERGE_PASSWORD` | VergeOS password | Required |
+| `INSECURE` | Skip TLS certificate verification (self-signed certs) | `false` |
 | `EXPORTER_VERSION` | Exporter image tag | `latest` |
 | `GRAFANA_ADMIN_PASSWORD` | Grafana admin password | `admin` |
 
@@ -142,6 +144,8 @@ docker compose down
 ```bash
 docker compose down -v
 ```
+
+This removes Prometheus metrics data and Grafana settings (dashboards, passwords, etc.). Use this when configuration changes aren't taking effect or you want to start fresh.
 
 ### Restart a specific service
 
