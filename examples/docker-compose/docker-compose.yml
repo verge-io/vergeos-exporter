@@ -47,7 +47,7 @@ services:
       - "-verge.username=${VERGE_USERNAME}"
       - "-verge.password=${VERGE_PASSWORD}"
       - "-web.listen-address=:9888"
-      - "-insecure=${INSECURE:-true}"
+      - "-insecure=${INSECURE:-false}"
     ports:
       - "9888:9888"
     networks:

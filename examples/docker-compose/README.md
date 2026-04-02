@@ -32,7 +32,7 @@ This stack deploys three interconnected services:
    VERGE_URL=https://your-vergeos-host
    VERGE_USERNAME=your-username
    VERGE_PASSWORD=your-password
-   INSECURE=true
+   #INSECURE=true
    GRAFANA_ADMIN_PASSWORD=secure-password
    ```
 
@@ -89,7 +89,7 @@ Once running, you can access:
 | `VERGE_URL` | VergeOS instance URL | Required |
 | `VERGE_USERNAME` | VergeOS username | Required |
 | `VERGE_PASSWORD` | VergeOS password | Required |
-| `INSECURE` | Skip TLS certificate verification (self-signed certs) | `true` |
+| `INSECURE` | Skip TLS certificate verification (self-signed certs) | `false` |
 | `EXPORTER_VERSION` | Exporter image tag | `latest` |
 | `GRAFANA_ADMIN_PASSWORD` | Grafana admin password | `admin` |
 
