@@ -115,6 +115,8 @@ Modify these in `docker-compose.yml` under the `prometheus` service commands if 
 │   └── provisioning/
 │       ├── datasources/        # Pre-configured Prometheus datasource
 │       └── dashboards/         # Dashboard definitions
+└── vergeos-exporter/
+    └── Dockerfile              # Standalone build from GitHub Releases
 ```
 
 ## Managing the Stack
