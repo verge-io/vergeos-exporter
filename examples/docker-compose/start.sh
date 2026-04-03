@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # VergeOS Monitoring Stack Startup Script
-# Pulls images, builds, and starts the stack, then displays access URLs
+# Pulls images and starts the stack, then displays access URLs
 
 set -e
 
@@ -13,10 +13,6 @@ echo ""
 # Pull latest images
 echo "📦 Pulling latest images..."
 docker compose pull
-
-echo ""
-echo "🔨 Building vergeos-exporter..."
-docker compose build --no-cache --pull vergeos-exporter
 
 echo ""
 echo "🚀 Starting services..."

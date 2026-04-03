@@ -1,4 +1,5 @@
 {
+  "__elements": {},
   "annotations": {
     "list": [
       {
@@ -18,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 6,
+  "id": null,
   "links": [],
   "panels": [
     {
@@ -42,6 +43,70 @@
       "fieldConfig": {
         "defaults": {
           "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "id": 65,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "name",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "expr": "vergeos_system_version{system_name=~\"$system\"}",
+          "legendFormat": "v{{version}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "System Version",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
             "mode": "thresholds"
           },
           "mappings": [],
@@ -49,8 +114,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               }
             ]
           },
@@ -62,7 +126,7 @@
         "h": 4,
         "w": 4,
         "x": 0,
-        "y": 1
+        "y": 3
       },
       "id": 2,
       "options": {
@@ -82,7 +146,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -113,8 +177,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               }
             ]
           },
@@ -126,7 +189,7 @@
         "h": 4,
         "w": 4,
         "x": 4,
-        "y": 1
+        "y": 3
       },
       "id": 3,
       "options": {
@@ -146,7 +209,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -177,8 +240,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               }
             ]
           },
@@ -190,7 +252,7 @@
         "h": 4,
         "w": 4,
         "x": 8,
-        "y": 1
+        "y": 3
       },
       "id": 4,
       "options": {
@@ -210,7 +272,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -257,8 +319,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
-                "value": 0
+                "color": "red"
               },
               {
                 "color": "green",
@@ -273,7 +334,7 @@
         "h": 4,
         "w": 4,
         "x": 12,
-        "y": 1
+        "y": 3
       },
       "id": 5,
       "options": {
@@ -293,7 +354,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -341,8 +402,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
-                "value": 0
+                "color": "red"
               },
               {
                 "color": "green",
@@ -357,7 +417,7 @@
         "h": 4,
         "w": 4,
         "x": 16,
-        "y": 1
+        "y": 3
       },
       "id": 6,
       "options": {
@@ -377,7 +437,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -410,8 +470,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               },
               {
                 "color": "yellow",
@@ -431,7 +490,7 @@
         "h": 4,
         "w": 4,
         "x": 20,
-        "y": 1
+        "y": 3
       },
       "id": 7,
       "options": {
@@ -449,7 +508,7 @@
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -481,8 +540,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               },
               {
                 "color": "#EAB839",
@@ -501,7 +559,7 @@
         "h": 4,
         "w": 4,
         "x": 0,
-        "y": 5
+        "y": 7
       },
       "id": 33,
       "options": {
@@ -528,18 +586,18 @@
         "sizing": "auto",
         "valueMode": "color"
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prom"
-          },
           "editorMode": "code",
           "expr": "(vergeos_cluster_used_cores{system_name=~\"$system\", cluster=~\"$cluster\"} /\n vergeos_cluster_online_cores{system_name=~\"$system\", cluster=~\"$cluster\"}) * 100",
           "legendFormat": "{{cluster}}",
           "range": true,
-          "refId": "A"
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          }
         }
       ],
       "title": "CPU % Overcommit",
@@ -560,8 +618,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               },
               {
                 "color": "yellow",
@@ -581,7 +638,7 @@
         "h": 4,
         "w": 4,
         "x": 4,
-        "y": 5
+        "y": 7
       },
       "id": 23,
       "options": {
@@ -601,7 +658,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -633,8 +690,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               }
             ]
           },
@@ -646,7 +702,7 @@
         "h": 4,
         "w": 4,
         "x": 8,
-        "y": 5
+        "y": 7
       },
       "id": 24,
       "options": {
@@ -666,7 +722,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -735,8 +791,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               }
             ]
           },
@@ -748,7 +803,7 @@
         "h": 4,
         "w": 4,
         "x": 12,
-        "y": 5
+        "y": 7
       },
       "id": 26,
       "options": {
@@ -768,7 +823,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -800,8 +855,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               },
               {
                 "color": "yellow",
@@ -821,7 +875,7 @@
         "h": 4,
         "w": 4,
         "x": 16,
-        "y": 5
+        "y": 7
       },
       "id": 34,
       "options": {
@@ -841,7 +895,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -873,8 +927,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               },
               {
                 "color": "yellow",
@@ -894,7 +947,7 @@
         "h": 4,
         "w": 4,
         "x": 20,
-        "y": 5
+        "y": 7
       },
       "id": 25,
       "options": {
@@ -914,7 +967,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -947,8 +1000,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               },
               {
                 "color": "#EAB839",
@@ -968,7 +1020,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 9
+        "y": 11
       },
       "id": 12,
       "options": {
@@ -995,7 +1047,7 @@
         "sizing": "auto",
         "valueMode": "color"
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -1028,8 +1080,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               },
               {
                 "color": "#EAB839",
@@ -1049,7 +1100,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 9
+        "y": 11
       },
       "id": 11,
       "options": {
@@ -1076,7 +1127,7 @@
         "sizing": "auto",
         "valueMode": "color"
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -1099,7 +1150,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 18
       },
       "id": 36,
       "panels": [],
@@ -1121,8 +1172,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1138,7 +1188,7 @@
         "h": 4,
         "w": 3,
         "x": 0,
-        "y": 17
+        "y": 19
       },
       "id": 40,
       "options": {
@@ -1158,7 +1208,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -1190,8 +1240,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               },
               {
                 "color": "yellow",
@@ -1211,7 +1260,7 @@
         "h": 4,
         "w": 3,
         "x": 3,
-        "y": 17
+        "y": 19
       },
       "id": 27,
       "options": {
@@ -1231,7 +1280,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -1263,8 +1312,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1280,7 +1328,7 @@
         "h": 4,
         "w": 3,
         "x": 6,
-        "y": 17
+        "y": 19
       },
       "id": 28,
       "options": {
@@ -1300,7 +1348,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -1332,8 +1380,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               }
             ]
           },
@@ -1376,7 +1423,7 @@
         "h": 4,
         "w": 4,
         "x": 9,
-        "y": 17
+        "y": 19
       },
       "id": 22,
       "options": {
@@ -1396,7 +1443,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -1428,8 +1475,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               }
             ]
           },
@@ -1472,7 +1518,7 @@
         "h": 4,
         "w": 4,
         "x": 13,
-        "y": 17
+        "y": 19
       },
       "id": 37,
       "options": {
@@ -1492,7 +1538,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -1524,8 +1570,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               }
             ]
           },
@@ -1568,7 +1613,7 @@
         "h": 4,
         "w": 4,
         "x": 17,
-        "y": 17
+        "y": 19
       },
       "id": 39,
       "options": {
@@ -1588,7 +1633,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -1620,8 +1665,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               }
             ]
           },
@@ -1664,7 +1708,7 @@
         "h": 4,
         "w": 3,
         "x": 21,
-        "y": 17
+        "y": 19
       },
       "id": 38,
       "options": {
@@ -1684,7 +1728,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -1749,8 +1793,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1766,7 +1809,7 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 21
+        "y": 23
       },
       "id": 13,
       "options": {
@@ -1785,7 +1828,7 @@
           "sort": "desc"
         }
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -1808,7 +1851,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 33
+        "y": 35
       },
       "id": 41,
       "panels": [],
@@ -1838,8 +1881,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               }
             ]
           }
@@ -1850,7 +1892,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 34
+        "y": 36
       },
       "id": 43,
       "options": {
@@ -1865,13 +1907,9 @@
         },
         "showHeader": true
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prom"
-          },
           "editorMode": "code",
           "exemplar": false,
           "expr": "vergeos_drive_power_on_hours{system_name=~\"$system\", node_name=~\"$node_name\"} / 3600",
@@ -1879,7 +1917,11 @@
           "instant": true,
           "legendFormat": "__auto",
           "range": false,
-          "refId": "A"
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          }
         }
       ],
       "title": "Power On Hours",
@@ -1891,7 +1933,10 @@
               "Time": true,
               "instance": true,
               "job": true,
-              "system_name": true
+              "system_name": true,
+              "vergeos_instance": true,
+              "serial": true,
+              "tier": true
             },
             "includeByName": {},
             "indexByName": {},
@@ -1921,8 +1966,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
               },
               {
                 "color": "#EAB839",
@@ -1942,7 +1986,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 34
+        "y": 36
       },
       "id": 45,
       "options": {
@@ -1969,7 +2013,7 @@
         "sizing": "auto",
         "valueMode": "color"
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -2034,8 +2078,11 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
               }
             ]
           }
@@ -2046,7 +2093,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 46
+        "y": 48
       },
       "id": 44,
       "options": {
@@ -2062,9 +2109,104 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.1.0-pre",
+      "pluginVersion": "11.6.0",
       "repeat": "node_name",
       "repeatDirection": "h",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "vergeos_drive_service_time{system_name=~\"$system\"}",
+          "legendFormat": "{{drive_name}}",
+          "range": true,
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          }
+        }
+      ],
+      "title": "Drive Service Time",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 58
+      },
+      "id": 50,
+      "panels": [],
+      "title": "Network",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": false,
+            "inspect": false
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 0,
+                  "text": "Down"
+                },
+                "1": {
+                  "color": "green",
+                  "index": 1,
+                  "text": "Up"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 59
+      },
+      "id": 51,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.6.0",
       "targets": [
         {
           "datasource": {
@@ -2072,17 +2214,1349 @@
             "uid": "prom"
           },
           "editorMode": "code",
-          "expr": "vergeos_drive_service_time{system_name=~\"$system\"}",
-          "legendFormat": "{{drive_name}} ms",
+          "exemplar": false,
+          "expr": "vergeos_nic_status{system_name=~\"$system\"}",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "NIC Status",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "instance": true,
+              "job": true,
+              "system_name": true,
+              "__name__": true,
+              "vergeos_instance": true
+            },
+            "includeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "Value": "Status",
+              "interface": "Interface",
+              "node_name": "Node",
+              "cluster": "Cluster"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 59
+      },
+      "id": 52,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "expr": "rate(vergeos_nic_tx_bytes_total{system_name=~\"$system\"}[5m])",
+          "legendFormat": "{{node_name}} {{interface}} TX",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "expr": "rate(vergeos_nic_rx_bytes_total{system_name=~\"$system\"}[5m])",
+          "hide": false,
+          "legendFormat": "{{node_name}} {{interface}} RX",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "NIC Traffic",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 67
+      },
+      "id": 53,
+      "panels": [],
+      "title": "Tenants",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 3,
+        "x": 0,
+        "y": 68
+      },
+      "id": 54,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "expr": "vergeos_tenants_total{system_name=~\"$system\"}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Drive Service Time $node_name",
+      "title": "Total Tenants",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 3,
+        "x": 3,
+        "y": 68
+      },
+      "id": 55,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "expr": "count(vergeos_tenant_running{system_name=~\"$system\"} == 1)",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Running Tenants",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 9,
+        "x": 6,
+        "y": 68
+      },
+      "id": 56,
+      "options": {
+        "displayMode": "lcd",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "expr": "vergeos_tenant_cpu_usage_pct{system_name=~\"$system\", tenant_name=~\"$tenant\"}",
+          "legendFormat": "{{tenant_name}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Tenant CPU Usage",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 9,
+        "x": 15,
+        "y": 68
+      },
+      "id": 57,
+      "options": {
+        "displayMode": "lcd",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "expr": "vergeos_tenant_ram_usage_pct{system_name=~\"$system\", tenant_name=~\"$tenant\"}",
+          "legendFormat": "{{tenant_name}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Tenant RAM Usage %",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 74
+      },
+      "id": 58,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "expr": "vergeos_tenant_storage_used_bytes{system_name=~\"$system\", tenant_name=~\"$tenant\"}",
+          "legendFormat": "{{tenant_name}} Used",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "expr": "vergeos_tenant_storage_provisioned_bytes{system_name=~\"$system\", tenant_name=~\"$tenant\"}",
+          "hide": false,
+          "legendFormat": "{{tenant_name}} Provisioned",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Tenant Storage Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 74
+      },
+      "id": 59,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "expr": "vergeos_tenant_node_cpu_usage_pct{system_name=~\"$system\", tenant_name=~\"$tenant\"}",
+          "legendFormat": "{{tenant_name}} / {{node_name}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Tenant Node CPU Usage",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 88
+      },
+      "id": 60,
+      "panels": [],
+      "title": "Virtual Machines",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": false,
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Running"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "color": "red",
+                        "index": 0,
+                        "text": "No"
+                      },
+                      "1": {
+                        "color": "green",
+                        "index": 1,
+                        "text": "Yes"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Enabled"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "0": {
+                        "color": "red",
+                        "index": 0,
+                        "text": "No"
+                      },
+                      "1": {
+                        "color": "green",
+                        "index": 1,
+                        "text": "Yes"
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "RAM (bytes)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 89
+      },
+      "id": 61,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "vergeos_vm_running{system_name=~\"$system\", vm_name=~\"$vm\"}",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "Running"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "vergeos_vm_enabled{system_name=~\"$system\", vm_name=~\"$vm\"}",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "Enabled"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "vergeos_vm_cpu_cores{system_name=~\"$system\", vm_name=~\"$vm\"}",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "Cores"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "vergeos_vm_ram_bytes{system_name=~\"$system\", vm_name=~\"$vm\"}",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "RAM"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "vergeos_vm_cpu_total{system_name=~\"$system\", vm_name=~\"$vm\"}",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "CPU"
+        }
+      ],
+      "title": "VM Status",
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "pattern": "cluster|node|vm_name|Value.*"
+            }
+          }
+        },
+        {
+          "id": "merge"
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "cluster": 0,
+              "node": 1,
+              "vm_name": 2,
+              "Value #Running": 3,
+              "Value #Enabled": 4,
+              "Value #Cores": 5,
+              "Value #RAM": 6,
+              "Value #CPU": 7
+            },
+            "renameByName": {
+              "vm_name": "VM",
+              "cluster": "Cluster",
+              "node": "Node",
+              "Value #Running": "Running",
+              "Value #Enabled": "Enabled",
+              "Value #Cores": "CPU Cores",
+              "Value #RAM": "RAM (bytes)",
+              "Value #CPU": "CPU %"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 99
+      },
+      "id": 62,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "expr": "vergeos_vm_cpu_total{system_name=~\"$system\", vm_name=~\"$vm\"}",
+          "legendFormat": "{{vm_name}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "VM CPU Usage Over Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 109
+      },
+      "id": 64,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "expr": "rate(vergeos_vm_nic_tx_bytes_total{system_name=~\"$system\", vm_name=~\"$vm\"}[5m])",
+          "legendFormat": "{{vm_name}} {{nic_name}} TX",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "expr": "rate(vergeos_vm_nic_rx_bytes_total{system_name=~\"$system\", vm_name=~\"$vm\"}[5m])",
+          "hide": false,
+          "legendFormat": "{{vm_name}} {{nic_name}} RX",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "VM Network Traffic",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 119
+      },
+      "id": 67,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "expr": "rate(vergeos_vm_disk_read_bytes_total{system_name=~\"$system\", vm_name=~\"$vm\"}[5m])",
+          "legendFormat": "{{vm_name}} {{disk_name}} read",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "expr": "rate(vergeos_vm_disk_write_bytes_total{system_name=~\"$system\", vm_name=~\"$vm\"}[5m])",
+          "hide": false,
+          "legendFormat": "{{vm_name}} {{disk_name}} write",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "VM Disk Throughput",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 129
+      },
+      "id": 68,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.6.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "expr": "rate(vergeos_vm_disk_read_ops_total{system_name=~\"$system\", vm_name=~\"$vm\"}[5m])",
+          "legendFormat": "{{vm_name}} {{disk_name}} read",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom"
+          },
+          "editorMode": "code",
+          "expr": "rate(vergeos_vm_disk_write_ops_total{system_name=~\"$system\", vm_name=~\"$vm\"}[5m])",
+          "hide": false,
+          "legendFormat": "{{vm_name}} {{disk_name}} write",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "VM Disk IOPS",
       "type": "timeseries"
     }
   ],
-  "preload": false,
   "refresh": "30s",
   "schemaVersion": 41,
   "tags": [
@@ -2114,12 +3588,7 @@
         "includeAll": true
       },
       {
-        "current": {
-          "text": "All",
-          "value": [
-            "$__all"
-          ]
-        },
+        "current": {},
         "definition": "label_values(vergeos_cluster_total_nodes{system_name=~\"$system\"}, cluster)",
         "includeAll": true,
         "label": "Cluster",
@@ -2136,11 +3605,8 @@
         "type": "query"
       },
       {
-        "current": {
-          "text": "All",
-          "value": "$__all"
-        },
-        "definition": "label_values(vergeos_drive_power_on_hours{system_name=~\"$system\"}, node_name)",
+        "current": {},
+        "definition": "label_values(vergeos_node_core_temp{system_name=~\"$system\"}, node_name)",
         "includeAll": true,
         "label": "Node",
         "multi": true,
@@ -2148,7 +3614,41 @@
         "options": [],
         "query": {
           "qryType": 5,
-          "query": "label_values(vergeos_drive_power_on_hours{system_name=~\"$system\"}, node_name)",
+          "query": "label_values(vergeos_node_core_temp{system_name=~\"$system\"}, node_name)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {},
+        "definition": "label_values(vergeos_tenant_running{system_name=~\"$system\"}, tenant_name)",
+        "includeAll": true,
+        "label": "Tenant",
+        "multi": true,
+        "name": "tenant",
+        "options": [],
+        "query": {
+          "qryType": 5,
+          "query": "label_values(vergeos_tenant_running{system_name=~\"$system\"}, tenant_name)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {},
+        "definition": "label_values(vergeos_vm_running{system_name=~\"$system\"}, vm_name)",
+        "includeAll": true,
+        "label": "VM",
+        "multi": true,
+        "name": "vm",
+        "options": [],
+        "query": {
+          "qryType": 5,
+          "query": "label_values(vergeos_vm_running{system_name=~\"$system\"}, vm_name)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
@@ -2165,5 +3665,6 @@
   "timezone": "browser",
   "title": "VergeOS Dashboard",
   "uid": "vergeos-dashboard",
-  "version": 8
+  "version": 14,
+  "weekStart": ""
 }

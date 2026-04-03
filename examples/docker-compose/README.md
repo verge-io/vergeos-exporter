@@ -18,7 +18,9 @@ This stack deploys three interconnected services:
   - Linux/macOS: Docker Engine or Docker Desktop
   - Windows: Docker Desktop with WSL2 backend
 - Access to a VergeOS environment
-- VergeOS credentials with appropriate monitoring permissions
+- VergeOS credentials with list and read permissions to the cloud
+  - Can be a Normal or API user
+  - MFA should be disabled
 
 ## Quick Start
 
@@ -201,6 +203,8 @@ Persistent volumes are created for:
 - `grafana_data` - Dashboards and settings
 
 These survive container restarts and stack restarts (unless `-v` is used with `docker compose down`).
+
+Named volumes are used instead of bind mounts for cross-platform compatibility (macOS, Windows, Linux) — Docker manages file ownership internally, avoiding permission issues.
 
 ## Security Considerations
 

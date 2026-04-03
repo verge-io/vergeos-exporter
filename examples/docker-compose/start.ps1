@@ -1,5 +1,5 @@
 # VergeOS Monitoring Stack Startup Script for Windows
-# Pulls images, builds, and starts the stack, then displays access URLs
+# Pulls images and starts the stack, then displays access URLs
 
 # Stop on errors
 $ErrorActionPreference = "Stop"
@@ -12,10 +12,6 @@ Write-Host ""
 # Pull latest images
 Write-Host "📦 Pulling latest images..."
 docker compose pull
-
-Write-Host ""
-Write-Host "🔨 Building vergeos-exporter..."
-docker compose build --no-cache --pull vergeos-exporter
 
 Write-Host ""
 Write-Host "🚀 Starting services..."
