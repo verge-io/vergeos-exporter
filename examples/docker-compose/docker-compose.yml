@@ -23,14 +23,24 @@ services:
     image: grafana/grafana-oss:latest
     container_name: grafana
     restart: unless-stopped
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        mkdir -p /etc/grafana/provisioning/dashboards
+        cp /mnt/dashboards/*.json /etc/grafana/provisioning/dashboards/
+        cp /mnt/dashboards-config/*.yaml /etc/grafana/provisioning/dashboards/
+        sed -i 's/$${DS_PROMETHEUS}/prom/g' /etc/grafana/provisioning/dashboards/*.json
+        exec /run.sh
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
-      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/vergeos-dashboard-pinuid.json
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/grafana-dashboard.json
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
-      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/provisioning/dashboards:/mnt/dashboards-config:ro
+      - ../grafana-dashboard.json:/mnt/dashboards/grafana-dashboard.json:ro
     ports:
       - "3000:3000"
     depends_on:
