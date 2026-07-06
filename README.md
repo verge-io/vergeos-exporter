@@ -186,7 +186,7 @@ The exporter will now start automatically on system boot and restart if it crash
 
 ## Running as a Windows Service
 
-The exporter has **built-in Windows service support** — no third-party wrapper (such as NSSM) is required. The `-service` flag registers, controls, and removes the service directly through the Windows Service Control Manager.
+The exporter has **built-in Windows service support** — no third-party wrapper is required. The `-service` flag registers, controls, and removes the service directly through the Windows Service Control Manager.
 
 1. Create a directory for the exporter and copy the executable there:
 ```powershell
