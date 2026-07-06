@@ -188,23 +188,27 @@ The exporter will now start automatically on system boot and restart if it crash
 
 To run the VergeOS Exporter as a Windows service, we'll use NSSM (Non-Sucking Service Manager):
 
-1. Download NSSM from the [official website](https://nssm.cc/download)
+1. Install NSSM. The easiest way is via [Chocolatey](https://community.chocolatey.org/packages/NSSM#install) (run PowerShell as Administrator):
+   ```powershell
+   choco install nssm
+   ```
+   Chocolatey adds `nssm` to your `PATH`, so the commands below work as written.
 
-2. Extract the NSSM archive and copy the appropriate executable (nssm.exe) to a permanent location:
-   - Use `nssm64.exe` for 64-bit systems (recommended)
-   - Copy it to `C:\Program Files\nssm\nssm.exe`
+   > **Note:** The historical download site `nssm.cc` is frequently unreachable. If you'd rather not use Chocolatey, download a build directly from the [NSSM GitHub mirror](https://github.com/kirillkovalenko/nssm/releases) or the [Chocolatey package files](https://community.chocolatey.org/packages/NSSM#files), extract the archive, and copy the appropriate executable to a permanent location:
+   > - Use the `win64` build for 64-bit systems (recommended)
+   > - Copy `nssm.exe` to `C:\Program Files\nssm\nssm.exe` and add that folder to your `PATH`
 
-3. Create a directory for the exporter:
+2. Create a directory for the exporter:
 ```powershell
 mkdir "C:\Program Files\vergeos-exporter"
 ```
 
-4. Copy the vergeos-exporter executable to this directory:
+3. Copy the vergeos-exporter executable to this directory:
 ```powershell
 copy vergeos-exporter.exe "C:\Program Files\vergeos-exporter"
 ```
 
-5. Install the service using NSSM (run Command Prompt as Administrator):
+4. Install the service using NSSM (run Command Prompt as Administrator):
 ```batch
 nssm install VergeOSExporter "C:\Program Files\vergeos-exporter\vergeos-exporter.exe"
 nssm set VergeOSExporter AppParameters "-verge.url=https://VERGEURL -verge.username=admin -verge.password=PASSWORD"
@@ -216,7 +220,7 @@ nssm set VergeOSExporter AppStdout "C:\Program Files\vergeos-exporter\logs\stdou
 nssm set VergeOSExporter AppStderr "C:\Program Files\vergeos-exporter\logs\stderr.log"
 ```
 
-6. Start the service:
+5. Start the service:
 ```batch
 nssm start VergeOSExporter
 ```
