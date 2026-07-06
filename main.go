@@ -33,10 +33,22 @@ var (
 	vergePassword = flag.String("verge.password", "", "Password for VergeOS API authentication")
 	scrapeTimeout = flag.Duration("scrape.timeout", 30*time.Second, "Timeout for scraping VergeOS API")
 	insecure      = flag.Bool("insecure", false, "Skip TLS certificate verification (use for self-signed certificates)")
+	logFile       = flag.String("log.file", "", "Write logs to this file instead of stderr (useful when running as a service).")
+	serviceAction = flag.String("service", "", "Windows service control action: install, uninstall, start, stop, run (Windows only).")
 )
 
 func main() {
 	flag.Parse()
+
+	// Redirect logging to a file when requested (services have no console).
+	if *logFile != "" {
+		f, err := os.OpenFile(*logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			log.Fatalf("Failed to open log file %s: %v", *logFile, err)
+		}
+		defer f.Close()
+		log.SetOutput(f)
+	}
 
 	log.Printf("vergeos-exporter version=%s commit=%s date=%s", version, commit, date)
 
@@ -53,8 +65,28 @@ func main() {
 		*vergePassword = os.Getenv("VERGE_PASSWORD")
 	}
 
+	// Windows service control/hosting. On non-Windows platforms this is a no-op
+	// unless -service was passed, in which case it reports a clear error.
+	if handled, err := runWindowsService(*serviceAction); handled {
+		if err != nil {
+			log.Fatalf("Service error: %v", err)
+		}
+		return
+	}
+
+	// Foreground execution (all platforms).
+	if err := runExporter(nil); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// runExporter builds the SDK client, registers collectors, and serves metrics
+// until stop is closed, an OS signal arrives, or the HTTP server fails. It is
+// platform-neutral: main() calls it directly for foreground runs, and the
+// Windows service handler calls it with a stop channel driven by the SCM.
+func runExporter(stop <-chan struct{}) error {
 	if *vergeUsername == "" || *vergePassword == "" {
-		log.Fatal("verge.username and verge.password are required (flags or VERGE_USERNAME/VERGE_PASSWORD env vars)")
+		return fmt.Errorf("verge.username and verge.password are required (flags or VERGE_USERNAME/VERGE_PASSWORD env vars)")
 	}
 
 	if *insecure {
@@ -69,7 +101,7 @@ func main() {
 		vergeos.WithTimeout(*scrapeTimeout),
 	)
 	if err != nil {
-		log.Fatalf("Failed to create VergeOS client: %v", err)
+		return fmt.Errorf("failed to create VergeOS client: %w", err)
 	}
 
 	// Validate credentials at startup (Bug #34: fail fast with clear error message)
@@ -79,9 +111,9 @@ func main() {
 	cloudName, err := client.Settings.GetCloudName(ctx)
 	if err != nil {
 		if vergeos.IsAuthError(err) {
-			log.Fatalf("Authentication failed: check username/password for %s", *vergeURL)
+			return fmt.Errorf("authentication failed: check username/password for %s", *vergeURL)
 		}
-		log.Fatalf("Failed to connect to VergeOS API at %s: %v", *vergeURL, err)
+		return fmt.Errorf("failed to connect to VergeOS API at %s: %w", *vergeURL, err)
 	}
 	log.Printf("Successfully connected to VergeOS system: %s", cloudName)
 
@@ -94,19 +126,22 @@ func main() {
 	tenantCollector := collectors.NewTenantCollector(client, *scrapeTimeout)
 	vmCollector := collectors.NewVMCollector(client, *scrapeTimeout)
 
-	prometheus.MustRegister(nodeCollector)
-	prometheus.MustRegister(storageCollector)
-	prometheus.MustRegister(networkCollector)
-	prometheus.MustRegister(clusterCollector)
-	prometheus.MustRegister(systemCollector)
-	prometheus.MustRegister(tenantCollector)
-	prometheus.MustRegister(vmCollector)
+	// Use a dedicated registry so repeated runs don't collide on the global default.
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(nodeCollector)
+	registry.MustRegister(storageCollector)
+	registry.MustRegister(networkCollector)
+	registry.MustRegister(clusterCollector)
+	registry.MustRegister(systemCollector)
+	registry.MustRegister(tenantCollector)
+	registry.MustRegister(vmCollector)
 
-	http.Handle(*metricsPath, promhttp.HandlerFor(
-		prometheus.DefaultGatherer,
+	mux := http.NewServeMux()
+	mux.Handle(*metricsPath, promhttp.HandlerFor(
+		registry,
 		promhttp.HandlerOpts{EnableOpenMetrics: true},
 	))
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, `<html>
 			<head><title>VergeOS Exporter</title></head>
 			<body>
@@ -118,16 +153,21 @@ func main() {
 
 	srv := &http.Server{
 		Addr:         *listenAddress,
+		Handler:      mux,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: *scrapeTimeout + 5*time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Graceful shutdown on SIGINT/SIGTERM
+	// Graceful shutdown on SIGINT/SIGTERM or when the caller closes stop
+	// (the latter is how the Windows service handler asks us to stop).
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
-		<-quit
+		select {
+		case <-quit:
+		case <-stop:
+		}
 		log.Println("Shutting down...")
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer shutdownCancel()
@@ -138,6 +178,7 @@ func main() {
 
 	log.Printf("Starting VergeOS exporter on %s", *listenAddress)
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		log.Fatalf("Server error: %v", err)
+		return fmt.Errorf("server error: %w", err)
 	}
+	return nil
 }
