@@ -188,15 +188,11 @@ The exporter will now start automatically on system boot and restart if it crash
 
 To run the VergeOS Exporter as a Windows service, we'll use NSSM (Non-Sucking Service Manager):
 
-1. Install NSSM. The easiest way is via [Chocolatey](https://community.chocolatey.org/packages/NSSM#install) (run PowerShell as Administrator):
+1. Install NSSM via [Chocolatey](https://community.chocolatey.org/packages/NSSM#install) (run PowerShell as Administrator):
    ```powershell
    choco install nssm
    ```
    Chocolatey adds `nssm` to your `PATH`, so the commands below work as written.
-
-   > **Note:** The historical download site `nssm.cc` is frequently unreachable. If you'd rather not use Chocolatey, download a build directly from the [NSSM GitHub mirror](https://github.com/kirillkovalenko/nssm/releases) or the [Chocolatey package files](https://community.chocolatey.org/packages/NSSM#files), extract the archive, and copy the appropriate executable to a permanent location:
-   > - Use the `win64` build for 64-bit systems (recommended)
-   > - Copy `nssm.exe` to `C:\Program Files\nssm\nssm.exe` and add that folder to your `PATH`
 
 2. Create a directory for the exporter:
 ```powershell
