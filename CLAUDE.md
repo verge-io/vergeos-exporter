@@ -54,6 +54,7 @@ The `MustNewConstMetric` pattern (vs persistent metric objects) is intentional â
 | System | `collectors/system.go` | `Settings`, `UpdateSettings`, `UpdateSourcePackages` |
 | Tenant | `collectors/tenant.go` | `Tenants`, `TenantNodes`, `TenantStatus`, `TenantStatsHistoryShort`, `TenantStorage`, `TenantLayer2Networks`, `MachineStats`, `MachineStatus` |
 | VM | `collectors/vm.go` | `VMs`, `MachineStats`, `MachineStatus`, `MachineNICs`, `Clusters` |
+| VNet | `collectors/vnet.go` | `Networks` |
 
 ### Test Pattern
 
