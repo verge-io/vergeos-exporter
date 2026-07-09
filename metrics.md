@@ -62,8 +62,9 @@ All VNet metrics are labeled by `system_name`, `vnet_name`, `vnet_id`, `cluster`
 
 Inventory/config (emitted for every virtual network):
 - **VNet Enabled**: `vergeos_vnet_enabled` (Gauge, 1=enabled)
-- **VNet Power State**: `vergeos_vnet_powerstate` (Gauge, 1=running)
 - **VNet Gateway Monitoring Enabled**: `vergeos_vnet_monitor_gateway` (Gauge, 1=enabled)
+
+A power-state metric is intentionally not exposed yet: the `/vnets` `powerstate` field is not maintained by the platform, and the true running state (`machine#status#status`) is not yet available through the SDK (verge-io/govergeos#34).
 
 Gateway monitoring (emitted only for networks with gateway monitoring enabled *and* at least one stats sample available; values are from the latest per-interval sample, so they are gauges, not cumulative counters):
 - **Monitor Packets Sent**: `vergeos_vnet_monitor_sent` (Gauge)

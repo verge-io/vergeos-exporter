@@ -84,19 +84,6 @@ func TestVNetCollector_Metrics(t *testing.T) {
 		}
 	})
 
-	t.Run("powerstate", func(t *testing.T) {
-		expected := `
-			# HELP vergeos_vnet_powerstate Whether the virtual network is running (1=running, 0=stopped)
-			# TYPE vergeos_vnet_powerstate gauge
-			vergeos_vnet_powerstate{cluster="cluster1",layer2_type="",system_name="test-cloud",type="external",vnet_id="10",vnet_name="external"} 1
-			vergeos_vnet_powerstate{cluster="cluster1",layer2_type="vxlan",system_name="test-cloud",type="internal",vnet_id="11",vnet_name="internal"} 0
-			vergeos_vnet_powerstate{cluster="cluster1",layer2_type="vlan",system_name="test-cloud",type="internal",vnet_id="12",vnet_name="newnet"} 0
-		`
-		if err := testutil.CollectAndCompare(collector, strings.NewReader(expected), "vergeos_vnet_powerstate"); err != nil {
-			t.Errorf("Unexpected metric values: %v", err)
-		}
-	})
-
 	t.Run("monitor_gateway", func(t *testing.T) {
 		expected := `
 			# HELP vergeos_vnet_monitor_gateway Whether gateway monitoring is enabled for the virtual network (1=enabled, 0=disabled)
@@ -185,7 +172,7 @@ func TestVNetCollector_Describe(t *testing.T) {
 		count++
 	}
 
-	if count != 14 {
-		t.Errorf("Expected 14 descriptors, got %d", count)
+	if count != 13 {
+		t.Errorf("Expected 13 descriptors, got %d", count)
 	}
 }

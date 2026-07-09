@@ -22,7 +22,6 @@ type VNetCollector struct {
 
 	// Inventory/config metrics
 	vnetEnabled        *prometheus.Desc
-	vnetPowerState     *prometheus.Desc
 	vnetMonitorGateway *prometheus.Desc
 
 	// Gateway monitoring metrics (latest sample per monitored network)
@@ -48,11 +47,6 @@ func NewVNetCollector(client *vergeos.Client, scrapeTimeout time.Duration) *VNet
 		vnetEnabled: prometheus.NewDesc(
 			"vergeos_vnet_enabled",
 			"Whether the virtual network is enabled (1=enabled, 0=disabled)",
-			labels, nil,
-		),
-		vnetPowerState: prometheus.NewDesc(
-			"vergeos_vnet_powerstate",
-			"Whether the virtual network is running (1=running, 0=stopped)",
 			labels, nil,
 		),
 		vnetMonitorGateway: prometheus.NewDesc(
@@ -121,7 +115,6 @@ func NewVNetCollector(client *vergeos.Client, scrapeTimeout time.Duration) *VNet
 // Describe implements prometheus.Collector.
 func (vc *VNetCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- vc.vnetEnabled
-	ch <- vc.vnetPowerState
 	ch <- vc.vnetMonitorGateway
 	ch <- vc.monitorSent
 	ch <- vc.monitorQuality
@@ -176,10 +169,11 @@ func (vc *VNetCollector) Collect(ch chan<- prometheus.Metric) {
 			vc.vnetEnabled, prometheus.GaugeValue,
 			boolToFloat64(network.Enabled), labels...,
 		)
-		ch <- prometheus.MustNewConstMetric(
-			vc.vnetPowerState, prometheus.GaugeValue,
-			boolToFloat64(network.PowerState), labels...,
-		)
+		// The vnets `powerstate` DB field is not maintained by the platform
+		// (always false on live systems); true running state is
+		// machine#status#status, which the SDK does not expose yet.
+		// TODO(govergeos): emit vergeos_vnet_powerstate once the SDK exposes
+		// the vnet machine status.
 		ch <- prometheus.MustNewConstMetric(
 			vc.vnetMonitorGateway, prometheus.GaugeValue,
 			boolToFloat64(network.MonitorGateway), labels...,
