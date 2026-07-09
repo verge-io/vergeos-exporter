@@ -125,6 +125,7 @@ func runExporter(stop <-chan struct{}) error {
 	systemCollector := collectors.NewSystemCollector(client, *scrapeTimeout)
 	tenantCollector := collectors.NewTenantCollector(client, *scrapeTimeout)
 	vmCollector := collectors.NewVMCollector(client, *scrapeTimeout)
+	vnetCollector := collectors.NewVNetCollector(client, *scrapeTimeout)
 
 	// Use a dedicated registry so repeated runs don't collide on the global default.
 	registry := prometheus.NewRegistry()
@@ -135,6 +136,7 @@ func runExporter(stop <-chan struct{}) error {
 	registry.MustRegister(systemCollector)
 	registry.MustRegister(tenantCollector)
 	registry.MustRegister(vmCollector)
+	registry.MustRegister(vnetCollector)
 
 	mux := http.NewServeMux()
 	mux.Handle(*metricsPath, promhttp.HandlerFor(

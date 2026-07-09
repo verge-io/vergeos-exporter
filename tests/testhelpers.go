@@ -403,6 +403,35 @@ type VMDriveMock struct {
 	Enabled       bool   `json:"enabled"`
 }
 
+// VNetMock represents a mock virtual network
+type VNetMock struct {
+	Key            int    `json:"$key"`
+	Name           string `json:"name"`
+	Enabled        bool   `json:"enabled"`
+	PowerState     bool   `json:"powerstate"`
+	Cluster        int    `json:"cluster"`
+	Type           string `json:"type"`
+	Layer2Type     string `json:"layer2_type"`
+	MonitorGateway bool   `json:"monitor_gateway"`
+}
+
+// VNetMonitorStatsMock represents a mock VNet gateway-monitoring stats record
+type VNetMonitorStatsMock struct {
+	Key           int    `json:"$key"`
+	VNet          int    `json:"vnet"`
+	Sent          uint16 `json:"sent"`
+	Quality       uint8  `json:"quality"`
+	DroppedPct    uint8  `json:"dropped_pct"`
+	LatencyUSAvg  uint32 `json:"latency_usec_avg"`
+	LatencyUSPeak uint32 `json:"latency_usec_peak"`
+	Duplicates    uint16 `json:"duplicates"`
+	Truncated     uint16 `json:"truncated"`
+	Dropped       uint16 `json:"dropped"`
+	BadChecksums  uint16 `json:"bad_checksums"`
+	BadData       uint16 `json:"bad_data"`
+	Timestamp     uint32 `json:"timestamp"`
+}
+
 // UpdateSettingsMock represents mock update settings
 type UpdateSettingsMock struct {
 	Key        int    `json:"$key"`
