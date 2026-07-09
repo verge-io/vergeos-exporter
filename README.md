@@ -186,53 +186,43 @@ The exporter will now start automatically on system boot and restart if it crash
 
 ## Running as a Windows Service
 
-To run the VergeOS Exporter as a Windows service, we'll use NSSM (Non-Sucking Service Manager):
+The exporter has **built-in Windows service support** — no third-party wrapper is required. The `-service` flag registers, controls, and removes the service directly through the Windows Service Control Manager.
 
-1. Download NSSM from the [official website](https://nssm.cc/download)
-
-2. Extract the NSSM archive and copy the appropriate executable (nssm.exe) to a permanent location:
-   - Use `nssm64.exe` for 64-bit systems (recommended)
-   - Copy it to `C:\Program Files\nssm\nssm.exe`
-
-3. Create a directory for the exporter:
+1. Create a directory for the exporter and copy the executable there:
 ```powershell
 mkdir "C:\Program Files\vergeos-exporter"
-```
-
-4. Copy the vergeos-exporter executable to this directory:
-```powershell
 copy vergeos-exporter.exe "C:\Program Files\vergeos-exporter"
 ```
 
-5. Install the service using NSSM (run Command Prompt as Administrator):
-```batch
-nssm install VergeOSExporter "C:\Program Files\vergeos-exporter\vergeos-exporter.exe"
-nssm set VergeOSExporter AppParameters "-verge.url=https://VERGEURL -verge.username=admin -verge.password=PASSWORD"
-nssm set VergeOSExporter DisplayName "VergeOS Exporter"
-nssm set VergeOSExporter Description "Prometheus exporter for VergeOS metrics"
-nssm set VergeOSExporter Start SERVICE_AUTO_START
-nssm set VergeOSExporter ObjectName LocalSystem
-nssm set VergeOSExporter AppStdout "C:\Program Files\vergeos-exporter\logs\stdout.log"
-nssm set VergeOSExporter AppStderr "C:\Program Files\vergeos-exporter\logs\stderr.log"
+2. Install the service (run **PowerShell or Command Prompt as Administrator**). Any exporter flags you pass here are stored and reused each time the service starts:
+```powershell
+cd "C:\Program Files\vergeos-exporter"
+.\vergeos-exporter.exe -service=install `
+  -verge.url="https://VERGEURL" `
+  -verge.username="admin" `
+  -verge.password="PASSWORD" `
+  -log.file="C:\Program Files\vergeos-exporter\logs\exporter.log"
+```
+   The service is created with automatic startup, so it will launch on boot. Use `-log.file` to capture logs, since a Windows service has no console. Credentials can also be supplied via the `VERGE_URL`, `VERGE_USERNAME`, and `VERGE_PASSWORD` environment variables instead of flags.
+
+3. Start the service:
+```powershell
+.\vergeos-exporter.exe -service=start
 ```
 
-6. Start the service:
-```batch
-nssm start VergeOSExporter
-```
-
-You can also manage the service using Windows Service Manager:
+You can also manage the service using the Windows Service Manager:
 - Open Services (services.msc)
 - Find "VergeOS Exporter" in the list
 - Right-click to Start, Stop, or Restart the service
 - View service status and modify startup type
 
-To remove the service:
-```batch
-nssm remove VergeOSExporter confirm
+To stop or remove the service:
+```powershell
+.\vergeos-exporter.exe -service=stop
+.\vergeos-exporter.exe -service=uninstall
 ```
 
-The service will now start automatically when Windows boots. Logs can be found in the specified log directory.
+The service will now start automatically when Windows boots. Logs can be found at the path given to `-log.file`.
 
 ## Running with Docker Compose demo/example
 
