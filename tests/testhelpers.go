@@ -408,7 +408,8 @@ type VNetMock struct {
 	Key            int    `json:"$key"`
 	Name           string `json:"name"`
 	Enabled        bool   `json:"enabled"`
-	PowerState     bool   `json:"powerstate"`
+	Running        bool   `json:"running"`
+	NIC            int    `json:"nic,omitempty"`
 	Cluster        int    `json:"cluster"`
 	Type           string `json:"type"`
 	Layer2Type     string `json:"layer2_type"`

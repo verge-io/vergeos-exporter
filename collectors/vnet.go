@@ -22,7 +22,14 @@ type VNetCollector struct {
 
 	// Inventory/config metrics
 	vnetEnabled        *prometheus.Desc
+	vnetPowerState     *prometheus.Desc
 	vnetMonitorGateway *prometheus.Desc
+
+	// Router NIC traffic counters
+	vnetTxBytes   *prometheus.Desc
+	vnetRxBytes   *prometheus.Desc
+	vnetTxPackets *prometheus.Desc
+	vnetRxPackets *prometheus.Desc
 
 	// Gateway monitoring metrics (latest sample per monitored network)
 	monitorSent             *prometheus.Desc
@@ -47,6 +54,31 @@ func NewVNetCollector(client *vergeos.Client, scrapeTimeout time.Duration) *VNet
 		vnetEnabled: prometheus.NewDesc(
 			"vergeos_vnet_enabled",
 			"Whether the virtual network is enabled (1=enabled, 0=disabled)",
+			labels, nil,
+		),
+		vnetPowerState: prometheus.NewDesc(
+			"vergeos_vnet_powerstate",
+			"Whether the virtual network's router is running (1=running, 0=stopped)",
+			labels, nil,
+		),
+		vnetTxBytes: prometheus.NewDesc(
+			"vergeos_vnet_tx_bytes_total",
+			"Total bytes transmitted by the virtual network's router NIC",
+			labels, nil,
+		),
+		vnetRxBytes: prometheus.NewDesc(
+			"vergeos_vnet_rx_bytes_total",
+			"Total bytes received by the virtual network's router NIC",
+			labels, nil,
+		),
+		vnetTxPackets: prometheus.NewDesc(
+			"vergeos_vnet_tx_packets_total",
+			"Total packets transmitted by the virtual network's router NIC",
+			labels, nil,
+		),
+		vnetRxPackets: prometheus.NewDesc(
+			"vergeos_vnet_rx_packets_total",
+			"Total packets received by the virtual network's router NIC",
 			labels, nil,
 		),
 		vnetMonitorGateway: prometheus.NewDesc(
@@ -115,7 +147,12 @@ func NewVNetCollector(client *vergeos.Client, scrapeTimeout time.Duration) *VNet
 // Describe implements prometheus.Collector.
 func (vc *VNetCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- vc.vnetEnabled
+	ch <- vc.vnetPowerState
 	ch <- vc.vnetMonitorGateway
+	ch <- vc.vnetTxBytes
+	ch <- vc.vnetRxBytes
+	ch <- vc.vnetTxPackets
+	ch <- vc.vnetRxPackets
 	ch <- vc.monitorSent
 	ch <- vc.monitorQuality
 	ch <- vc.monitorDroppedPct
@@ -155,6 +192,18 @@ func (vc *VNetCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
+	// Map NIC key -> NIC so each vnet's router NIC stats can be joined
+	// without per-vnet API calls.
+	allNICs, err := vc.Client().MachineNICs.List(ctx)
+	if err != nil {
+		log.Printf("VNetCollector: Error fetching NICs: %v", err)
+		return
+	}
+	nicByKey := make(map[int]vergeos.MachineNIC, len(allNICs))
+	for _, nic := range allNICs {
+		nicByKey[int(nic.Key)] = nic
+	}
+
 	for _, network := range networks {
 		clusterName := clusterMap[int(network.Cluster)]
 		if clusterName == "" {
@@ -169,15 +218,32 @@ func (vc *VNetCollector) Collect(ch chan<- prometheus.Metric) {
 			vc.vnetEnabled, prometheus.GaugeValue,
 			boolToFloat64(network.Enabled), labels...,
 		)
-		// The vnets `powerstate` DB field is not maintained by the platform
-		// (always false on live systems); true running state is
-		// machine#status#status, which the SDK does not expose yet.
-		// TODO(govergeos): emit vergeos_vnet_powerstate once the SDK exposes
-		// the vnet machine status.
+		// Running (machine#status#running) is the true state; the vnets
+		// `powerstate` DB field is not maintained by the platform.
+		ch <- prometheus.MustNewConstMetric(
+			vc.vnetPowerState, prometheus.GaugeValue,
+			boolToFloat64(network.Running), labels...,
+		)
 		ch <- prometheus.MustNewConstMetric(
 			vc.vnetMonitorGateway, prometheus.GaugeValue,
 			boolToFloat64(network.MonitorGateway), labels...,
 		)
+
+		// Router NIC traffic counters (primary NIC only; DMZ NIC not exposed)
+		if nic, ok := nicByKey[int(network.NIC)]; ok && network.NIC != 0 && nic.Stats != nil {
+			ch <- prometheus.MustNewConstMetric(
+				vc.vnetTxBytes, prometheus.CounterValue, float64(nic.Stats.TxBytes), labels...,
+			)
+			ch <- prometheus.MustNewConstMetric(
+				vc.vnetRxBytes, prometheus.CounterValue, float64(nic.Stats.RxBytes), labels...,
+			)
+			ch <- prometheus.MustNewConstMetric(
+				vc.vnetTxPackets, prometheus.CounterValue, float64(nic.Stats.TxPckts), labels...,
+			)
+			ch <- prometheus.MustNewConstMetric(
+				vc.vnetRxPackets, prometheus.CounterValue, float64(nic.Stats.RxPckts), labels...,
+			)
+		}
 
 		if !network.MonitorGateway {
 			continue

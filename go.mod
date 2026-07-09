@@ -6,7 +6,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/prometheus/client_golang v1.20.5
 	github.com/prometheus/client_model v0.6.1
-	github.com/verge-io/govergeos v0.2.0
+	github.com/verge-io/govergeos v0.3.0
 	golang.org/x/sys v0.22.0
 )
 

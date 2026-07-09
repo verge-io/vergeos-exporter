@@ -24,7 +24,8 @@ A Prometheus exporter for VergeOS that collects metrics about VSAN tiers, cluste
   - Process and service status
 
 - Virtual Network (VNet) Metrics:
-  - Enabled/monitoring state per network
+  - Enabled/power/monitoring state per network
+  - Router NIC TX/RX bytes and packets
   - Gateway monitoring quality, latency, and packet-loss stats
 
 ## Metrics Format

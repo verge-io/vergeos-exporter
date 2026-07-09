@@ -15,11 +15,14 @@ import (
 
 // newVNetMockServer builds a mock server serving /vnets and
 // /vnet_monitor_stats_history_short (filtered by "vnet eq <id>").
-func newVNetMockServer(t *testing.T, config MockServerConfig, clusters []ClusterMock, vnets []VNetMock, stats []VNetMonitorStatsMock) *httptest.Server {
+func newVNetMockServer(t *testing.T, config MockServerConfig, clusters []ClusterMock, vnets []VNetMock, stats []VNetMonitorStatsMock, nics []MachineNICMock) *httptest.Server {
 	return NewBaseMockServer(t, config, func(w http.ResponseWriter, r *http.Request) bool {
 		switch {
 		case strings.Contains(r.URL.Path, "/clusters"):
 			WriteJSONResponse(w, clusters)
+			return true
+		case strings.Contains(r.URL.Path, "/machine_nics"):
+			WriteJSONResponse(w, nics)
 			return true
 		case strings.Contains(r.URL.Path, "/vnet_monitor_stats_history_short"):
 			filter := r.URL.Query().Get("filter")
@@ -48,15 +51,20 @@ func TestVNetCollector_Metrics(t *testing.T) {
 	}
 
 	vnets := []VNetMock{
-		// External network with gateway monitoring and stats available
-		{Key: 10, Name: "external", Enabled: true, PowerState: true, Cluster: 1,
+		// External network with gateway monitoring, stats, and a router NIC
+		{Key: 10, Name: "external", Enabled: true, Running: true, NIC: 500, Cluster: 1,
 			Type: "external", Layer2Type: "", MonitorGateway: true},
-		// Internal network, no monitoring
-		{Key: 11, Name: "internal", Enabled: true, PowerState: false, Cluster: 1,
+		// Internal network, no monitoring, no router NIC stats
+		{Key: 11, Name: "internal", Enabled: true, Running: false, Cluster: 1,
 			Type: "internal", Layer2Type: "vxlan", MonitorGateway: false},
 		// Monitoring enabled but no stats row yet
-		{Key: 12, Name: "newnet", Enabled: false, PowerState: false, Cluster: 1,
+		{Key: 12, Name: "newnet", Enabled: false, Running: false, Cluster: 1,
 			Type: "internal", Layer2Type: "vlan", MonitorGateway: true},
+	}
+
+	nics := []MachineNICMock{
+		{Key: 500, Machine: 900, Name: "vnet10",
+			Stats: &MachineNICStatsMock{Key: 500, TxPckts: 7000, RxPckts: 8000, TxBytes: 700000, RxBytes: 800000}},
 	}
 
 	stats := []VNetMonitorStatsMock{
@@ -65,7 +73,7 @@ func TestVNetCollector_Metrics(t *testing.T) {
 			Dropped: 3, BadChecksums: 4, BadData: 5, Timestamp: 1700000000},
 	}
 
-	mockServer := newVNetMockServer(t, config, clusters, vnets, stats)
+	mockServer := newVNetMockServer(t, config, clusters, vnets, stats, nics)
 	defer mockServer.Close()
 
 	client := CreateTestSDKClient(t, mockServer.URL)
@@ -80,6 +88,46 @@ func TestVNetCollector_Metrics(t *testing.T) {
 			vergeos_vnet_enabled{cluster="cluster1",layer2_type="vlan",system_name="test-cloud",type="internal",vnet_id="12",vnet_name="newnet"} 0
 		`
 		if err := testutil.CollectAndCompare(collector, strings.NewReader(expected), "vergeos_vnet_enabled"); err != nil {
+			t.Errorf("Unexpected metric values: %v", err)
+		}
+	})
+
+	t.Run("powerstate", func(t *testing.T) {
+		expected := `
+			# HELP vergeos_vnet_powerstate Whether the virtual network's router is running (1=running, 0=stopped)
+			# TYPE vergeos_vnet_powerstate gauge
+			vergeos_vnet_powerstate{cluster="cluster1",layer2_type="",system_name="test-cloud",type="external",vnet_id="10",vnet_name="external"} 1
+			vergeos_vnet_powerstate{cluster="cluster1",layer2_type="vxlan",system_name="test-cloud",type="internal",vnet_id="11",vnet_name="internal"} 0
+			vergeos_vnet_powerstate{cluster="cluster1",layer2_type="vlan",system_name="test-cloud",type="internal",vnet_id="12",vnet_name="newnet"} 0
+		`
+		if err := testutil.CollectAndCompare(collector, strings.NewReader(expected), "vergeos_vnet_powerstate"); err != nil {
+			t.Errorf("Unexpected metric values: %v", err)
+		}
+	})
+
+	t.Run("router_nic_traffic", func(t *testing.T) {
+		// Only vnet 10 has a router NIC with stats
+		expected := `
+			# HELP vergeos_vnet_tx_bytes_total Total bytes transmitted by the virtual network's router NIC
+			# TYPE vergeos_vnet_tx_bytes_total counter
+			vergeos_vnet_tx_bytes_total{cluster="cluster1",layer2_type="",system_name="test-cloud",type="external",vnet_id="10",vnet_name="external"} 700000
+			# HELP vergeos_vnet_rx_bytes_total Total bytes received by the virtual network's router NIC
+			# TYPE vergeos_vnet_rx_bytes_total counter
+			vergeos_vnet_rx_bytes_total{cluster="cluster1",layer2_type="",system_name="test-cloud",type="external",vnet_id="10",vnet_name="external"} 800000
+			# HELP vergeos_vnet_tx_packets_total Total packets transmitted by the virtual network's router NIC
+			# TYPE vergeos_vnet_tx_packets_total counter
+			vergeos_vnet_tx_packets_total{cluster="cluster1",layer2_type="",system_name="test-cloud",type="external",vnet_id="10",vnet_name="external"} 7000
+			# HELP vergeos_vnet_rx_packets_total Total packets received by the virtual network's router NIC
+			# TYPE vergeos_vnet_rx_packets_total counter
+			vergeos_vnet_rx_packets_total{cluster="cluster1",layer2_type="",system_name="test-cloud",type="external",vnet_id="10",vnet_name="external"} 8000
+		`
+		metricNames := []string{
+			"vergeos_vnet_tx_bytes_total",
+			"vergeos_vnet_rx_bytes_total",
+			"vergeos_vnet_tx_packets_total",
+			"vergeos_vnet_rx_packets_total",
+		}
+		if err := testutil.CollectAndCompare(collector, strings.NewReader(expected), metricNames...); err != nil {
 			t.Errorf("Unexpected metric values: %v", err)
 		}
 	})
@@ -172,7 +220,7 @@ func TestVNetCollector_Describe(t *testing.T) {
 		count++
 	}
 
-	if count != 13 {
-		t.Errorf("Expected 13 descriptors, got %d", count)
+	if count != 18 {
+		t.Errorf("Expected 18 descriptors, got %d", count)
 	}
 }

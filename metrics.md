@@ -62,9 +62,14 @@ All VNet metrics are labeled by `system_name`, `vnet_name`, `vnet_id`, `cluster`
 
 Inventory/config (emitted for every virtual network):
 - **VNet Enabled**: `vergeos_vnet_enabled` (Gauge, 1=enabled)
+- **VNet Power State**: `vergeos_vnet_powerstate` (Gauge, 1=running; derived from the router machine status, not the unmaintained `/vnets` `powerstate` field)
 - **VNet Gateway Monitoring Enabled**: `vergeos_vnet_monitor_gateway` (Gauge, 1=enabled)
 
-A power-state metric is intentionally not exposed yet: the `/vnets` `powerstate` field is not maintained by the platform, and the true running state (`machine#status#status`) is not yet available through the SDK (verge-io/govergeos#34).
+Router NIC traffic (emitted when the network has a router NIC with stats; counts traffic through the vnet router's primary NIC — DMZ NIC traffic is not included):
+- **VNet Transmit Bytes**: `vergeos_vnet_tx_bytes_total` (Counter)
+- **VNet Receive Bytes**: `vergeos_vnet_rx_bytes_total` (Counter)
+- **VNet Transmit Packets**: `vergeos_vnet_tx_packets_total` (Counter)
+- **VNet Receive Packets**: `vergeos_vnet_rx_packets_total` (Counter)
 
 Gateway monitoring (emitted only for networks with gateway monitoring enabled *and* at least one stats sample available; values are from the latest per-interval sample, so they are gauges, not cumulative counters):
 - **Monitor Packets Sent**: `vergeos_vnet_monitor_sent` (Gauge)
@@ -79,7 +84,6 @@ Gateway monitoring (emitted only for networks with gateway monitoring enabled *a
 - **Monitor Bad Data**: `vergeos_vnet_monitor_bad_data` (Gauge)
 - **Monitor Sample Timestamp**: `vergeos_vnet_monitor_timestamp_seconds` (Gauge, Unix timestamp)
 
-Note: the VergeOS API does not expose VNet-level TX/RX byte or packet counters — only gateway-monitoring quality/latency/drop data (`/vnet_monitor_stats_history_short`). For traffic counters, use the physical NIC (`vergeos_nic_*`) and VM NIC (`vergeos_vm_nic_*`) metrics.
 ---
 ## VSAN Tiers Overview
 - **VSAN Tier Capacity**: `vergeos_vsan_tier_capacity` (Gauge, labeled by `system_name`, `tier`, and `description`)
