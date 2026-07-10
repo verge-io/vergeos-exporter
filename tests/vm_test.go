@@ -27,7 +27,7 @@ func TestVMCollector(t *testing.T) {
 	}
 
 	allMachineStats := []MachineStatsMock{
-		{Key: 1, Machine: 101, TotalCPU: 75, UserCPU: 50, SystemCPU: 20, IOWaitCPU: 5},
+		{Key: 1, Machine: 101, TotalCPU: 75},
 	}
 
 	allMachineStatuses := []MachineStatusMock{
@@ -111,9 +111,6 @@ func TestVMCollector(t *testing.T) {
 	// Verify all expected metrics exist
 	expectedMetrics := map[string]bool{
 		"vergeos_vm_cpu_total":              false,
-		"vergeos_vm_cpu_user":               false,
-		"vergeos_vm_cpu_system":             false,
-		"vergeos_vm_cpu_iowait":             false,
 		"vergeos_vm_running":                false,
 		"vergeos_vm_enabled":                false,
 		"vergeos_vm_cpu_cores":              false,
@@ -141,6 +138,17 @@ func TestVMCollector(t *testing.T) {
 	for metric, found := range expectedMetrics {
 		if !found {
 			t.Errorf("Expected metric %s not found", metric)
+		}
+	}
+
+	removedMetrics := map[string]bool{
+		"vergeos_vm_cpu_user":   true,
+		"vergeos_vm_cpu_system": true,
+		"vergeos_vm_cpu_iowait": true,
+	}
+	for _, mf := range metrics {
+		if removedMetrics[mf.GetName()] {
+			t.Errorf("Removed metric %s is still exposed", mf.GetName())
 		}
 	}
 
@@ -319,7 +327,7 @@ func TestVMCollector_SnapshotFiltering(t *testing.T) {
 
 		case strings.Contains(r.URL.Path, "/machine_stats"):
 			WriteJSONResponse(w, []MachineStatsMock{
-				{Key: 1, Machine: 101, TotalCPU: 30, UserCPU: 20, SystemCPU: 8, IOWaitCPU: 2},
+				{Key: 1, Machine: 101, TotalCPU: 30},
 			})
 			return true
 
@@ -389,7 +397,7 @@ func TestVMCollector_StaleMetrics(t *testing.T) {
 			var stats []MachineStatsMock
 			for i := 1; i <= vmCount; i++ {
 				stats = append(stats, MachineStatsMock{
-					Key: i, Machine: 100 + i, TotalCPU: 50, UserCPU: 30, SystemCPU: 15, IOWaitCPU: 5,
+					Key: i, Machine: 100 + i, TotalCPU: 50,
 				})
 			}
 			WriteJSONResponse(w, stats)

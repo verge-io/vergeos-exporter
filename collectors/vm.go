@@ -25,10 +25,7 @@ type VMCollector struct {
 	mutex sync.Mutex
 
 	// CPU metrics
-	vmCPUTotal  *prometheus.Desc
-	vmCPUUser   *prometheus.Desc
-	vmCPUSystem *prometheus.Desc
-	vmCPUIowait *prometheus.Desc
+	vmCPUTotal *prometheus.Desc
 
 	// State metrics
 	vmRunning *prometheus.Desc
@@ -68,24 +65,6 @@ func NewVMCollector(client *vergeos.Client, scrapeTimeout time.Duration) *VMColl
 		vmCPUTotal: prometheus.NewDesc(
 			"vergeos_vm_cpu_total",
 			"Total CPU usage percentage",
-			vmLabels,
-			nil,
-		),
-		vmCPUUser: prometheus.NewDesc(
-			"vergeos_vm_cpu_user",
-			"User CPU usage percentage",
-			vmLabels,
-			nil,
-		),
-		vmCPUSystem: prometheus.NewDesc(
-			"vergeos_vm_cpu_system",
-			"System CPU usage percentage",
-			vmLabels,
-			nil,
-		),
-		vmCPUIowait: prometheus.NewDesc(
-			"vergeos_vm_cpu_iowait",
-			"IO Wait CPU usage percentage",
 			vmLabels,
 			nil,
 		),
@@ -191,9 +170,6 @@ func NewVMCollector(client *vergeos.Client, scrapeTimeout time.Duration) *VMColl
 // Describe implements prometheus.Collector
 func (vc *VMCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- vc.vmCPUTotal
-	ch <- vc.vmCPUUser
-	ch <- vc.vmCPUSystem
-	ch <- vc.vmCPUIowait
 	ch <- vc.vmRunning
 	ch <- vc.vmEnabled
 	ch <- vc.vmCPUCores
@@ -298,18 +274,12 @@ func (vc *VMCollector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(vc.vmRAMBytes, prometheus.GaugeValue, float64(vm.RAM)*1048576, labels...)
 
 		// CPU stats (0 if powered off or no stats available)
-		var totalCPU, userCPU, systemCPU, iowaitCPU float64
+		var totalCPU float64
 		if stats, ok := statsMap[vm.Machine]; ok {
 			totalCPU = float64(stats.TotalCPU)
-			userCPU = float64(stats.UserCPU)
-			systemCPU = float64(stats.SystemCPU)
-			iowaitCPU = float64(stats.IOWaitCPU)
 		}
 
 		ch <- prometheus.MustNewConstMetric(vc.vmCPUTotal, prometheus.GaugeValue, totalCPU, labels...)
-		ch <- prometheus.MustNewConstMetric(vc.vmCPUUser, prometheus.GaugeValue, userCPU, labels...)
-		ch <- prometheus.MustNewConstMetric(vc.vmCPUSystem, prometheus.GaugeValue, systemCPU, labels...)
-		ch <- prometheus.MustNewConstMetric(vc.vmCPUIowait, prometheus.GaugeValue, iowaitCPU, labels...)
 
 		// NIC metrics (only for VMs with NICs)
 		if nics, ok := nicMap[vm.Machine]; ok {

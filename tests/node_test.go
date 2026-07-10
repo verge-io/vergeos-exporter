@@ -27,8 +27,8 @@ func TestNodeCollector(t *testing.T) {
 	}
 
 	machineStats := map[int]MachineStatsMock{
-		101: {Key: 1, Machine: 101, TotalCPU: 45, RAMUsed: 48000, RAMPct: 73, CoreUsageList: json.RawMessage(`[10.5, 20.3, 30.1, 40.0]`), CoreTemp: 55, CoreTempTop: 62},
-		102: {Key: 2, Machine: 102, TotalCPU: 30, RAMUsed: 32000, RAMPct: 49, CoreUsageList: json.RawMessage(`[5.0, 15.0]`), CoreTemp: 42, CoreTempTop: 48},
+		101: {Key: 1, Machine: 101, TotalCPU: 45, UserCPU: 20, SystemCPU: 15, IOWaitCPU: 10, RAMUsed: 48000, RAMPct: 73, CoreUsageList: json.RawMessage(`[10.5, 20.3, 30.1, 40.0]`), CoreTemp: 55, CoreTempTop: 62},
+		102: {Key: 2, Machine: 102, TotalCPU: 30, UserCPU: 10, SystemCPU: 15, IOWaitCPU: 5, RAMUsed: 32000, RAMPct: 49, CoreUsageList: json.RawMessage(`[5.0, 15.0]`), CoreTemp: 42, CoreTempTop: 48},
 	}
 
 	mockServer := NewBaseMockServer(t, config, func(w http.ResponseWriter, r *http.Request) bool {
@@ -81,6 +81,10 @@ func TestNodeCollector(t *testing.T) {
 		"vergeos_node_ipmi_status":    false,
 		"vergeos_node_ram_total":      false,
 		"vergeos_node_ram_allocated":  false,
+		"vergeos_node_cpu_total":      false,
+		"vergeos_node_cpu_user":       false,
+		"vergeos_node_cpu_system":     false,
+		"vergeos_node_cpu_iowait":     false,
 		"vergeos_node_cpu_core_usage": false,
 		"vergeos_node_core_temp":      false,
 		"vergeos_node_ram_used":       false,
@@ -144,6 +148,37 @@ func TestNodeCollector(t *testing.T) {
 			vergeos_node_ram_allocated{cluster="cluster1",node_name="node2",system_name="testcloud"} 16384
 		`
 		if err := testutil.CollectAndCompare(collector, strings.NewReader(expected), "vergeos_node_ram_allocated"); err != nil {
+			t.Errorf("Unexpected metric values: %v", err)
+		}
+	})
+
+	t.Run("cpu_breakdown", func(t *testing.T) {
+		expected := `
+			# HELP vergeos_node_cpu_total Total CPU usage percentage
+			# TYPE vergeos_node_cpu_total gauge
+			vergeos_node_cpu_total{cluster="cluster1",node_name="node1",system_name="testcloud"} 45
+			vergeos_node_cpu_total{cluster="cluster1",node_name="node2",system_name="testcloud"} 30
+			# HELP vergeos_node_cpu_user User CPU usage percentage
+			# TYPE vergeos_node_cpu_user gauge
+			vergeos_node_cpu_user{cluster="cluster1",node_name="node1",system_name="testcloud"} 20
+			vergeos_node_cpu_user{cluster="cluster1",node_name="node2",system_name="testcloud"} 10
+			# HELP vergeos_node_cpu_system System CPU usage percentage
+			# TYPE vergeos_node_cpu_system gauge
+			vergeos_node_cpu_system{cluster="cluster1",node_name="node1",system_name="testcloud"} 15
+			vergeos_node_cpu_system{cluster="cluster1",node_name="node2",system_name="testcloud"} 15
+			# HELP vergeos_node_cpu_iowait IO Wait CPU usage percentage
+			# TYPE vergeos_node_cpu_iowait gauge
+			vergeos_node_cpu_iowait{cluster="cluster1",node_name="node1",system_name="testcloud"} 10
+			vergeos_node_cpu_iowait{cluster="cluster1",node_name="node2",system_name="testcloud"} 5
+		`
+		if err := testutil.CollectAndCompare(
+			collector,
+			strings.NewReader(expected),
+			"vergeos_node_cpu_total",
+			"vergeos_node_cpu_user",
+			"vergeos_node_cpu_system",
+			"vergeos_node_cpu_iowait",
+		); err != nil {
 			t.Errorf("Unexpected metric values: %v", err)
 		}
 	})
