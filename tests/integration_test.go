@@ -79,6 +79,23 @@ func TestIntegrationNodeCollector(t *testing.T) {
 
 	metrics := collectMetrics(t, nc)
 
+	t.Run("cpu_breakdown", func(t *testing.T) {
+		for _, name := range []string{
+			"vergeos_node_cpu_total",
+			"vergeos_node_cpu_user",
+			"vergeos_node_cpu_system",
+			"vergeos_node_cpu_iowait",
+		} {
+			found := filterMetrics(metrics, name)
+			if len(found) == 0 {
+				t.Errorf("Expected at least one %s metric", name)
+			}
+			for _, m := range found {
+				assertHasLabels(t, m, "system_name", "cluster", "node_name")
+			}
+		}
+	})
+
 	t.Run("running_cores", func(t *testing.T) {
 		found := filterMetrics(metrics, "vergeos_node_running_cores")
 		if len(found) == 0 {
@@ -202,33 +219,15 @@ func TestIntegrationVMCollector(t *testing.T) {
 		t.Logf("Found %d VM CPU total metrics", len(found))
 	})
 
-	t.Run("vm_cpu_user", func(t *testing.T) {
-		found := filterMetrics(metrics, "vergeos_vm_cpu_user")
-		if len(found) == 0 {
-			t.Fatal("Expected at least one vergeos_vm_cpu_user metric")
-		}
-		for _, m := range found {
-			assertHasLabels(t, m, "system_name", "cluster", "node", "vm_name", "vm_id")
-		}
-	})
-
-	t.Run("vm_cpu_system", func(t *testing.T) {
-		found := filterMetrics(metrics, "vergeos_vm_cpu_system")
-		if len(found) == 0 {
-			t.Fatal("Expected at least one vergeos_vm_cpu_system metric")
-		}
-		for _, m := range found {
-			assertHasLabels(t, m, "system_name", "cluster", "node", "vm_name", "vm_id")
-		}
-	})
-
-	t.Run("vm_cpu_iowait", func(t *testing.T) {
-		found := filterMetrics(metrics, "vergeos_vm_cpu_iowait")
-		if len(found) == 0 {
-			t.Fatal("Expected at least one vergeos_vm_cpu_iowait metric")
-		}
-		for _, m := range found {
-			assertHasLabels(t, m, "system_name", "cluster", "node", "vm_name", "vm_id")
+	t.Run("vm_cpu_breakdown_absent", func(t *testing.T) {
+		for _, name := range []string{
+			"vergeos_vm_cpu_user",
+			"vergeos_vm_cpu_system",
+			"vergeos_vm_cpu_iowait",
+		} {
+			if found := filterMetrics(metrics, name); len(found) != 0 {
+				t.Errorf("Expected %s to be absent, found %d metrics", name, len(found))
+			}
 		}
 	})
 
