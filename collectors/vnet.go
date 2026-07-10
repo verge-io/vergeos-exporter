@@ -1,6 +1,7 @@
 package collectors
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strconv"
@@ -193,16 +194,23 @@ func (vc *VNetCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	// Map NIC key -> NIC so each vnet's router NIC stats can be joined
-	// without per-vnet API calls.
-	allNICs, err := vc.Client().MachineNICs.List(ctx)
-	if err != nil {
-		log.Printf("VNetCollector: Error fetching NICs: %v", err)
-		return
+	// without per-vnet API calls. Best-effort: a NIC fetch failure only
+	// drops the traffic counters, not the rest of the VNet metrics.
+	nicByKey := make(map[int]vergeos.MachineNIC)
+	if allNICs, err := vc.Client().MachineNICs.List(ctx); err != nil {
+		log.Printf("VNetCollector: Error fetching NICs (traffic counters skipped): %v", err)
+	} else {
+		for _, nic := range allNICs {
+			nicByKey[int(nic.Key)] = nic
+		}
 	}
-	nicByKey := make(map[int]vergeos.MachineNIC, len(allNICs))
-	for _, nic := range allNICs {
-		nicByKey[int(nic.Key)] = nic
+
+	type monitoredVNet struct {
+		id     int
+		name   string
+		labels []string
 	}
+	var monitored []monitoredVNet
 
 	for _, network := range networks {
 		clusterName := clusterMap[int(network.Cluster)]
@@ -245,52 +253,71 @@ func (vc *VNetCollector) Collect(ch chan<- prometheus.Metric) {
 			)
 		}
 
-		if !network.MonitorGateway {
-			continue
+		if network.MonitorGateway {
+			monitored = append(monitored, monitoredVNet{id: int(network.ID), name: network.Name, labels: labels})
 		}
-
-		stats, err := vc.Client().Networks.GetLatestStatistics(ctx, int(network.ID))
-		if err != nil {
-			log.Printf("VNetCollector: Error fetching monitor stats for network %s: %v", network.Name, err)
-			continue
-		}
-		if stats == nil {
-			// Monitoring enabled but no stats row yet (e.g. network just started)
-			continue
-		}
-
-		ch <- prometheus.MustNewConstMetric(
-			vc.monitorSent, prometheus.GaugeValue, float64(stats.Sent), labels...,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			vc.monitorQuality, prometheus.GaugeValue, float64(stats.Quality), labels...,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			vc.monitorDroppedPct, prometheus.GaugeValue, float64(stats.DroppedPct), labels...,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			vc.monitorLatencyUsecAvg, prometheus.GaugeValue, float64(stats.LatencyUSAvg), labels...,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			vc.monitorLatencyUsecPeak, prometheus.GaugeValue, float64(stats.LatencyUSPeak), labels...,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			vc.monitorDuplicates, prometheus.GaugeValue, float64(stats.Duplicates), labels...,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			vc.monitorTruncated, prometheus.GaugeValue, float64(stats.Truncated), labels...,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			vc.monitorDropped, prometheus.GaugeValue, float64(stats.Dropped), labels...,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			vc.monitorBadChecksums, prometheus.GaugeValue, float64(stats.BadChecksums), labels...,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			vc.monitorBadData, prometheus.GaugeValue, float64(stats.BadData), labels...,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			vc.monitorTimestampSeconds, prometheus.GaugeValue, float64(stats.Timestamp), labels...,
-		)
 	}
+
+	// Fetch latest monitor stats with bounded concurrency so many monitored
+	// networks don't serially exhaust the scrape timeout (the SDK issues one
+	// HTTP request per network).
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, 8)
+	for _, m := range monitored {
+		wg.Add(1)
+		go func(m monitoredVNet) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			vc.collectMonitorStats(ctx, ch, m.id, m.name, m.labels)
+		}(m)
+	}
+	wg.Wait()
+}
+
+// collectMonitorStats emits the latest gateway-monitoring stats for one network.
+func (vc *VNetCollector) collectMonitorStats(ctx context.Context, ch chan<- prometheus.Metric, id int, name string, labels []string) {
+	stats, err := vc.Client().Networks.GetLatestStatistics(ctx, id)
+	if err != nil {
+		log.Printf("VNetCollector: Error fetching monitor stats for network %s: %v", name, err)
+		return
+	}
+	if stats == nil {
+		// Monitoring enabled but no stats row yet (e.g. network just started)
+		return
+	}
+
+	ch <- prometheus.MustNewConstMetric(
+		vc.monitorSent, prometheus.GaugeValue, float64(stats.Sent), labels...,
+	)
+	ch <- prometheus.MustNewConstMetric(
+		vc.monitorQuality, prometheus.GaugeValue, float64(stats.Quality), labels...,
+	)
+	ch <- prometheus.MustNewConstMetric(
+		vc.monitorDroppedPct, prometheus.GaugeValue, float64(stats.DroppedPct), labels...,
+	)
+	ch <- prometheus.MustNewConstMetric(
+		vc.monitorLatencyUsecAvg, prometheus.GaugeValue, float64(stats.LatencyUSAvg), labels...,
+	)
+	ch <- prometheus.MustNewConstMetric(
+		vc.monitorLatencyUsecPeak, prometheus.GaugeValue, float64(stats.LatencyUSPeak), labels...,
+	)
+	ch <- prometheus.MustNewConstMetric(
+		vc.monitorDuplicates, prometheus.GaugeValue, float64(stats.Duplicates), labels...,
+	)
+	ch <- prometheus.MustNewConstMetric(
+		vc.monitorTruncated, prometheus.GaugeValue, float64(stats.Truncated), labels...,
+	)
+	ch <- prometheus.MustNewConstMetric(
+		vc.monitorDropped, prometheus.GaugeValue, float64(stats.Dropped), labels...,
+	)
+	ch <- prometheus.MustNewConstMetric(
+		vc.monitorBadChecksums, prometheus.GaugeValue, float64(stats.BadChecksums), labels...,
+	)
+	ch <- prometheus.MustNewConstMetric(
+		vc.monitorBadData, prometheus.GaugeValue, float64(stats.BadData), labels...,
+	)
+	ch <- prometheus.MustNewConstMetric(
+		vc.monitorTimestampSeconds, prometheus.GaugeValue, float64(stats.Timestamp), labels...,
+	)
 }

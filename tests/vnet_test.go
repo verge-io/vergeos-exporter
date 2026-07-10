@@ -202,6 +202,52 @@ func TestVNetCollector_Metrics(t *testing.T) {
 	})
 }
 
+func TestVNetCollector_NICFetchFailure(t *testing.T) {
+	config := DefaultMockConfig()
+	config.CloudName = "test-cloud"
+
+	clusters := []ClusterMock{{Key: 1, Name: "cluster1", Enabled: true}}
+	vnets := []VNetMock{
+		{Key: 10, Name: "external", Enabled: true, Running: true, NIC: 500, Cluster: 1,
+			Type: "external", Layer2Type: "", MonitorGateway: false},
+	}
+
+	mockServer := NewBaseMockServer(t, config, func(w http.ResponseWriter, r *http.Request) bool {
+		switch {
+		case strings.Contains(r.URL.Path, "/clusters"):
+			WriteJSONResponse(w, clusters)
+			return true
+		case strings.Contains(r.URL.Path, "/machine_nics"):
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return true
+		case strings.Contains(r.URL.Path, "/vnets"):
+			WriteJSONResponse(w, vnets)
+			return true
+		}
+		return false
+	})
+	defer mockServer.Close()
+
+	client := CreateTestSDKClient(t, mockServer.URL)
+	collector := collectors.NewVNetCollector(client, TestScrapeTimeout)
+
+	// Inventory metrics must survive a NIC fetch failure
+	expected := `
+		# HELP vergeos_vnet_enabled Whether the virtual network is enabled (1=enabled, 0=disabled)
+		# TYPE vergeos_vnet_enabled gauge
+		vergeos_vnet_enabled{cluster="cluster1",layer2_type="",system_name="test-cloud",type="external",vnet_id="10",vnet_name="external"} 1
+	`
+	if err := testutil.CollectAndCompare(collector, strings.NewReader(expected), "vergeos_vnet_enabled"); err != nil {
+		t.Errorf("Inventory metrics missing after NIC fetch failure: %v", err)
+	}
+
+	// Traffic counters must be absent, not zero-valued or stale
+	count := testutil.CollectAndCount(collector, "vergeos_vnet_tx_bytes_total")
+	if count != 0 {
+		t.Errorf("Expected 0 traffic series after NIC fetch failure, got %d", count)
+	}
+}
+
 func TestVNetCollector_Describe(t *testing.T) {
 	config := DefaultMockConfig()
 
