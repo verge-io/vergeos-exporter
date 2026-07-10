@@ -56,6 +56,35 @@ All drive metrics include the following labels:
 - **NIC Receive Bytes**: `vergeos_nic_rx_bytes_total` (Counter, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
 - **NIC Status**: `vergeos_nic_status` (Gauge, labeled by `system_name`, `cluster`, `node_name`, and `interface`)
 ---
+## VNet Metrics
+
+All VNet metrics are labeled by `system_name`, `vnet_name`, `vnet_id`, `cluster`, `type`, and `layer2_type`.
+
+Inventory/config (emitted for every virtual network):
+- **VNet Enabled**: `vergeos_vnet_enabled` (Gauge, 1=enabled)
+- **VNet Power State**: `vergeos_vnet_powerstate` (Gauge, 1=running; derived from the router machine status, not the unmaintained `/vnets` `powerstate` field)
+- **VNet Gateway Monitoring Enabled**: `vergeos_vnet_monitor_gateway` (Gauge, 1=enabled)
+
+Router NIC traffic (emitted when the network has a router NIC with stats; counts traffic through the vnet router's primary NIC — DMZ NIC traffic is not included):
+- **VNet Transmit Bytes**: `vergeos_vnet_tx_bytes_total` (Counter)
+- **VNet Receive Bytes**: `vergeos_vnet_rx_bytes_total` (Counter)
+- **VNet Transmit Packets**: `vergeos_vnet_tx_packets_total` (Counter)
+- **VNet Receive Packets**: `vergeos_vnet_rx_packets_total` (Counter)
+
+Gateway monitoring (emitted only for networks with gateway monitoring enabled *and* at least one stats sample available; values are from the latest per-interval sample, so they are gauges, not cumulative counters):
+- **Monitor Packets Sent**: `vergeos_vnet_monitor_sent` (Gauge)
+- **Monitor Quality**: `vergeos_vnet_monitor_quality` (Gauge, percentage, 100 - dropped_pct)
+- **Monitor Dropped Percentage**: `vergeos_vnet_monitor_dropped_pct` (Gauge, percentage)
+- **Monitor Average Latency**: `vergeos_vnet_monitor_latency_usec_avg` (Gauge, microseconds)
+- **Monitor Peak Latency**: `vergeos_vnet_monitor_latency_usec_peak` (Gauge, microseconds)
+- **Monitor Duplicate Packets**: `vergeos_vnet_monitor_duplicates` (Gauge)
+- **Monitor Truncated Packets**: `vergeos_vnet_monitor_truncated` (Gauge)
+- **Monitor Dropped Packets**: `vergeos_vnet_monitor_dropped` (Gauge)
+- **Monitor Bad Checksums**: `vergeos_vnet_monitor_bad_checksums` (Gauge)
+- **Monitor Bad Data**: `vergeos_vnet_monitor_bad_data` (Gauge)
+- **Monitor Sample Timestamp**: `vergeos_vnet_monitor_timestamp_seconds` (Gauge, Unix timestamp)
+
+---
 ## VSAN Tiers Overview
 - **VSAN Tier Capacity**: `vergeos_vsan_tier_capacity` (Gauge, labeled by `system_name`, `tier`, and `description`)
 - **VSAN Tier Used Space**: `vergeos_vsan_tier_used` (Gauge, labeled by `system_name`, `tier`, and `description`)
