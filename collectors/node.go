@@ -24,6 +24,10 @@ type NodeCollector struct {
 	nodeRAM        *prometheus.Desc
 
 	// MachineStats metrics (Issue 1)
+	nodeCPUTotal     *prometheus.Desc
+	nodeCPUUser      *prometheus.Desc
+	nodeCPUSystem    *prometheus.Desc
+	nodeCPUIowait    *prometheus.Desc
 	nodeCPUCoreUsage *prometheus.Desc
 	nodeCoreTemp     *prometheus.Desc
 	nodeRAMUsed      *prometheus.Desc
@@ -61,6 +65,30 @@ func NewNodeCollector(client *vergeos.Client, scrapeTimeout time.Duration) *Node
 		nodeRAM: prometheus.NewDesc(
 			"vergeos_node_ram_allocated",
 			"VM RAM in MB (vm_ram field)",
+			nodeLabels,
+			nil,
+		),
+		nodeCPUTotal: prometheus.NewDesc(
+			"vergeos_node_cpu_total",
+			"Total CPU usage percentage",
+			nodeLabels,
+			nil,
+		),
+		nodeCPUUser: prometheus.NewDesc(
+			"vergeos_node_cpu_user",
+			"User CPU usage percentage",
+			nodeLabels,
+			nil,
+		),
+		nodeCPUSystem: prometheus.NewDesc(
+			"vergeos_node_cpu_system",
+			"System CPU usage percentage",
+			nodeLabels,
+			nil,
+		),
+		nodeCPUIowait: prometheus.NewDesc(
+			"vergeos_node_cpu_iowait",
+			"IO Wait CPU usage percentage",
 			nodeLabels,
 			nil,
 		),
@@ -111,6 +139,10 @@ func (nc *NodeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- nc.nodeIPMIStatus
 	ch <- nc.nodeRAMTotal
 	ch <- nc.nodeRAM
+	ch <- nc.nodeCPUTotal
+	ch <- nc.nodeCPUUser
+	ch <- nc.nodeCPUSystem
+	ch <- nc.nodeCPUIowait
 	ch <- nc.nodeCPUCoreUsage
 	ch <- nc.nodeCoreTemp
 	ch <- nc.nodeRAMUsed
@@ -223,6 +255,11 @@ func (nc *NodeCollector) Collect(ch chan<- prometheus.Metric) {
 		if !ok {
 			continue
 		}
+
+		ch <- prometheus.MustNewConstMetric(nc.nodeCPUTotal, prometheus.GaugeValue, float64(stats.TotalCPU), systemName, clusterName, node.Name)
+		ch <- prometheus.MustNewConstMetric(nc.nodeCPUUser, prometheus.GaugeValue, float64(stats.UserCPU), systemName, clusterName, node.Name)
+		ch <- prometheus.MustNewConstMetric(nc.nodeCPUSystem, prometheus.GaugeValue, float64(stats.SystemCPU), systemName, clusterName, node.Name)
+		ch <- prometheus.MustNewConstMetric(nc.nodeCPUIowait, prometheus.GaugeValue, float64(stats.IOWaitCPU), systemName, clusterName, node.Name)
 
 		// Per-core CPU usage
 		coreUsages, err := stats.GetCoreUsages()

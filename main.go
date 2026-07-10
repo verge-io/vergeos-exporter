@@ -31,6 +31,7 @@ var (
 	vergeURL      = flag.String("verge.url", "http://localhost", "Base URL of the VergeOS API")
 	vergeUsername = flag.String("verge.username", "", "Username for VergeOS API authentication")
 	vergePassword = flag.String("verge.password", "", "Password for VergeOS API authentication")
+	vergeAPIKey   = flag.String("verge.apikey", "", "API key for VergeOS API authentication (alternative to username/password)")
 	scrapeTimeout = flag.Duration("scrape.timeout", 30*time.Second, "Timeout for scraping VergeOS API")
 	insecure      = flag.Bool("insecure", false, "Skip TLS certificate verification (use for self-signed certificates)")
 	logFile       = flag.String("log.file", "", "Write logs to this file instead of stderr (useful when running as a service).")
@@ -64,6 +65,9 @@ func main() {
 	if *vergePassword == "" {
 		*vergePassword = os.Getenv("VERGE_PASSWORD")
 	}
+	if *vergeAPIKey == "" {
+		*vergeAPIKey = os.Getenv("VERGE_API_KEY")
+	}
 
 	// Windows service control/hosting. On non-Windows platforms this is a no-op
 	// unless -service was passed, in which case it reports a clear error.
@@ -85,8 +89,9 @@ func main() {
 // platform-neutral: main() calls it directly for foreground runs, and the
 // Windows service handler calls it with a stop channel driven by the SCM.
 func runExporter(stop <-chan struct{}) error {
-	if *vergeUsername == "" || *vergePassword == "" {
-		return fmt.Errorf("verge.username and verge.password are required (flags or VERGE_USERNAME/VERGE_PASSWORD env vars)")
+	auth, err := authOption(*vergeAPIKey, *vergeUsername, *vergePassword)
+	if err != nil {
+		return err
 	}
 
 	if *insecure {
@@ -96,7 +101,7 @@ func runExporter(stop <-chan struct{}) error {
 	// Create SDK client for API operations
 	client, err := vergeos.NewClient(
 		vergeos.WithBaseURL(*vergeURL),
-		vergeos.WithCredentials(*vergeUsername, *vergePassword),
+		auth,
 		vergeos.WithInsecureTLS(*insecure),
 		vergeos.WithTimeout(*scrapeTimeout),
 	)
@@ -111,7 +116,7 @@ func runExporter(stop <-chan struct{}) error {
 	cloudName, err := client.Settings.GetCloudName(ctx)
 	if err != nil {
 		if vergeos.IsAuthError(err) {
-			return fmt.Errorf("authentication failed: check username/password for %s", *vergeURL)
+			return fmt.Errorf("authentication failed: check API key or username/password for %s", *vergeURL)
 		}
 		return fmt.Errorf("failed to connect to VergeOS API at %s: %w", *vergeURL, err)
 	}
@@ -183,4 +188,14 @@ func runExporter(stop <-chan struct{}) error {
 		return fmt.Errorf("server error: %w", err)
 	}
 	return nil
+}
+
+func authOption(apiKey, username, password string) (vergeos.ClientOption, error) {
+	if apiKey != "" {
+		return vergeos.WithAPIKey(apiKey), nil
+	}
+	if username == "" || password == "" {
+		return nil, fmt.Errorf("authentication required: provide verge.apikey (or VERGE_API_KEY) or both verge.username and verge.password (or VERGE_USERNAME/VERGE_PASSWORD)")
+	}
+	return vergeos.WithCredentials(username, password), nil
 }

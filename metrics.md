@@ -8,6 +8,10 @@
 ## Node Details and Stats
 
 ### CPU Metrics
+- **Total CPU Usage**: `vergeos_node_cpu_total` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
+- **User CPU Usage**: `vergeos_node_cpu_user` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
+- **System CPU Usage**: `vergeos_node_cpu_system` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
+- **IO Wait CPU Usage**: `vergeos_node_cpu_iowait` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
 - **CPU Usage per Core**: `vergeos_node_cpu_core_usage` (Gauge, labeled by `system_name`, `cluster`, `node_name`, and `core_id`)
 - **CPU Temperature**: `vergeos_node_core_temp` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
 - **Running Cores**: `vergeos_node_running_cores` (Gauge, labeled by `system_name`, `cluster`, and `node_name`)
@@ -185,11 +189,8 @@ All VM metrics include labels: `system_name`, `cluster`, `node`, `vm_name`, `vm_
 
 ### VM CPU Metrics
 - **Total CPU Usage**: `vergeos_vm_cpu_total` (Gauge, percentage 0-100)
-- **User CPU Usage**: `vergeos_vm_cpu_user` (Gauge, percentage 0-100)
-- **System CPU Usage**: `vergeos_vm_cpu_system` (Gauge, percentage 0-100)
-- **IO Wait CPU Usage**: `vergeos_vm_cpu_iowait` (Gauge, percentage 0-100)
 
-Powered-off VMs report 0 for all CPU metrics.
+Powered-off VMs report 0 CPU usage.
 
 ### VM NIC Metrics
 Additional label: `nic_name`. Only emitted for VMs with NIC stats available.

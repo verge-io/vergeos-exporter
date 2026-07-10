@@ -93,8 +93,9 @@ go build -o vergeos-exporter
 - `-web.listen-address`: Address to listen on for web interface and telemetry (default: ":9888")
 - `-web.telemetry-path`: Path under which to expose metrics
 - `-verge.url`: VergeOS API URL (default: "https://localhost"). Also: `VERGE_URL` env var
-- `-verge.username`: VergeOS API username (required). Also: `VERGE_USERNAME` env var
-- `-verge.password`: VergeOS API password (required). Also: `VERGE_PASSWORD` env var
+- `-verge.username`: VergeOS API username (required with password unless using an API key). Also: `VERGE_USERNAME` env var
+- `-verge.password`: VergeOS API password (required with username unless using an API key). Also: `VERGE_PASSWORD` env var
+- `-verge.apikey`: VergeOS API key (alternative to username/password). Also: `VERGE_API_KEY` env var
 - `-scrape.timeout`: Timeout for scraping VergeOS API (default: 30s)
 
 Environment variables are recommended over CLI flags in production to avoid exposing credentials in the process list.
@@ -103,6 +104,9 @@ Environment variables are recommended over CLI flags in production to avoid expo
 
 ```bash
 ./vergeos-exporter -verge.url="https://VERGEURL" -verge.username="admin" -verge.password="password"
+
+# Or authenticate with an API key
+./vergeos-exporter -verge.url="https://VERGEURL" -verge.apikey="API_KEY"
 ```
 
 ### Permissions
@@ -208,7 +212,7 @@ cd "C:\Program Files\vergeos-exporter"
   -verge.password="PASSWORD" `
   -log.file="C:\Program Files\vergeos-exporter\logs\exporter.log"
 ```
-   The service is created with automatic startup, so it will launch on boot. Use `-log.file` to capture logs, since a Windows service has no console. Credentials can also be supplied via the `VERGE_URL`, `VERGE_USERNAME`, and `VERGE_PASSWORD` environment variables instead of flags.
+   The service is created with automatic startup, so it will launch on boot. Use `-log.file` to capture logs, since a Windows service has no console. Credentials can also be supplied via the `VERGE_URL`, `VERGE_USERNAME`, `VERGE_PASSWORD`, and `VERGE_API_KEY` environment variables instead of flags.
 
 3. Start the service:
 ```powershell
