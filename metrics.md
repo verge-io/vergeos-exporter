@@ -77,7 +77,6 @@ All drive metrics include the following labels:
 - **VNet Monitor Sample Timestamp**: `vergeos_vnet_monitor_timestamp_seconds` (Gauge, labeled by `system_name`, `vnet_name`, `vnet_id`, `cluster`, `type`, and `layer2_type`)
 
 Notes:
-- `vergeos_vnet_powerstate` is derived from the vnet router's machine status (the `/vnets` `powerstate` field is not maintained by the platform).
 - The `vergeos_vnet_tx_*`/`rx_*` counters cover the vnet router's primary NIC; DMZ NIC traffic is not included. They are emitted only when the network has a router NIC with stats.
 - The `vergeos_vnet_monitor_*` metrics are emitted only for networks with gateway monitoring enabled and at least one stats sample. Values come from the latest per-interval sample, so they are gauges rather than cumulative counters.
 ---
