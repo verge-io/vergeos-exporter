@@ -128,10 +128,13 @@ See [metrics.md](metrics.md) for a complete list of exported metrics.
 
 A pre-configured Grafana dashboard is included in the `examples/grafana-dashboard.json` file. This dashboard provides a comprehensive visualization of VergeOS metrics including:
 
-- VSAN tier performance and health metrics
-- Cluster resource utilization and status
+- System overview (version, node/VM/tenant counts, CPU and RAM capacity)
+- VSAN tier capacity, usage, and health, plus per-drive details
 - Node health and performance indicators
-- Storage metrics and drive status
+- Physical network (NIC) status and traffic
+- Virtual network router traffic and gateway monitoring
+- Tenant resource and storage usage
+- Per-VM CPU, network, and disk activity
 
 To import the dashboard:
 
