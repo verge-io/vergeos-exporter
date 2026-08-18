@@ -191,7 +191,6 @@ All VM metrics include labels: `system_name`, `cluster`, `node`, `vm_name`, `vm_
 - **Total CPU Usage**: `vergeos_vm_cpu_total` (Gauge, percentage 0-100)
 
 Powered-off VMs report 0 CPU usage.
-VergeOS does not populate the per-category CPU fields for VM machines, so user, system, and I/O-wait CPU metrics are not exposed.
 
 ### VM Memory Metrics
 - **RAM Used**: `vergeos_vm_ram_used_bytes` (Gauge, physical host RAM used by the VM in bytes)
