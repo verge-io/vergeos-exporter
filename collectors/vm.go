@@ -27,6 +27,9 @@ type VMCollector struct {
 	// CPU metrics
 	vmCPUTotal *prometheus.Desc
 
+	// Memory metrics
+	vmRAMUsedBytes *prometheus.Desc
+
 	// State metrics
 	vmRunning *prometheus.Desc
 	vmEnabled *prometheus.Desc
@@ -65,6 +68,12 @@ func NewVMCollector(client *vergeos.Client, scrapeTimeout time.Duration) *VMColl
 		vmCPUTotal: prometheus.NewDesc(
 			"vergeos_vm_cpu_total",
 			"Total CPU usage percentage",
+			vmLabels,
+			nil,
+		),
+		vmRAMUsedBytes: prometheus.NewDesc(
+			"vergeos_vm_ram_used_bytes",
+			"Physical host RAM used by the VM in bytes",
 			vmLabels,
 			nil,
 		),
@@ -170,6 +179,7 @@ func NewVMCollector(client *vergeos.Client, scrapeTimeout time.Duration) *VMColl
 // Describe implements prometheus.Collector
 func (vc *VMCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- vc.vmCPUTotal
+	ch <- vc.vmRAMUsedBytes
 	ch <- vc.vmRunning
 	ch <- vc.vmEnabled
 	ch <- vc.vmCPUCores
@@ -273,13 +283,15 @@ func (vc *VMCollector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(vc.vmCPUCores, prometheus.GaugeValue, float64(vm.CPUCores), labels...)
 		ch <- prometheus.MustNewConstMetric(vc.vmRAMBytes, prometheus.GaugeValue, float64(vm.RAM)*1048576, labels...)
 
-		// CPU stats (0 if powered off or no stats available)
-		var totalCPU float64
+		// Runtime stats (0 if powered off or no stats available)
+		var totalCPU, ramUsedBytes float64
 		if stats, ok := statsMap[vm.Machine]; ok {
 			totalCPU = float64(stats.TotalCPU)
+			ramUsedBytes = float64(stats.RAMUsed) * 1048576
 		}
 
 		ch <- prometheus.MustNewConstMetric(vc.vmCPUTotal, prometheus.GaugeValue, totalCPU, labels...)
+		ch <- prometheus.MustNewConstMetric(vc.vmRAMUsedBytes, prometheus.GaugeValue, ramUsedBytes, labels...)
 
 		// NIC metrics (only for VMs with NICs)
 		if nics, ok := nicMap[vm.Machine]; ok {

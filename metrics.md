@@ -192,6 +192,11 @@ All VM metrics include labels: `system_name`, `cluster`, `node`, `vm_name`, `vm_
 
 Powered-off VMs report 0 CPU usage.
 
+### VM Memory Metrics
+- **RAM Used**: `vergeos_vm_ram_used_bytes` (Gauge, physical host RAM used by the VM in bytes)
+
+`ram_used` comes from the host's `machine_stats` record in MB and is converted to bytes. It is host-resident memory usage, not guest-reported usage, and does not depend on the guest agent. Powered-off VMs report 0.
+
 ### VM NIC Metrics
 Additional label: `nic_name`. Only emitted for VMs with NIC stats available.
 - **NIC TX Bytes**: `vergeos_vm_nic_tx_bytes_total` (Counter, total transmitted bytes)
