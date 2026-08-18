@@ -38,7 +38,7 @@ The exporter supports both standard Prometheus text format and [OpenMetrics](htt
 
 Prebuilt binaries for Linux, Windows, and macOS (both amd64 and arm64) are available on the [Releases](https://github.com/verge-io/vergeos-exporter/releases) page.
 
-Note that the version number is included in the filename (e.g., vergeos-exporter_2.1.0_Darwin_x86_64.tar.gz), so ensure you download the correct version for your system.
+Note that the version number is included in the filename (e.g., vergeos-exporter_2.1.2_Darwin_x86_64.tar.gz), so ensure you download the correct version for your system.
 
 1. Download the appropriate binary for your system
 2. Extract the archive:
@@ -68,7 +68,7 @@ docker run --rm -p 9888:9888 \
 
 Available tags:
 - `ghcr.io/verge-io/vergeos-exporter:latest` — most recent release
-- `ghcr.io/verge-io/vergeos-exporter:2.1.0` — specific version (no `v` prefix)
+- `ghcr.io/verge-io/vergeos-exporter:2.1.2` — specific version (no `v` prefix)
 
 See `examples/docker-compose/` for a complete monitoring stack with Prometheus and Grafana.
 
