@@ -271,6 +271,16 @@ func TestIntegrationVMCollector(t *testing.T) {
 		}
 	})
 
+	t.Run("vm_ram_used_bytes", func(t *testing.T) {
+		found := filterMetrics(metrics, "vergeos_vm_ram_used_bytes")
+		if len(found) == 0 {
+			t.Fatal("Expected at least one vergeos_vm_ram_used_bytes metric")
+		}
+		for _, m := range found {
+			assertHasLabels(t, m, "system_name", "cluster", "node", "vm_name", "vm_id")
+		}
+	})
+
 	t.Run("vm_nic_tx_bytes", func(t *testing.T) {
 		found := filterMetrics(metrics, "vergeos_vm_nic_tx_bytes_total")
 		t.Logf("Found %d VM NIC TX bytes metrics", len(found))

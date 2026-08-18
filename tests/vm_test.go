@@ -27,7 +27,7 @@ func TestVMCollector(t *testing.T) {
 	}
 
 	allMachineStats := []MachineStatsMock{
-		{Key: 1, Machine: 101, TotalCPU: 75},
+		{Key: 1, Machine: 101, TotalCPU: 75, RAMUsed: 2048},
 	}
 
 	allMachineStatuses := []MachineStatusMock{
@@ -111,6 +111,7 @@ func TestVMCollector(t *testing.T) {
 	// Verify all expected metrics exist
 	expectedMetrics := map[string]bool{
 		"vergeos_vm_cpu_total":              false,
+		"vergeos_vm_ram_used_bytes":         false,
 		"vergeos_vm_running":                false,
 		"vergeos_vm_enabled":                false,
 		"vergeos_vm_cpu_cores":              false,
@@ -208,6 +209,18 @@ func TestVMCollector(t *testing.T) {
 			vergeos_vm_ram_bytes{cluster="compute-cluster",node="",system_name="testcloud",vm_id="2",vm_name="db-server"} 1.7179869184e+10
 		`
 		if err := testutil.CollectAndCompare(collector, strings.NewReader(expected), "vergeos_vm_ram_bytes"); err != nil {
+			t.Errorf("Unexpected metric values: %v", err)
+		}
+	})
+
+	t.Run("ram_used_bytes", func(t *testing.T) {
+		expected := `
+			# HELP vergeos_vm_ram_used_bytes Physical host RAM used by the VM in bytes
+			# TYPE vergeos_vm_ram_used_bytes gauge
+			vergeos_vm_ram_used_bytes{cluster="compute-cluster",node="node1",system_name="testcloud",vm_id="1",vm_name="web-server"} 2.147483648e+09
+			vergeos_vm_ram_used_bytes{cluster="compute-cluster",node="",system_name="testcloud",vm_id="2",vm_name="db-server"} 0
+		`
+		if err := testutil.CollectAndCompare(collector, strings.NewReader(expected), "vergeos_vm_ram_used_bytes"); err != nil {
 			t.Errorf("Unexpected metric values: %v", err)
 		}
 	})
