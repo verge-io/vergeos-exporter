@@ -71,6 +71,13 @@ func IsVersionCheck(r *http.Request) bool {
 	return strings.HasSuffix(r.URL.Path, "/version.json")
 }
 
+// IsCredentialCheck returns true for the authenticated read performed by
+// govergeos v0.3.1+ during client creation.
+func IsCredentialCheck(r *http.Request) bool {
+	q := r.URL.Query()
+	return strings.HasSuffix(r.URL.Path, "/clusters") && q.Get("limit") == "1" && q.Get("fields") == "$key"
+}
+
 // IsSettingsRequest returns true if the request is for settings with cloud_name filter
 func IsSettingsRequest(r *http.Request) bool {
 	return strings.Contains(r.URL.Path, "/settings") &&
@@ -99,6 +106,12 @@ func NewBaseMockServer(t *testing.T, config MockServerConfig, additionalHandler 
 
 		// Check basic auth for other endpoints
 		if !CheckBasicAuth(w, r) {
+			return
+		}
+
+		// Keep the SDK credential check ahead of collector-specific /clusters mocks.
+		if IsCredentialCheck(r) {
+			WriteJSONResponse(w, []map[string]int{{"$key": 1}})
 			return
 		}
 
