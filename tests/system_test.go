@@ -125,6 +125,8 @@ func TestSystemCollector_StaleMetrics(t *testing.T) {
 				"version": currentVersion,
 				"hash":    currentHash,
 			})
+		case IsCredentialCheck(r):
+			WriteJSONResponse(w, []map[string]int{{"$key": 1}})
 		case IsSettingsRequest(r):
 			WriteJSONResponse(w, []map[string]string{
 				{"key": "cloud_name", "value": "testcloud"},

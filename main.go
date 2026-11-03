@@ -106,6 +106,9 @@ func runExporter(stop <-chan struct{}) error {
 		vergeos.WithTimeout(*scrapeTimeout),
 	)
 	if err != nil {
+		if vergeos.IsAuthError(err) {
+			return fmt.Errorf("authentication failed: check API key or username/password for %s", *vergeURL)
+		}
 		return fmt.Errorf("failed to create VergeOS client: %w", err)
 	}
 
